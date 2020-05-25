@@ -55,6 +55,11 @@ namespace RetroDRY
         /// </summary>
         public BackgroundWorker BackgroundWorker = new BackgroundWorker();
 
+        /// <summary>
+        /// Host app can use this to get diagnostic reports
+        /// </summary>
+        public readonly Diagnostics Diagnostics;
+
         internal readonly SqlFlavorizer.VendorKind DatabaseVendor;
 
         /// <summary>
@@ -71,6 +76,7 @@ namespace RetroDRY
             LockManager = new LockManager(() => GetDbConnection(lockDatabaseNumber), PropogatePersistonChanged);
             DefaultSql = new RetroSql();
             DefaultSql.Initialize(DatabaseVendor);
+            Diagnostics = new Diagnostics(ClientPlex);
 
             //set up process to clean cache
             BackgroundWorker.Register(() =>
@@ -87,7 +93,7 @@ namespace RetroDRY
                 return Task.CompletedTask;
             }, 70);
 
-            //set up process for communcation with other servers about locks
+            //set up process for communication with other servers about locks
             BackgroundWorker.Register(DoLockRefresh, 90);
         }
 
@@ -124,10 +130,23 @@ namespace RetroDRY
         /// </summary>
         public async Task<MainResponse> HandleHttpMain(MainRequest req)
         {
-            var user = ClientPlex.GetUser(req.SessionKey); 
-            if (user == null) return new MainResponse { ErrorCode = Constants.ERRCODE_BADUSER };
             var resp = new MainResponse();
+            try
+            {
+                var user = ClientPlex.GetUser(req.SessionKey);
+                if (user == null) return new MainResponse { ErrorCode = Constants.ERRCODE_BADUSER };
+                await HandleHttpMain(req, user, resp);
+            }
+            catch (Exception ex)
+            {
+                resp.ErrorCode = Constants.ERRCODE_INTERNAL;
+                //todo allow host app to register method to log exception details
+            }
+            return resp;
+        }
 
+        private async Task HandleHttpMain(MainRequest req, IUser user, MainResponse resp)
+        {
             //initialize
             if (req.Initialze != null)
             {
@@ -143,8 +162,8 @@ namespace RetroDRY
                 {
                     var daton = await GetDaton(DatonKey.Parse(drequest.Key), user);
                     if (drequest.KnownVersion != daton.Version) //omit if client already has the current version
-                        datons.Add(daton); 
-                    if (drequest.DoSubscribe) 
+                        datons.Add(daton);
+                    if (drequest.DoSubscribe)
                         ClientPlex.ManageSubscribe(req.SessionKey, daton.Key, daton.Version, true);
                 }
                 resp.CondensedDatons = datons.Select(daton =>
@@ -209,7 +228,7 @@ namespace RetroDRY
                     {
                         (hasLock, lockErrorCode) = LockManager.RequestLock(datonKey, mrequest.Version, req.SessionKey);
                     }
-                    else 
+                    else
                     {
                         LockManager.ReleaseLock(datonKey, req.SessionKey);
                     }
@@ -230,8 +249,6 @@ namespace RetroDRY
                 ClientPlex.DeleteSession(req.SessionKey);
                 LockManager.ReleaseLocksForSession(req.SessionKey);
             }
-
-            return resp;
         }
 
         /// <summary>
@@ -283,7 +300,7 @@ namespace RetroDRY
             }
 
             //get from database if needed (and cache it)
-            var datondef = DataDictionary.DatonDefs[key.Name];
+            var datondef = DataDictionary.FindDef(key);
             if (daton == null)
             {
                 var sql = GetSqlInstance(key);

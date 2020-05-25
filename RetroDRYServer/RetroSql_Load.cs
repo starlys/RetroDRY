@@ -32,7 +32,7 @@ namespace RetroDRY
         /// <param name="pageSize">only inspected for viewons main table</param>
         public virtual async Task<Daton> Load(IDbConnection db, DataDictionary dbdef, DatonKey key, int pageSize)
         {
-            var datondef = dbdef.DatonDefs[key.Name];
+            var datondef = dbdef.FindDef(key);
 
             //handle viewon paging and ordering
             string sortColName = datondef.MainTableDef.DefaulSortColName;
@@ -40,35 +40,40 @@ namespace RetroDRY
             if (key is ViewonKey vkey)
             {
                 pageNo = vkey.PageNumber;
-                sortColName = vkey.SortColumnName;
+                if (vkey.SortColumnName != null)
+                    sortColName = vkey.SortColumnName;
             }
             else pageSize = 0; //prohibit paging in persistons
 
             //load main table
             var whereClause = MainTableWhereClause(datondef.MainTableDef, key);
             var loadResult = await LoadTable(db, dbdef, datondef.MainTableDef, whereClause, sortColName, pageSize, pageNo);
+            loadResult.RowsByParentKey.TryGetValue("", out var rowsForParent);
 
-            Daton daton;
+            Daton daton = Utils.Construct(datondef.Type) as Daton;
             if (datondef.MultipleMainRows)
             {
-                daton = Utils.Construct(datondef.Type) as Daton;
                 if (daton is Viewon viewon) viewon.IsCompleteLoad = loadResult.IsComplete;
 
                 //copy rowsDict into daton's main table IList
                 var listField = datondef.Type.GetField(datondef.MainTableDef.Name);
-                var rowsForParent = loadResult.RowsByParentKey[null];
-                var list = Utils.CreateOrGetFieldValue<IList>(daton, listField);
-                foreach (var row in rowsForParent) list.Add(row);
+                if (rowsForParent != null)
+                {
+                    var list = Utils.CreateOrGetFieldValue<IList>(daton, listField);
+                    foreach (var row in rowsForParent) list.Add(row);
+                }
             }
-            else
+            else //single main row
             {
-                daton = loadResult.RowsByParentKey[null][0] as Daton;
+                if (rowsForParent != null)
+                    daton = rowsForParent?[0] as Daton;
             }
 
             //child tables
             var rowsByPK = RestructureByPrimaryKey(datondef.MainTableDef, loadResult.RowsByParentKey);
             await LoadChildTablesRecursive(rowsByPK, db, dbdef, datondef.MainTableDef);
 
+            daton.Key = key;
             daton.Recompute(datondef);
             return daton;
         }
@@ -197,6 +202,8 @@ namespace RetroDRY
         /// <param name="parentRows">parent Row objects indexed by primary key value</param>
         protected async Task LoadChildTablesRecursive(Dictionary<object, Row> parentRows, IDbConnection db, DataDictionary dbdef, TableDef parentdef)
         {
+            if (!parentRows.Any()) return;
+
             //get parent keys in the form "1,2,3..."
             string parentKeyListFormatted = SqlSelectBuilder.FormatInClauseList(parentRows.Keys);
 
@@ -275,7 +282,8 @@ namespace RetroDRY
             {
                 var fkCol = tabledef.FindCol(coldef.LeftJoin.ForeignKeyColumnName);
                 if (fkCol == null) throw new Exception($"Invalid foreign key column name in LeftJoin info on {coldef.Name}; it must be the name of a column in the same table");
-                var foreignTabledef = dbdef.DatonDefs[fkCol.ForeignKeyDatonTypeName].MainTableDef;
+                if (fkCol.ForeignKeyDatonTypeName == null) throw new Exception($"Invalid use of foreign key column in LeftJoin; {fkCol.Name} must use a ForeignKey annotation to identify the foriegn table");
+                var foreignTabledef = dbdef.FindDef(fkCol.ForeignKeyDatonTypeName).MainTableDef;
                 return $"(select {coldef.LeftJoin.RemoteDisplayColumnName} from {foreignTabledef.SqlTableName} where {foreignTabledef.PrimaryKeyColName}={tabledef.SqlTableName}.{fkCol.Name})";
             }
 
@@ -293,6 +301,7 @@ namespace RetroDRY
             foreach (var ci in colInfos)
             {
                 object value = reader.GetValue(ci.Index);
+                if (value is DBNull) value = null;
                 ci.Field.SetValue(target, value);
             }
         }

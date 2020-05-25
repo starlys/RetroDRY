@@ -20,7 +20,7 @@ namespace SampleServer.Controllers
         [HttpPost("/any/login")]
         public object Login([FromBody]LoginRequest req)
         {
-            //in a real app, validate against database
+            //in a real app, validate user against database
             var user = UserCache.Users.FirstOrDefault(u => u.Id == req.Id);
 
             //check password, register with RetroDRY
@@ -40,6 +40,7 @@ namespace SampleServer.Controllers
                 SessionKey = sessionKey
             };
         }
+
         /// <summary>
         /// Get any daton in compatible format by key
         /// </summary>

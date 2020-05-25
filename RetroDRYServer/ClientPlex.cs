@@ -53,6 +53,8 @@ namespace RetroDRY
         /// </summary>
         private readonly ConcurrentDictionary<string, SessionInfo> Sessions = new ConcurrentDictionary<string, SessionInfo>();
 
+        public int SessionCount => Sessions.Count;
+
         /// <summary>
         /// Create a session and return a unique key
         /// </summary>
@@ -76,6 +78,7 @@ namespace RetroDRY
         /// </summary>
         public IUser GetUser(string sessionKey)
         {
+            if (sessionKey == null) return null;
             if (!Sessions.TryGetValue(sessionKey, out SessionInfo client)) return null;
             client.LastAccessed = DateTime.UtcNow;
             return client.User;
@@ -207,7 +210,7 @@ namespace RetroDRY
                     thisClientChanged = true;
 
                     //hide cols by permissions
-                    var datondef = dbdef.DatonDefs[daton.Key.Name];
+                    var datondef = dbdef.FindDef(daton);
                     var trimmedDaton = daton.Clone(datondef);
                     var guard = new SecurityGuard(dbdef, cli.User);
                     guard.HidePrivateParts(trimmedDaton);

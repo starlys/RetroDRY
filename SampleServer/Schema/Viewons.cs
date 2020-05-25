@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using RetroDRY;
 
 namespace SampleServer.Schema
@@ -46,11 +47,13 @@ namespace SampleServer.Schema
         [InheritFrom("Customer")]
         public class TopRow : Row
         {
-            public int CompanyId;
+            [Key]
+            public int CustomerId;
 
             [SortColumn]
             public string Company;
 
+            [ForeignKey(typeof(Employee))]
             public int SalesRepId;
 
             [LeftJoin("SalesRepId", "LastName"), Prompt("Sales rep.")]
@@ -95,7 +98,7 @@ namespace SampleServer.Schema
             [Prompt("I-code starts with")]
             public string ItemCode;
 
-            [InheritFrom("Work in description")] 
+            [Prompt("Item description")] 
             public string Description;
         }
     }

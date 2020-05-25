@@ -83,7 +83,7 @@ namespace RetroDRY
         /// <summary>
         /// Initialize
         /// </summary>
-        /// <param name="returnColumnNames">if null or emptyu, will select all columns</param>
+        /// <param name="returnColumnNames">if null or empty, will select all columns</param>
         public SqlSelectBuilder(SqlFlavorizer sqlFlavor, string mainTable, string sortColName, List<string> returnColumnNames)
         {
             SqlFlavor = sqlFlavor;
@@ -99,6 +99,9 @@ namespace RetroDRY
         /// <returns></returns>
         public override string ToString()
         {
+            //validate
+            if (SortColumnName == null) throw new Exception("Sort column must be defined");
+
             string retCols = string.Join(",", ReturnColumnNames);
             string sql = $"select {retCols} from {MainTable} {WhereClause.ToString() ?? ""} order by {SortColumnName}";
             if (PageSize > 0) sql += SqlFlavor.BuildPagingClause(PageNo, PageSize);

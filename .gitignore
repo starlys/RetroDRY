@@ -1,6 +1,10 @@
 ﻿/.vs
+/.vscode
 bin
 obj
 /SampleServer/appsettings_dev.json
 *.csproj.user
 *.code-workspace
+node_modules
+/RetroDRYClient/dist
+/RetroDRYClient/lib

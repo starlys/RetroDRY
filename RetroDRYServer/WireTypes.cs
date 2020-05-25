@@ -84,6 +84,8 @@ namespace RetroDRY
 
     public class DatonDefResponse
     {
+        public string Name { get; set; }
+
         public TableDefResponse MainTableDef { get; set; }
 
         /// <summary>

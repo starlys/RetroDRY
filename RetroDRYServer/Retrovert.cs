@@ -45,7 +45,7 @@ namespace RetroDRY
         /// </summary>
         public static string ToWire(DataDictionary dbdef, Daton daton, bool compatibleFormat)
         {
-            var datondef = dbdef.DatonDefs[daton.Key.Name];
+            var datondef = dbdef.FindDef(daton);
             var buf = new StringBuilder(1000);
             var writerOLD = new StringWriter(buf);
             var writer = new JsonTextWriter(writerOLD);
@@ -90,7 +90,7 @@ namespace RetroDRY
         public static Daton FromCompatibleWireFull(DataDictionary dbdef, JObject jroot)
         {
             var datonKey = DatonKey.Parse(jroot.Value<string>("Key"));
-            var datondef = dbdef.DatonDefs[datonKey.Name];
+            var datondef = dbdef.FindDef(datonKey);
             var daton = Utils.Construct(datondef.Type) as Daton;
             daton.Key = datonKey;
             daton.Version = jroot.Value<string>("Version");
@@ -123,7 +123,7 @@ namespace RetroDRY
         public static PersistonDiff FromDiff(DataDictionary dbdef, JObject jroot)
         {
             var datonKey = DatonKey.Parse(jroot.Value<string>("Key"));
-            var datondef = dbdef.DatonDefs[datonKey.Name];
+            var datondef = dbdef.FindDef(datonKey);
             var diff = new PersistonDiff(datondef, datonKey, jroot.Value<string>("Version"));
 
             ReadJsonDiffRowArray(jroot, datondef.MainTableDef, diff.MainTable);
@@ -412,10 +412,12 @@ namespace RetroDRY
         public static DataDictionaryResponse DataDictionaryToWire(DataDictionary ddict, IUser user)
         {
             var datonWires = new List<DatonDefResponse>();
-            foreach (var datondef in ddict.DatonDefs.Values)
+            foreach (var name in ddict.DatonDefs.Keys)
             {
+                var datondef = ddict.DatonDefs[name];
                 datonWires.Add(new DatonDefResponse
                 {
+                    Name = name,
                     CriteriaDef = ToWire(datondef.CriteriaDef, user),
                     MainTableDef = ToWire(datondef.MainTableDef, user),
                     MultipleMainRows = datondef.MultipleMainRows

@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "lib": ["ES2015", "DOM"],
+        "module": "commonjs",
+        "outDir": "./lib",
+        "sourceMap": true,
+        "strict": true,
+        "declaration": true,
+        "noImplicitReturns": true,
+        "forceConsistentCasingInFileNames": true,
+        "noUnusedLocals": true
+    },
+    "include": ["src"],
+    "exclude": ["node_modules"]
+}

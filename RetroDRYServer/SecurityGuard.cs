@@ -78,7 +78,7 @@ namespace RetroDRY
         /// </summary>
         public void HidePrivateParts(Daton daton)
         {
-            var datondef = Dbdef.DatonDefs[daton.Key.Name];
+            var datondef = Dbdef.FindDef(daton);
             var recur = RecurPoint.FromDaton(datondef, daton);
             if (recur is TableRecurPoint rt)
                 HidePrivateParts(daton, rt);

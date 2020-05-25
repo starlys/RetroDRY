@@ -28,7 +28,7 @@ namespace RetroDRY
                 var target = Utils.Construct(datondef.Type) as Daton;
                 target.Key = Key;
                 target.Version = Version;
-                var listField = datondef.MainTableDef.RowType.GetField(datondef.MainTableDef.Name);
+                var listField = datondef.Type.GetField(datondef.MainTableDef.Name);
                 var sourceList = listField.GetValue(this) as IList;
                 var targetList = listField.GetValue(target) as IList;
                 if (sourceList != null)

@@ -1,13 +1,11 @@
-﻿using RetroDRY;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System;
+using RetroDRY;
 
 namespace SampleServer
 {
     public static class Globals
     {
+        public static string ConnectionString;
         public static Retroverse Retroverse;
     }
 }

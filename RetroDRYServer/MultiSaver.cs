@@ -161,7 +161,7 @@ namespace RetroDRY
             item.Errors.AddRange(securityErrors);
 
             //get pristine, diff, and modified versions
-            item.DatonDef = Retroverse.DataDictionary.DatonDefs[item.Diff.Key.Name];
+            item.DatonDef = Retroverse.DataDictionary.FindDef(item.Diff.Key);
             if (item.Diff.Key.IsNew)
             {
                 item.Modified = Utils.Construct(item.DatonDef.Type) as Persiston;

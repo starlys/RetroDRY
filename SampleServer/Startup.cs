@@ -26,7 +26,8 @@ namespace SampleServer
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers().AddNewtonsoftJson(); 
+            services.AddControllers().AddNewtonsoftJson();
+            services.AddCors();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -43,6 +44,8 @@ namespace SampleServer
 
             app.UseAuthorization();
 
+            app.UseCors(builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
@@ -51,15 +54,18 @@ namespace SampleServer
 
         public static void InitializeRetroDRY()
         {
-            //load configuration (for this sample, we are using a separate file for retrodry features)
+            //load configuration (for this sample, we are using a separate settings file for retrodry features)
             var configBuilder = new ConfigurationBuilder().SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
                 .AddJsonFile("appsettings_dev.json");
             var config = configBuilder.Build();
             var dbConnection = config["Database"];
+            Globals.ConnectionString = dbConnection;
 
             DbConnection dbResolver(int databaseNumber)
             {
-                return new Npgsql.NpgsqlConnection(dbConnection);
+                var db = new Npgsql.NpgsqlConnection(dbConnection);
+                db.Open();
+                return db;
             }
 
             //set up data dictionary from annotations
@@ -68,13 +74,13 @@ namespace SampleServer
 
             //sample to override data dictionary. In a real app the overrides might come from setup tables or be hardcoded, and this process
             //could be moved to a separate class
-            //ddict.DatonDefs["Cutomer"] = new DatonDef
+            //ddict.DatonDefs["Customer"] = new DatonDef
             //{
             //  ...
             //};
 
             //sample custom validation
-            ddict.DatonDefs["Cutomer"].CustomValidator = Validators.ValidateCustomer;
+            ddict.DatonDefs["Customer"].CustomValidator = Validators.ValidateCustomer;
 
             //start up RetroDRY
             ddict.FinalizeInheritance();

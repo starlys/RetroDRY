@@ -31,7 +31,7 @@ namespace RetroDRY
                 using (var rdr = cmd.ExecuteReader())
                 {
                     if (rdr.Read())
-                        return (rdr.GetString(0), rdr.GetString(1));
+                        return (Utils.Read<string>(rdr, 0), Utils.Read<string>(rdr, 1));
                 }
             }
 
@@ -147,9 +147,12 @@ namespace RetroDRY
                 Utils.AddParameterWithValue(cmd, "u", serverLifeNumber);
                 using (var rdr = cmd.ExecuteReader())
                 {
-                    var key = DatonKey.Parse(rdr.GetString(0));
-                    string version = rdr.GetString(1);
-                    ret.Add((key, version));
+                    while (rdr.Read())
+                    {
+                        var key = DatonKey.Parse(Utils.Read<string>(rdr, 0));
+                        string version = Utils.Read<string>(rdr, 1);
+                        ret.Add((key, version));
+                    }
                 }
             }
             return ret;
