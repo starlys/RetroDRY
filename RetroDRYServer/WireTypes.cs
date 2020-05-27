@@ -69,6 +69,7 @@ namespace RetroDRY
         /// it will only contain up through the errored member
         /// </summary>
         public SavePersistonResponse[] SavedPersistons { get; set; }
+        public bool SavePersistonsSuccess { get; set; }
     }
 
     public class LongResponse : RetroResponse

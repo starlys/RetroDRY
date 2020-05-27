@@ -1,9 +1,11 @@
-import Utils, { HttpResponse } from "./utils";
-import { MainRequest, MainResponse, DataDictionaryResponse, GetDatonRequest } from "./wireTypes";
+import { DataDictionaryResponse } from "./wireTypes";
 import { Retrovert } from "./retrovert";
+import DiffTool from "./diffTool";
+import DatonKey from "./datonKey";
+import SaveInfo from "./saveInfo";
+import Utils from "./utils";
 
 export default class Session {
-
     //UTC + this number of minutes = local time; caller should set this
     timeZoneOffset: number = 0;
    
@@ -20,7 +22,7 @@ export default class Session {
     //the data dictionary; set in start()
     dataDictionary?: DataDictionaryResponse;
 
-    private timer: any;
+    //private timer: any;
     private serverIdx: number = 0;
 
     //pristine persistons that are subscribed or locked, indexed by key
@@ -29,7 +31,7 @@ export default class Session {
     //subscribe level (1=subscribed; 2=locked) indexed by persiston key
     private subscribeLevel: any = {};
 
-    //start session; caller should check this.dataDictionary to see if it was successful
+    //start session; caller should check this.dataDictionary is truthy to see if it was successful
     async start(): Promise<void> {
         if (!this.serverList.length) throw new Error('server list not initialized');
         this.serverIdx = Math.floor(Math.random() * this.serverList.length); //random server
@@ -41,7 +43,7 @@ export default class Session {
 
     //get single daton from cache or server; null if error
     async get(datonKey: string): Promise<any> {
-        if (!this.dataDictionary) throw new Error('Session not initialized'); //todo reusable func
+        this.ensureInitialized();
 
         //get from cache
         let daton: any = this.persistonCache[datonKey];
@@ -57,13 +59,13 @@ export default class Session {
             sessionKey: this.sessionKey, 
             getDatons: [datonRequest]
         };
-        const response = await Utils.httpPost<MainResponse>(this.baseServerUrl() + 'retro/main', request);
+        const response = await Utils.httpMain(this.baseServerUrl(), request);
         const isOk = response && response.condensedDatons && response.condensedDatons.length == 1;
         if (!isOk) return null;
         const condensedDaton = response?.condensedDatons?.[0];
 
         //convert condensed to full object
-        daton = Retrovert.expandCondensedDaton(this.dataDictionary, condensedDaton)
+        daton = Retrovert.expandCondensedDaton(this.dataDictionary!, condensedDaton)
 
         //cache it
         //todo
@@ -78,18 +80,24 @@ export default class Session {
         return daton;
     }
 
-    //save any number of datons; the objects passed in should be abandoned by the caller after a successful save;
-    //returns ? //todo
-    async save(datons: any[]) {
+    //save any number of datons in one transaction; the objects passed in should be abandoned by the caller after a successful save;
+    //returns savePersistonResponse for each daton, and an overall success flag
+    async save(datons: any[]): Promise<SaveInfo> {
+        this.ensureInitialized();
         const diffs: any[] = [];
         for(let idx = 0; idx < datons.length; ++idx) {
-            const daton = datons[idx];
-            if (!daton.key) throw new Error('daton.key required');
+            const modified = datons[idx];
+            if (!modified.key) throw new Error('daton.key required');
 
-            //todo get pristine version
+            //get pristine version
+            const pristine = this.persistonCache[modified.key];
+            if (!pristine) throw new Error('daton cannot be saved because it was not cached');
             
-            //todo generate diff
-            const diff = {};
+            //generate diff
+            const datonkey  = DatonKey.parse(modified.key);
+            const datondef = Utils.getDatonDef(this.dataDictionary!, datonkey.typeName);
+            if (!datondef) throw new Error('invalid type name');
+            const diff = DiffTool.generate(datondef, pristine, modified);
             diffs.push(diff);
         }
 
@@ -98,18 +106,16 @@ export default class Session {
             sessionKey: this.sessionKey,
             saveDatons: diffs
         };
-        const response = await Utils.httpPost<MainResponse>(this.baseServerUrl() + 'retro/main', request); //todo move main call to Utils as not generic
+        const response = await Utils.httpMain(this.baseServerUrl(), request);
 
-        //todo error reporting
-        const isOk = response && response.savedPersistons;
-        if (!isOk) return null; //
-        //response?.savedPersistons[0].isSuccess
-
+        //error reporting
+        const ret = { success: response?.savePersistonsSuccess || false, details: response?.savedPersistons || []};
+        return ret;
     }
 
     private async callInitialize() {
         const request = { sessionKey: this.sessionKey, initialze: { languageCode: this.languageCode}};
-        const response = await Utils.httpPost<MainResponse>(this.baseServerUrl() + 'retro/main', request);
+        const response = await Utils.httpMain(this.baseServerUrl(), request);
         if (response && response.dataDictionary)
             this.dataDictionary = response.dataDictionary;
     }
@@ -118,7 +124,11 @@ export default class Session {
         return this.serverList[this.serverIdx];
     }
 
-    private longPoll(): void {
-
+    private ensureInitialized() {
+        if (!this.dataDictionary) throw new Error('Session not initialized'); 
     }
+
+    // private longPoll(): void {
+
+    // }
 }

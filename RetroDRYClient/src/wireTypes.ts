@@ -28,7 +28,7 @@ export interface GetDatonRequest
 {
     key: string;
     doSubscribe: boolean;
-    knownVersion?: string;
+    knownVersion?: string|null;
 }
 
 export interface ManageDatonRequest
@@ -55,6 +55,7 @@ export interface MainResponse extends RetroResponse
     condensedDatons?: CondensedDatonResponse[];
     manageDatons?: ManageDatonResponse[];
     savedPersistons?: SavePersistonResponse[];
+    savePersistonsSuccess?: boolean;
 }
 
 export interface LongResponse extends RetroResponse

@@ -1,4 +1,6 @@
 import { DataDictionaryResponse, TableDefResponse } from "./wireTypes";
+import DatonKey from "./datonKey";
+import Utils from "./utils";
 
 //utilities for type conversion
 export class Retrovert {
@@ -8,9 +10,9 @@ export class Retrovert {
         let daton: any = {};
         daton.key = condensed.key;
         daton.isComplete = condensed.isComplete !== false; //omitted means true
-        const datontypename = ''; //todo parse daton.key
-        const datondef = databaseDef.datonDefs.find(d => d.mainTableDef.name === datontypename); //todo util func for this
-        if (!datondef) throw new Error(`No type ${datontypename}`);
+        const datonKey = DatonKey.parse(daton.key);
+        const datondef = Utils.getDatonDef(databaseDef, datonKey.typeName); 
+        if (!datondef) throw new Error(`No type ${datonKey.typeName}`);
         if (datondef.multipleMainRows) {
             const maintargetlist: any[] = daton[datondef.mainTableDef.name] = [];
             this.expandCondensedTable(datondef.mainTableDef, condensed.content, maintargetlist);
@@ -40,6 +42,6 @@ export class Retrovert {
             const target = {};
             targetList.push(target);
             this.expandCondensedRow(tabledef, condensedRow, target);
-
+        }
     }
 }

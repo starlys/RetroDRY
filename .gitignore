@@ -1,5 +1,4 @@
 ﻿/.vs
-/.vscode
 bin
 obj
 /SampleServer/appsettings_dev.json

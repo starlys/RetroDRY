@@ -8,15 +8,6 @@ export class RecurPoint {
         this.tableDef = tabledef;
     }
 
-    // Get a RecurPoint for the top level of a daton, which will be a RowRecurPoint for single-main-row type, else a TableRecurPoint
-    static FromDaton(datondef: DatonDefResponse, daton: any): RecurPoint
-    {
-        if (datondef.multipleMainRows) 
-            return new TableRecurPoint(datondef.mainTableDef, RecurPoint.getChildTable(daton, datondef.mainTableDef.name, true));
-        else
-            return new RowRecurPoint(datondef.mainTableDef, daton);
-    }
-
     // Get a child table within a parent row 
     protected static getChildTable(parent: any, f: string, createIfMissing: boolean): any[] {
         let list = parent[f];
@@ -27,22 +18,27 @@ export class RecurPoint {
 }
 
 // RecurPoint for a table
-class TableRecurPoint extends RecurPoint {
+export class TableRecurPoint extends RecurPoint {
     table: any[];
+
+    // Create a TableRecurPoint for the top level of a daton having multiple main rows
+    static FromDaton(datondef: DatonDefResponse, daton: any): TableRecurPoint
+    {
+        return new TableRecurPoint(datondef.mainTableDef, RecurPoint.getChildTable(daton, datondef.mainTableDef.name, true));
+    }
 
     constructor(tableDef: TableDefResponse, table: any[]) {
         super(tableDef);
         this.table = table;
     }
 
-    *getRows(): IterableIterator<RowRecurPoint> {
-        for (let row of this.table)
-            yield new RowRecurPoint(this.tableDef, row);
+    getRows(): RowRecurPoint[] {
+        return this.table.map(row => new RowRecurPoint(this.tableDef, row))
     }
 }
 
 // RecurPoint for a row
-class RowRecurPoint extends RecurPoint {
+export class RowRecurPoint extends RecurPoint {
     row: any;
 
     constructor(tableDef: TableDefResponse, row: any) {
@@ -50,12 +46,10 @@ class RowRecurPoint extends RecurPoint {
         this.row = row;
     }
 
-    *getChildren(): IterableIterator<TableRecurPoint> {
+    getChildren(): TableRecurPoint[] {
         if (this.tableDef.children) {
-            for (let childTableDef of this.tableDef.children)
-            {
-                yield new TableRecurPoint(childTableDef, RecurPoint.getChildTable(this.tableDef, childTableDef.name, true));
-            }
+            return this.tableDef.children.map(childTableDef => new TableRecurPoint(childTableDef, RecurPoint.getChildTable(this.tableDef, childTableDef.name, true)));
         }
+        return [];
     }
 }

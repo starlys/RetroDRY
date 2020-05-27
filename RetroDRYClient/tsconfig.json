@@ -1,7 +1,7 @@
 {
     "compilerOptions": {
         "target": "es5",
-        "lib": ["ES2015", "DOM"],
+        "lib": ["es6", "DOM", "ES2015", "ES2017"],
         "module": "commonjs",
         "outDir": "./lib",
         "sourceMap": true,
@@ -9,8 +9,9 @@
         "declaration": true,
         "noImplicitReturns": true,
         "forceConsistentCasingInFileNames": true,
-        "noUnusedLocals": true
+        "noUnusedLocals": true,
+        "downlevelIteration": true
     },
-    "include": ["src"],
+    "include": ["src", "unittest"],
     "exclude": ["node_modules"]
 }

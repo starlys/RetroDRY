@@ -186,7 +186,7 @@ namespace RetroDRY
                     var diff = Retrovert.FromDiff(DataDictionary, saveRequest.Diff);
                     diffs.Add(diff);
                 }
-                var results = await SaveDatons(req.SessionKey, user, diffs.ToArray());
+                (bool success, var results) = await SaveDatons(req.SessionKey, user, diffs.ToArray());
 
                 var saveResponses = new List<SavePersistonResponse>();
                 foreach (var result in results)
@@ -201,6 +201,7 @@ namespace RetroDRY
                     });
                 }
                 resp.SavedPersistons = saveResponses.ToArray();
+                resp.SavePersistonsSuccess = success;
             }
 
             //change datons state
@@ -328,19 +329,19 @@ namespace RetroDRY
         /// will not do anything about the cache, and will not remember the newly assigned version.
         /// Also note that propogation of changes does not happen until the lock is released (not here).
         /// </summary>
-        public async Task<MultiSaver.Result[]> SaveDatons(string sessionKey, IUser user, PersistonDiff[] diffs)
+        public async Task<(bool, MultiSaver.Result[])> SaveDatons(string sessionKey, IUser user, PersistonDiff[] diffs)
         {
             //confirm this user has locks
             var keysAndVersions = diffs.Select(d => (d.Key, d.BasedOnVersion));
             var lockError = ConfirmAllLocks(sessionKey, keysAndVersions);
             if (lockError != null)
-                return new MultiSaver.Result[] { lockError };
+                return (false, new MultiSaver.Result[] { lockError });
 
             //save
             using (var saver = new MultiSaver(this, user, diffs))
             {
-                await saver.Save();
-                return saver.GetResults();
+                bool success = await saver.Save();
+                return (success, saver.GetResults());
             }
         }
 
