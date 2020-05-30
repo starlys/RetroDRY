@@ -14,7 +14,7 @@ namespace RetroDRY
             public int NumSessions;
         }
 
-        private ClientPlex ClientPlex;
+        private readonly ClientPlex ClientPlex;
 
         public Diagnostics(ClientPlex clientplex)
         {
@@ -28,5 +28,10 @@ namespace RetroDRY
                 NumSessions = ClientPlex.SessionCount
             };
         }
+
+        /// <summary>
+        /// When set by the host app, is then called whenever an internal error occurs during a client request
+        /// </summary>
+        public Action<string> ReportClientCallError;
     }
 }

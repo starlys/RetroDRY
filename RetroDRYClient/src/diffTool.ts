@@ -1,30 +1,47 @@
 import { DatonDefResponse } from "./wireTypes";
 import { RowRecurPoint, TableRecurPoint } from "./recurPoint";
-import Utils from "./utils";
 
 //utility for creating diffs 
 export default class DiffTool {
     //generate a diff in the wire format required by the server by comparing the pristine and modified versions
-    //of a daton; or return null if there are no changes
+    //of a daton; or return null if there are no changes;
+    //if pristine is missing, creates diff of all values in modified (used for creating new persistons)
     static generate(datonDef: DatonDefResponse, pristine: any, modified: any): any {
         const diff: any = {
-            key: pristine.key
+            key: modified.key,
+            version: pristine?.version
         };
         let hasChanges = false;
         if (datonDef.multipleMainRows) {
-            const rt0 = TableRecurPoint.FromDaton(datonDef, pristine);
-            const rt1 = TableRecurPoint.FromDaton(datonDef, modified);
-            const topDiffs = DiffTool.diffTable(rt0, rt1);
-            for (const key in topDiffs) {
-                diff[key] = topDiffs[key];
-                hasChanges = true;
+            if (pristine) {
+                const rt0 = TableRecurPoint.FromDaton(datonDef, pristine);
+                const rt1 = TableRecurPoint.FromDaton(datonDef, modified);
+                const topDiffs = DiffTool.diffTable(rt0, rt1);
+                for (const key in topDiffs) {
+                    diff[key] = topDiffs[key];
+                    hasChanges = true;
+                }
+            } else {
+                throw new Error('Cannot create diff for new periston with multiple main rows; must load and modify existing persiston');
             }
-        } else {
-            const r0 = new RowRecurPoint(datonDef.mainTableDef, pristine);
+        } else { //single main row
             const r1 = new RowRecurPoint(datonDef.mainTableDef, modified);
-            const topDiff = this.diffRow(r0, r1);
-            if (topDiff) {
-                diff[r0.tableDef.name] = [topDiff];
+            if (pristine) {
+                const r0 = new RowRecurPoint(datonDef.mainTableDef, pristine);
+                const topDiff = DiffTool.diffRow(r0, r1);
+                if (topDiff) {
+                    diff[r0.tableDef.name] = [topDiff];
+                    hasChanges = true;
+                }
+            } else {
+                //todo
+                //special case of new persiton with single main row
+                const topDiff: any = {};
+                for (const coldef of r1.tableDef.cols) {
+                    topDiff[coldef.name] = r1.row[coldef.name];
+                }
+                DiffTool.addInsertedRowChildren(topDiff, r1);
+                diff[r1.tableDef.name + '-new'] = [topDiff];
                 hasChanges = true;
             }
         }
@@ -35,7 +52,7 @@ export default class DiffTool {
     //modifies rowDiff to include all child rows as inserted, recusively
     private static addInsertedRowChildren(rowDiff: any, r1: RowRecurPoint) {
         for (const rt1 of r1.getChildren()) {
-            const insertedRows = this.getInsertedRows(rt1);
+            const insertedRows = DiffTool.getInsertedRows(rt1);
             if (insertedRows.length) {
                 rowDiff[rt1.tableDef.name + '-new'] = insertedRows;
             }
@@ -50,7 +67,7 @@ export default class DiffTool {
             for (const coldef of r1.tableDef.cols) {
                 diff[coldef.name] = r1.row[coldef.name];
             }
-            this.addInsertedRowChildren(diff, r1);
+            DiffTool.addInsertedRowChildren(diff, r1);
             ret.push(diff);
         }
         return ret;
@@ -78,7 +95,7 @@ export default class DiffTool {
         for (let ctidx = 0; ctidx < children0.length; ++ ctidx) {
             const ct0 = children0[ctidx];
             const ct1 = children1[ctidx];
-            const childDiffs = this.diffTable(ct0, ct1);
+            const childDiffs = DiffTool.diffTable(ct0, ct1);
             for (const key in childDiffs) {
                 diff[key] = childDiffs[key];
                 hasChanges = true;
@@ -108,13 +125,13 @@ export default class DiffTool {
         //for each pristine row, see if it was deleted or changed
         for (const r0 of rows0) {
             const pk0 = r0.row[pkName];
-            const r1Idx: any = Utils.findIndex(rows1, r => r.row[pkName] === pk0);
+            const r1Idx: any = rows1.findIndex(r => r.row[pkName] === pk0);
             if (r1Idx === -1) { //was deleted
                 const rowDiff: any = {};
                 rowDiff[pkName] = pk0;
                 deleted.push(rowDiff);
             } else { //was possibly changed
-                const dr = this.diffRow(r0, rows1[r1Idx]);
+                const dr = DiffTool.diffRow(r0, rows1[r1Idx]);
                 if (dr) {
                     dr[pkName] = pk0;
                     modified.push(dr);
@@ -129,7 +146,7 @@ export default class DiffTool {
             for (const coldef of r1.tableDef.cols) {
                 rowDiff[coldef.name] = r1.row[coldef.name];
             }
-            this.addInsertedRowChildren(rowDiff, r1);
+            DiffTool.addInsertedRowChildren(rowDiff, r1);
             inserted.push(rowDiff);
         }
 

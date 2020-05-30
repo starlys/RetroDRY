@@ -46,9 +46,10 @@ export class RowRecurPoint extends RecurPoint {
         this.row = row;
     }
 
+    //gets child table, and creates the member in the parent object as needed
     getChildren(): TableRecurPoint[] {
         if (this.tableDef.children) {
-            return this.tableDef.children.map(childTableDef => new TableRecurPoint(childTableDef, RecurPoint.getChildTable(this.tableDef, childTableDef.name, true)));
+            return this.tableDef.children.map(childTableDef => new TableRecurPoint(childTableDef, RecurPoint.getChildTable(this.row, childTableDef.name, true)));
         }
         return [];
     }

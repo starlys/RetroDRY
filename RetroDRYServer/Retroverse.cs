@@ -140,7 +140,7 @@ namespace RetroDRY
             catch (Exception ex)
             {
                 resp.ErrorCode = Constants.ERRCODE_INTERNAL;
-                //todo allow host app to register method to log exception details
+                Diagnostics.ReportClientCallError?.Invoke(ex.ToString());
             }
             return resp;
         }
@@ -160,18 +160,16 @@ namespace RetroDRY
                 var datons = new List<Daton>();
                 foreach (var drequest in req.GetDatons)
                 {
-                    var daton = await GetDaton(DatonKey.Parse(drequest.Key), user);
-                    if (drequest.KnownVersion != daton.Version) //omit if client already has the current version
+                    var daton = await GetDaton(DatonKey.Parse(drequest.Key), user, forceCheckLatest: drequest.ForceLoad);
+                    if (daton.Version == null || drequest.KnownVersion != daton.Version) //omit if client already has the current version
                         datons.Add(daton);
                     if (drequest.DoSubscribe)
                         ClientPlex.ManageSubscribe(req.SessionKey, daton.Key, daton.Version, true);
                 }
                 resp.CondensedDatons = datons.Select(daton =>
                 {
-                    bool isComplete = (daton is Viewon v) ? v.IsCompleteLoad : true;
                     return new CondensedDatonResponse
                     {
-                        IsComplete = isComplete,
                         CondensedDatonJson = Retrovert.ToWire(DataDictionary, daton, false)
                     };
                 }).ToArray();
@@ -183,7 +181,7 @@ namespace RetroDRY
                 var diffs = new List<PersistonDiff>();
                 foreach (var saveRequest in req.SaveDatons)
                 {
-                    var diff = Retrovert.FromDiff(DataDictionary, saveRequest.Diff);
+                    var diff = Retrovert.FromDiff(DataDictionary, saveRequest);
                     diffs.Add(diff);
                 }
                 (bool success, var results) = await SaveDatons(req.SessionKey, user, diffs.ToArray());
@@ -196,7 +194,7 @@ namespace RetroDRY
                         IsDeleted = result.IsDeleted,
                         IsSuccess = result.IsSuccess,
                         OldKey = result.OldKey.ToString(),
-                        NewKey = result.NewKey.ToString(),
+                        NewKey = result.NewKey?.ToString(),
                         Errors = result.Errors
                     });
                 }
@@ -227,6 +225,7 @@ namespace RetroDRY
                     bool hasLock = false;
                     if (wantsLock)
                     {
+                        if (string.IsNullOrEmpty(mrequest.Version)) throw new Exception("Version required to lock daton");
                         (hasLock, lockErrorCode) = LockManager.RequestLock(datonKey, mrequest.Version, req.SessionKey);
                     }
                     else
@@ -307,7 +306,7 @@ namespace RetroDRY
                 var sql = GetSqlInstance(key);
                 using (var db = GetDbConnection(datondef.DatabaseNumber))
                     daton = await sql.Load(db, DataDictionary, key, ViewonPageSize);
-                if (verifiedVersion == null)
+                if (verifiedVersion == null && daton is Persiston)
                     verifiedVersion = LockManager.GetVersion(key);
                 daton.Version = verifiedVersion;
                 DatonCache.Put(daton);
@@ -408,7 +407,6 @@ namespace RetroDRY
                 foreach (var daton in pg.Datons)
                     wireDatons.Add(new CondensedDatonResponse
                     {
-                        IsComplete = (daton is Viewon v ? v.IsCompleteLoad : false),
                         CondensedDatonJson = Retrovert.ToWire(DataDictionary, daton, false)
                     });
             }

@@ -27,20 +27,28 @@ namespace SampleServer.Controllers
         }
 
         /// <summary>
-        /// Get next action to do on client, or if argument is 'start', begin test suite.
+        /// Get next action to do on client
         /// </summary>
         [HttpGet("nextaction/{completedStepCode}")]
         public async Task<object> GetNextAction(string completedStepCode)
         {
-            TestStep step;
-            if (completedStepCode == "start")
-                step = GetStep(TestingState.FirstStepCode);
-            else
-                step = GetStep(completedStepCode);
-            await step.Validate();
+            TestStep step = GetStep(completedStepCode);
+            try
+            {
+                await step.Validate();
+            }
+            catch (Exception ex)
+            {
+                return new
+                {
+                    NextStepCode = "",
+                    ValidateError = ex.Message
+                };
+            }
             return new
             {
-                step.NextStepCode
+                step.NextStepCode,
+                ValidateError = ""
             };
         }
 

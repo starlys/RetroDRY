@@ -92,7 +92,7 @@ namespace RetroDRY
             };
             if (diff.DatonDef.MultipleMainRows)
             {
-                var mainListField = tdata.TableDef.RowType.GetField(tdata.TableDef.Name);
+                var mainListField = diff.DatonDef.Type.GetField(tdata.TableDef.Name);
                 tdata.PristineList = mainListField.GetValue(pristineDaton) as IList;
                 tdata.ModifiedList = mainListField.GetValue(modifiedDaton) as IList;
             }    
@@ -108,7 +108,7 @@ namespace RetroDRY
 
             foreach (var row in tdata.DiffRowList)
             {
-                if (!row.Columns.TryGetValue(tdata.TableDef.PrimaryKeyColName, out object rowKey))
+                if (!row.Columns.TryGetValue(tdata.TableDef.PrimaryKeyColName, out object rowKey)) 
                     throw new Exception($"Diff row is missing primary key {tdata.TableDef.PrimaryKeyColName}");
 
                 //find pristine row

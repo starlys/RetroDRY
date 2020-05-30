@@ -1,7 +1,5 @@
 import { DataDictionaryResponse, DatonDefResponse, MainRequest, MainResponse } from "./wireTypes";
 
-type findIndexCallback = (element:any) => boolean;
-
 export default class Utils {
     //typed http post with json-decoded response
     //example consuming code: const response = await httpPost<MyReturnType>("https://...", body);
@@ -30,13 +28,6 @@ export default class Utils {
     //find the daton definition by daton type name
     static getDatonDef(databaseDef: DataDictionaryResponse, typeName: string): DatonDefResponse|undefined {
         return databaseDef.datonDefs.find(d => d.name === typeName); 
-    }
-
-    //polyfill for findIndex ()
-    static findIndex(a: any[], predicate: findIndexCallback) {
-        for (let i = 0; i < a.length; ++i)
-            if (predicate(a[i])) return i;
-        return -1;
     }
 }
 

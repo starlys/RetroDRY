@@ -12,6 +12,14 @@ namespace UnitTest
     public class RetrovertTests
     {
         [TestMethod]
+        public void CamelCase()
+        {
+            Assert.AreEqual("camelCase", Retrovert.CamelCasify("CamelCase"));
+            Assert.AreEqual("islower", Retrovert.CamelCasify("islower"));
+            Assert.AreEqual("@#", Retrovert.CamelCasify("@#"));
+        }
+
+        [TestMethod]
         public void ToCompatibleWire()
         {
             var jill = new Employee
@@ -41,12 +49,12 @@ namespace UnitTest
 
             string json = Retrovert.ToWire(ddict, jill, true);
             //expected has single quotes so the source code is more readable
-            string expected = "{'Key':'Employee|=9','Version':'v2','Employee':{'EmpId':9,'FirstName':'Jill'}}";
+            string expected = "{'key':'Employee|=9','version':'v2','employee':{'empId':9,'firstName':'Jill'}}";
             Assert.AreEqual(expected.Replace('\'', '"'), json);
 
             json = Retrovert.ToWire(ddict, elist, true);
             //expected has single quotes so the source code is more readable
-            expected = "{'Key':'EmployeeList','Version':'v2','Employee':[{'EmpId':9,'FirstName':'Jill','LastName':null,'SupervisorId':0,'SupervisorLastName':null}]}";
+            expected = "{'key':'EmployeeList','version':'v2','employee':[{'empId':9,'firstName':'Jill','lastName':null,'supervisorId':0,'supervisorLastName':null}]}";
             Assert.AreEqual(expected.Replace('\'', '"'), json);
         }
 
@@ -95,17 +103,17 @@ namespace UnitTest
 
             string json = Retrovert.ToWire(ddict, jill, false);
             //expected has single quotes so the source code is more readable
-            string expected = "{'Key':'Employee|=9','Version':'v2','Content':[[9,'Jill']]}";
+            string expected = "{'key':'Employee|=9','version':'v2','content':[[9,'Jill']]}";
             Assert.AreEqual(expected.Replace('\'', '"'), json);
 
             json = Retrovert.ToWire(ddict, elist, false);
             //expected has single quotes so the source code is more readable
-            expected = "{'Key':'EmployeeList','Version':'v2','Content':[[9,'Jill',null,0,null]]}";
+            expected = "{'key':'EmployeeList','version':'v2','content':[[9,'Jill',null,0,null]]}";
             Assert.AreEqual(expected.Replace('\'', '"'), json);
 
             json = Retrovert.ToWire(ddict, emily, false);
             //expected has single quotes so the source code is more readable
-            expected = "{'Key':'Ogre|=3','Version':'v2','Content':[[3,'Emily',2,null,[[0,'THUMP','n1',null],[0,'BOP',null,null]]]]}";
+            expected = "{'key':'Ogre|=3','version':'v2','content':[[3,'Emily',2,null,[[0,'THUMP','n1',null],[0,'BOP',null,null]]]]}";
             Assert.AreEqual(expected.Replace('\'', '"'), json);
         }
 
@@ -117,7 +125,7 @@ namespace UnitTest
             ddict.AddDatonUsingClassAnnotation(typeof(EmployeeList));
             ddict.AddDatonUsingClassAnnotation(typeof(Ogre));
 
-            string json = "{'Key':'Employee|=9','Version':'v2','Employee':[{'EmpId':9,'FirstName':'Jill'}]}".Replace('\'', '"');
+            string json = "{'key':'Employee|=9','version':'v2','employee':[{'empId':9,'firstName':'Jill'}]}".Replace('\'', '"');
             var jobj = JsonConvert.DeserializeObject<JObject>(json);
             var jill0 = Retrovert.FromCompatibleWireFull(ddict, jobj);
             Assert.IsTrue(jill0 is Employee);
@@ -127,7 +135,7 @@ namespace UnitTest
             Assert.AreEqual(9, jill.EmpId);
             Assert.AreEqual("Jill", jill.FirstName);
 
-            json = "{'Key':'EmployeeList','Version':'v2','Employee':[{'EmpId':9,'FirstName':'Jill','LastName':null,'SupervisorId':0,'SupervisorLastName':null}]}".Replace('\'', '"');
+            json = "{'key':'EmployeeList','version':'v2','employee':[{'empId':9,'firstName':'Jill','lastName':null,'supervisorId':0,'supervisorLastName':null}]}".Replace('\'', '"');
             jobj = JsonConvert.DeserializeObject<JObject>(json);
             var elist0 = Retrovert.FromCompatibleWireFull(ddict, jobj);
             Assert.IsTrue(elist0 is EmployeeList);
@@ -159,7 +167,7 @@ namespace UnitTest
             var ddict = new DataDictionary();
             ddict.AddDatonUsingClassAnnotation(typeof(Ogre));
 
-            string json = "{'Key':'Ogre|=9','Version':'v2','Ogre':[{'OgreId':9,'Money':2.50,'PaymentMethod-deleted':[{'PaymentMethodId':92}],'PaymentMethod-new':[{'Method':'STOMP','Notes':'n2'}]}]}".Replace('\'', '"');
+            string json = "{'key':'Ogre|=9','version':'v2','ogre':[{'ogreId':9,'money':2.50,'paymentMethod-deleted':[{'paymentMethodId':92}],'paymentMethod-new':[{'method':'STOMP','notes':'n2'}]}]}".Replace('\'', '"');
             var jobj = JsonConvert.DeserializeObject<JObject>(json);
             var emilyChanges = Retrovert.FromDiff(ddict, jobj);
             Assert.AreEqual(new PersistonKey("Ogre", "9", false), emilyChanges.Key);

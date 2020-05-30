@@ -9,19 +9,18 @@ namespace SampleServer.Tests
     /// </summary>
     public static class TestingState
     {
-        public static string FirstStepCode = "10-10";
-
         public static TestStep[] Steps = new[]
         {
             new TestStep
             {
                 //client - no action
-                //server - clears out database
+                //server - clears out database and clears existing sessions
                 StepCode = "10-10",
                 NextStepCode = "10-20",
                 Validate = () =>
                 {
-                    TestUtils.ExecuteSql("delete from Customer"); //todo etc all tables
+                    TestUtils.ExecuteSql("truncate RetroLock,SaleItemNote,SaleItem,Sale,ItemVariant,Item,Customer,EmployeeContact,Employee,SaleStatus,PhoneType restart identity cascade");
+                    Startup.InitializeRetroDRY();
                     return Task.CompletedTask;
                 }
             },
@@ -62,13 +61,29 @@ namespace SampleServer.Tests
             },
             new TestStep
             {
-                //TODO LEFT OFF HERE
-                //client - creates new customer and saves
-                //server - confirm database contains customer and there are no locks
+                //client - loads and saves PhoneType with new rows in it
+                //server - confirm database contains phone types and there are no locks
                 StepCode = "30-10",
+                NextStepCode = "30-20",
+                Validate = async () =>
+                {
+                    await Task.Delay(200);
+                    if (TestUtils.LockCount() != 0) throw new Exception("Expected no locks");
+                    if (TestUtils.CountRecords("PhoneType") != 2) throw new Exception("Expected 2 phone types");
+                    //return Task.CompletedTask;
+                }
+            },
+            new TestStep
+            {
+                //client - creates new Employee, Customer 
+                //server - confirm database contains customer and there are no locks
+                StepCode = "30-20",
                 NextStepCode = "40-10",
                 Validate = () =>
                 {
+                    if (TestUtils.LockCount() != 0) throw new Exception("Expected no locks");
+                    if (TestUtils.CountRecords("EmployeeContact") != 1) throw new Exception("Expected 1 emp contact");
+                    if (TestUtils.CountRecords("Customer") != 1) throw new Exception("Expected 1 customer");
                     return Task.CompletedTask;
                 }
             },
@@ -91,6 +106,7 @@ namespace SampleServer.Tests
                 NextStepCode = "60-10",
                 Validate = () =>
                 {
+                    if (TestUtils.LockCount() != 1) throw new Exception("Expected one lock");
                     return Task.CompletedTask;
                 }
             },
@@ -102,98 +118,29 @@ namespace SampleServer.Tests
                 NextStepCode = "70-10",
                 Validate = () =>
                 {
+                    if (TestUtils.LockCount() != 0) throw new Exception("Expected no locks");
                     return Task.CompletedTask;
                 }
             },
             new TestStep
             {
-                //client - lock customer then save change to main and child rows, and unlock
-                //server - confirm changes were saved
+                //client - lock employee then save change to main and child rows, and unlock
+                //server - confirm changes were saved and no locks
                 StepCode = "70-10",
-                NextStepCode = "80-10",
+                NextStepCode = "DONE",
                 Validate = () =>
                 {
-                    //todo maybe find way to inspect incoming diff to ensure expected contents
+                    if (TestUtils.LockCount() != 0) throw new Exception("Expected no locks");
+                    if (TestUtils.CountRecords("EmployeeContact") != 2) throw new Exception("Expected two emp contacts");
+                    if (TestUtils.QueryScalar("select LastName from Employee where EmployeeId=1").ToString() != "Smurf") 
+                        throw new Exception("Last name didn't change to Smurf");
+                    if (TestUtils.QueryScalar("select Phone from EmployeeContact where EmployeeId=1 and Phone like '5%'").ToString() != "505 555 1234")
+                        throw new Exception("Phone didn't change to 505");
+                    if (TestUtils.QueryScalar("select Phone from EmployeeContact where EmployeeId=1 and Phone like 's%'").ToString() != "sammy@smurfland.com")
+                        throw new Exception("Email didn't change to sammy@smurfland.com");
                     return Task.CompletedTask;
                 }
-            },
-            new TestStep
-            {
-                //client - 
-                //server - confirm 
-                StepCode = "30-10",
-                NextStepCode = "40-10",
-                Validate = () =>
-                {
-                    return Task.CompletedTask;
-                }
-            },
-            new TestStep
-            {
-                //client - 
-                //server - confirm 
-                StepCode = "30-10",
-                NextStepCode = "40-10",
-                Validate = () =>
-                {
-                    return Task.CompletedTask;
-                }
-            },
-            new TestStep
-            {
-                //client - 
-                //server - confirm 
-                StepCode = "30-10",
-                NextStepCode = "40-10",
-                Validate = () =>
-                {
-                    return Task.CompletedTask;
-                }
-            },
-            new TestStep
-            {
-                //client - 
-                //server - confirm 
-                StepCode = "30-10",
-                NextStepCode = "40-10",
-                Validate = () =>
-                {
-                    return Task.CompletedTask;
-                }
-            },
-            new TestStep
-            {
-                //client - 
-                //server - confirm 
-                StepCode = "30-10",
-                NextStepCode = "40-10",
-                Validate = () =>
-                {
-                    return Task.CompletedTask;
-                }
-            },
-            new TestStep
-            {
-                //client - 
-                //server - confirm 
-                StepCode = "30-10",
-                NextStepCode = "40-10",
-                Validate = () =>
-                {
-                    return Task.CompletedTask;
-                }
-            },
-            new TestStep
-            {
-                //client - 
-                //server - confirm 
-                StepCode = "30-10",
-                NextStepCode = "40-10",
-                Validate = () =>
-                {
-                    return Task.CompletedTask;
-                }
-            },
+            }
         };
     }
 }

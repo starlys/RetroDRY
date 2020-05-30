@@ -94,8 +94,12 @@ namespace RetroDRY
         protected virtual SqlSelectBuilder.Where MainTableWhereClause(TableDef tabledef, PersistonKey key)
         {
             if (key.WholeTable) return null;
+            var pkType = tabledef.FindCol(tabledef.PrimaryKeyColName).CSType;
+            object pk = key.PrimaryKey; //always string here
+            if (pkType != typeof(string))
+                pk = Convert.ChangeType(pk, pkType);
             var w = new SqlSelectBuilder.Where();
-            w.AddWhere($"{tabledef.PrimaryKeyColName}={w.NextParameterName()}", key.PrimaryKey);
+            w.AddWhere($"{tabledef.PrimaryKeyColName}={w.NextParameterName()}", pk);
             return w;
         }
 
@@ -142,7 +146,7 @@ namespace RetroDRY
                 customColIndex = columnNames.Count;
                 columnNames.Add(CUSTOMCOLNAME);
             }
-            var sql = new SqlSelectBuilder(SqlFlavor, tabledef.Name, sortColName, columnNames) {
+            var sql = new SqlSelectBuilder(SqlFlavor, tabledef.SqlTableName, sortColName, columnNames) {
                 WhereClause = whereClause,
                 PageSize = pageSize,
                 PageNo = pageNo
@@ -153,6 +157,7 @@ namespace RetroDRY
             using (var cmd = db.CreateCommand())
             {
                 cmd.CommandText = CustomizeSqlStatement(sql.ToString());
+                whereClause.ExportParameters(cmd);
                 using (var reader = cmd.ExecuteReader())
                 {
                     int rowsLoaded = 0;
@@ -203,6 +208,7 @@ namespace RetroDRY
         protected async Task LoadChildTablesRecursive(Dictionary<object, Row> parentRows, IDbConnection db, DataDictionary dbdef, TableDef parentdef)
         {
             if (!parentRows.Any()) return;
+            if (parentdef.Children == null) return;
 
             //get parent keys in the form "1,2,3..."
             string parentKeyListFormatted = SqlSelectBuilder.FormatInClauseList(parentRows.Keys);
@@ -311,7 +317,7 @@ namespace RetroDRY
         /// </summary>
         private void SetRowFromCustomValues(string json, TableDef tabledef, Row row)
         {
-            var customs = JsonConvert.DeserializeObject<JObject>(json);
+            var customs = JsonConvert.DeserializeObject<JObject>(json, Constants.CamelSerializerSettings);
             foreach (var coldef in tabledef.Cols.Where(c => c.IsCustom))
             {
                 var node = customs[coldef.Name];

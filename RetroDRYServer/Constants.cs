@@ -1,4 +1,6 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using System;
 
 namespace RetroDRY
 {
@@ -7,6 +9,12 @@ namespace RetroDRY
     /// </summary>
     public static class Constants
     {
+        public static readonly JsonSerializerSettings CamelSerializerSettings = new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            Formatting = Formatting.None
+        };
+
         //error codes returned to http clients
         public const string 
             ERRCODE_INTERNAL = "INTERNAL", //internal error, unplanned for

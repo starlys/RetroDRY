@@ -10,6 +10,7 @@ export class Retrovert {
         let daton: any = {};
         daton.key = condensed.key;
         daton.isComplete = condensed.isComplete !== false; //omitted means true
+        daton.version = condensed.version;
         const datonKey = DatonKey.parse(daton.key);
         const datondef = Utils.getDatonDef(databaseDef, datonKey.typeName); 
         if (!datondef) throw new Error(`No type ${datonKey.typeName}`);

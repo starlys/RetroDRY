@@ -25,4 +25,9 @@ export default class DatonKey {
             ret += '|' + this.otherSegments.join();
         return ret;
     }
+
+    //true if key refers to a new, unsaved persiston
+    isNew(): boolean {
+        return this.otherSegments.length === 1 && this.otherSegments[0] === '=-1';
+    }
 }

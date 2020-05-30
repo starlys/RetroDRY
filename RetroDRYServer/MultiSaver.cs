@@ -22,7 +22,7 @@ namespace RetroDRY
             public DatonKey OldKey;
 
             /// <summary>
-            /// This key will be different from the requested key for new persistons
+            /// This key will be different from the requested key for new persistons; may be null on error
             /// </summary>
             public DatonKey NewKey;
 
@@ -74,7 +74,6 @@ namespace RetroDRY
         {
             foreach (var trx in Trxs)
             {
-                trx.Transaction?.Rollback();
                 trx.Transaction?.Dispose();
                 trx.Connection.Dispose();
             }
@@ -156,12 +155,13 @@ namespace RetroDRY
         /// <returns>true if ok</returns>
         private async Task<bool> Prep(SaveItem item)
         {
+            item.DatonDef = Retroverse.DataDictionary.FindDef(item.Diff.Key);
+
             //security check
             var securityErrors = Guard.GetDisallowedWrites(item.Pristine, item.DatonDef, item.Diff);
             item.Errors.AddRange(securityErrors);
 
             //get pristine, diff, and modified versions
-            item.DatonDef = Retroverse.DataDictionary.FindDef(item.Diff.Key);
             if (item.Diff.Key.IsNew)
             {
                 item.Modified = Utils.Construct(item.DatonDef.Type) as Persiston;

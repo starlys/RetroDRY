@@ -98,7 +98,7 @@ namespace RetroDRY
         public static T Read<T>(IDataReader rdr, int idx)
         {
             object value = rdr.GetValue(idx);
-            if (value is DBNull) return default(T);
+            if (value is DBNull) return default;
             return (T)value;
         }
     }

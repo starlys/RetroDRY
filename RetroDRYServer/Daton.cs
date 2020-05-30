@@ -14,7 +14,7 @@ namespace RetroDRY
 
         /// <summary>
         /// null if this is newly created and never saved, else the version matching the RetroLock table
-        /// (Used on in persistons but declared at base level for easier coding of serialize and other conversions)
+        /// (Used only in persistons but declared at base level for easier coding of serialize and other conversions)
         /// </summary>
         public string Version { get; set; }
 
@@ -48,6 +48,7 @@ namespace RetroDRY
             {
                 var target = Clone(datondef.MainTableDef) as Daton;
                 target.Key = Key;
+                target.Version = Version;
                 return target;
             }                
         }

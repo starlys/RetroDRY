@@ -19,7 +19,7 @@ namespace RetroDRY
         public InitializeRequest Initialze { get; set; }
         public GetDatonRequest[] GetDatons { get; set; }
         public ManageDatonRequest[] ManageDatons { get; set; }
-        public SaveDatonRequest[] SaveDatons { get; set; }
+        public JObject[] SaveDatons { get; set; }
         public bool DoQuit { get; set; }
     }
 
@@ -32,6 +32,7 @@ namespace RetroDRY
     {
         public string Key { get; set; }
         public bool DoSubscribe { get; set; }
+        public bool ForceLoad { get; set; }
         public string KnownVersion { get; set; }
     }
 
@@ -45,11 +46,6 @@ namespace RetroDRY
         public int SubscribeState { get; set; }
 
         public string Version { get; set; }
-    }
-
-    public class SaveDatonRequest
-    {
-        public JObject Diff { get; set; }
     }
 
     public class RetroResponse
@@ -243,8 +239,6 @@ namespace RetroDRY
     [JsonConverter(typeof(Retrovert.CondensedDatonResponseConverter))]
     public class CondensedDatonResponse
     {
-        public bool IsComplete { get; set; }
-
         /// <summary>
         /// The overridden JSON serializer ensures this gets sent out as JSON with property name "daton", not as a string
         /// </summary>

@@ -28,6 +28,7 @@ export interface GetDatonRequest
 {
     key: string;
     doSubscribe: boolean;
+    forceLoad: boolean;
     knownVersion?: string|null;
 }
 
