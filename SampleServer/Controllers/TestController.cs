@@ -13,13 +13,13 @@ namespace SampleServer.Controllers
     [ApiController]
     public class TestController : ControllerBase
     {
-        [HttpGet("newsession")]
-        public object GetSession()
+        [HttpGet("newsession/{serverNo},{userId}")]
+        public object GetSession(int serverNo, string userId)
         {
             bool isLocal = Request.Host.Host == "localhost" || Request.Host.Host == "127.0.0.1";
             if (!isLocal) throw new Exception("Must run on localhost");
-            var user = UserCache.Buffy_The_Admin;
-            string sessionKey = Globals.Retroverse.CreateSession(user);
+            var user = UserCache.Users.First(u => u.Id == userId);
+            string sessionKey = Globals.TestingRetroverse[serverNo].CreateSession(user);
             return new
             {
                 sessionKey

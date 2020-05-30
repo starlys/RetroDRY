@@ -61,6 +61,7 @@ namespace SampleServer
             var dbConnection = config["Database"];
             Globals.ConnectionString = dbConnection;
 
+            //This will tell RetroDRY how to access your database
             DbConnection dbResolver(int databaseNumber)
             {
                 var db = new Npgsql.NpgsqlConnection(dbConnection);
@@ -68,7 +69,7 @@ namespace SampleServer
                 return db;
             }
 
-            //set up data dictionary from annotations
+            //build data dictionary from annotations
             var ddict = new DataDictionary();
             ddict.AddDatonsUsingClassAnnotation(typeof(Startup).Assembly);
 
@@ -78,6 +79,7 @@ namespace SampleServer
             //{
             //  ...
             //};
+            //ddict.DatonDefs["Customer"].MainTableDef.Prompt["de"] = "..,";
 
             //sample custom validation
             ddict.DatonDefs["Customer"].CustomValidator = Validators.ValidateCustomer;
@@ -88,6 +90,19 @@ namespace SampleServer
 
             //error reporting; In a real app you would send this to your logging destinations
             Globals.Retroverse.Diagnostics.ReportClientCallError = msg => Console.WriteLine(msg);
+
+            //only for integration testing
+            InitializeRetroDRYIntegrationTesting(ddict, dbResolver);
+        }
+
+        /// <summary>
+        /// Don't include this in a real app; see Program.IntegrationTestingSetup
+        /// </summary>
+        public static void InitializeRetroDRYIntegrationTesting(DataDictionary ddict, Func<int, DbConnection> dbResolver)
+        {
+            Globals.TestingRetroverse[0] = Globals.Retroverse;
+            Globals.TestingRetroverse[1] = new Retroverse(SqlFlavorizer.VendorKind.PostgreSQL, ddict, dbResolver);
+            Globals.TestingRetroverse[2] = new Retroverse(SqlFlavorizer.VendorKind.PostgreSQL, ddict, dbResolver);
         }
     }
 }

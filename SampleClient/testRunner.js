@@ -2,14 +2,14 @@ const integrationTestContainer = {
     sampleApi: 'https://localhost:5001/api/',
 
     //data that lasts between test steps
-    session1Key: '',
-    session1: null,
+    session1: null, //buffy
+    session2: null, //nate
     widgetCoId: 0,
     widgetCo: null,
 
     //entry point - quick tests
     runTestSuite: async function() {
-        let stepCode = '10-10';
+        let stepCode = 'a10-10';
         while (true) {
             stepCode = await this.getNextStep(stepCode);
             const found = await this.doStep(stepCode);
@@ -19,7 +19,7 @@ const integrationTestContainer = {
     
     //entry point - slow tests
     runSlowTestSuite: async function() {
-        let stepCode = '1010-10';
+        let stepCode = 'b10-10';
         while (true) {
             stepCode = await this.getNextStep(stepCode);
             const found = await this.doStep(stepCode);
@@ -35,7 +35,7 @@ const integrationTestContainer = {
     },
     
     doStep: async function(stepCode) {
-        const action = this['step' + stepCode];
+        const action = this[stepCode];
         if (!action) {
             console.log('Test suite completed');
             return false; 
@@ -57,37 +57,37 @@ const integrationTestContainer = {
     // ***************************** QUICK TEST STEPS *****************************
     // ****************************************************************************
 
-    'step10-20': async function() {
+    'a10-20': async function() {
         const badSession = await retrodry.start([this.sampleApi], 'nosuchsessionkey', -5 * 60);
         if (badSession) this.fail('Expected no session on bad credentials');
     },
     
-    'step10-30': async function() {
-        const newSessionResponse = await fetch(this.sampleApi + 'test/newsession');
-        this.session1Key = (await newSessionResponse.json()).sessionKey;
-        const session = await retrodry.start([this.sampleApi], this.session1Key, -5 * 60);
+    'a10-30': async function() {
+        const newSessionResponse = await fetch(this.sampleApi + 'test/newsession/0,buffy');
+        const sessionKey = (await newSessionResponse.json()).sessionKey;
+        const session = await retrodry.start([this.sampleApi], sessionKey, -5 * 60);
         if (!session) this.fail('Expected successful session start');
         const numDatons = session.dataDictionary.datonDefs.length;
         if (numDatons !== 9) this.fail('Wrong number of datons in data dict');
         this.session1 = session;
     },
     
-    'step20-10': async function() {
+    'a20-10': async function() {
         const customerList = await this.session1.get('CustomerList');
         const numCustomers = customerList.customer.length;
         if (numCustomers !== 0) this.fail('Expected no customers');
     },
     
-    'step30-10': async function() {
+    'a30-10': async function() {
         //add rows to PhoneType and save
-        const phoneTypes = await this.session1.get('PhoneTypeLookup', { doSubscribe: true });
+        const phoneTypes = await this.session1.get('PhoneTypeLookup', { doSubscribeEdit: true });
         phoneTypes.phoneType.push({phoneTypeId: -1, typeOfPhone: 'Office'});
         phoneTypes.phoneType.push({phoneTypeId: -1, typeOfPhone: 'Cell'});
         const saveResult = await this.session1.save([phoneTypes]);
         if (!saveResult.success) this.fail('Expected to save phoneTypes');
     },
     
-    'step30-20': async function() {
+    'a30-20': async function() {
         //create employee
         const sammy = {
             key: 'Employee|=-1',
@@ -106,6 +106,19 @@ const integrationTestContainer = {
         let saveResult = await this.session1.save([sammy]);
         if (!saveResult.success) this.fail('Expected to save employee');
         
+        //create invalid customer
+        const widgetCo = {
+            key: 'Customer|=-1',
+            customerId: -1,
+            company: 'The company that starts with THE',
+            salesRepId: 1, //sammy
+            notes: 'Customer has great holliday parties'
+        };
+        saveResult = await this.session1.save([widgetCo]);
+        if (saveResult.success) this.fail('Expected save customer to fail');
+    },
+    
+    'a30-30': async function() {
         //create customer
         const widgetCo = {
             key: 'Customer|=-1',
@@ -114,11 +127,11 @@ const integrationTestContainer = {
             salesRepId: 1, //sammy
             notes: 'Customer has great holliday parties'
         };
-        saveResult = await this.session1.save([widgetCo]);
+        let saveResult = await this.session1.save([widgetCo]);
         if (!saveResult.success) this.fail('Expected to save customer');
     },
-    
-    'step40-10': async function() {
+
+    'a40-10': async function() {
         const custList = await this.session1.get('CustomerList', { forceCheckVersion: true });
         if (!custList.key) this.fail('Expected CustomerList to be a daton');
         const custRows = custList.customer;
@@ -129,25 +142,25 @@ const integrationTestContainer = {
         this.widgetCoId = widgetCo.customerId;   
     },
     
-    'step50-10': async function() {
+    'a50-10': async function() {
         //lock customer
         const widgetKey = 'Customer|=' + this.widgetCoId;
-        this.widgetCo = await this.session1.get(widgetKey, { doSubscribe: true });
+        this.widgetCo = await this.session1.get(widgetKey, { doSubscribeEdit: true });
         if (!this.widgetCo) this.fail('Cannot load persiston WidgetCo');
         //this.widgetCo is a clone of the locally cached version
         const stateErrors = await this.session1.changeSubscribeState([this.widgetCo], 2);
         if (stateErrors[widgetKey]) this.fail('Error locking WidgetCo: ' + stateErrors[widgetKey]);
     },
     
-    'step60-10': async function() {
+    'a60-10': async function() {
         //unlock customer w/o changes
         const stateErrors = await this.session1.changeSubscribeState([this.widgetCo], 1);
         if (stateErrors[this.widgetCo.key]) this.fail('Error unlocking WidgetCo: ' + stateErrors[widgetKey]);
     },
 
-    'step70-10': async function() {
+    'a70-10': async function() {
         //edit employee and child contact record and save, then unlock
-        const sammy = await this.session1.get('Employee|=1', { doSubscribe: true });
+        const sammy = await this.session1.get('Employee|=1', { doSubscribeEdit: true });
         if (!sammy) this.fail('Cannot load persiston Sammy');
         sammy.lastName = 'Smurf';
         sammy.eContact[0].phone = '505 555 1234';
@@ -162,12 +175,53 @@ const integrationTestContainer = {
         if (stateErrors[this.widgetCo.key]) this.fail('Error unlocking Sammy: ' + stateErrors['Employee|=1']);
     },
 
+    'a70-20': async function() {
+        //re-login as Nate
+        const newSessionResponse = await fetch(this.sampleApi + 'test/newsession/0,nate');
+        const sessionKey = (await newSessionResponse.json()).sessionKey;
+        const session = await retrodry.start([this.sampleApi], sessionKey, -5 * 60);
+        if (!session) this.fail('Expected successful session start');
+        this.session2 = session;
+
+        //get customer list and confirm name not visible
+        const custList = await this.session2.get('CustomerList');
+        const custRows = custList.customer;
+        const numCustomers = custRows.length;
+        if (numCustomers !== 1) this.fail('Expected one customer');
+        const widgetCoRow = custRows[0];
+        if (widgetCoRow.company) this.fail('Expected company name to be invisible to Nate (viewon)');
+
+        //get customer persiston and re-confirm the same
+        const widgetKey = 'Customer|=' + this.widgetCoId;
+        let widgetCo = await this.session2.get(widgetKey, { doSubscribeEdit: true });
+        if (!widgetCo) this.fail('Cannot load persiston WidgetCo');
+        if (widgetCo.company) this.fail('Expected company name to be invisible to Nate (persiston)');
+        if (!widgetCo.notes) this.fail('Expected company notes to be visible to Nate (persiston)');
+
+        //attempt to save changes to an invalid column
+        const stateErrors = await this.session2.changeSubscribeState([widgetCo], 2); 
+        if (stateErrors[widgetKey]) this.fail('Error locking WidgetCo: ' + stateErrors[widgetKey]);
+        widgetCo.company = "I'm not allowed to change this column";
+        let saveResult = await this.session2.save([widgetCo]);
+        if (saveResult.success) this.fail('Expected to be unallowed to save customer');
+
+        //re-get widget co from local cache
+        widgetCo = await this.session2.get(widgetKey, { doSubscribeEdit: true });
+        if (!widgetCo.key) this.fail('Expected widgetCo to load');
+        if (widgetCo.company) this.fail('Expected company name to be unchanged by the test');
+
+        //attempt to save changes to only the valid field 
+        widgetCo.notes = 'Customer canceled their holliday parties';
+        saveResult = await this.session2.save([widgetCo]);
+        if (!saveResult.success) this.fail('Expected to be allowed to save customer');
+    },
+
 
     // ****************************************************************************
     // ***************************** SLOW TEST STEPS ******************************
     // ****************************************************************************
 
-    'step1010-10': async function() {
+    'b10-20': async function() {
 
     }
 };

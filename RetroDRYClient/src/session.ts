@@ -53,32 +53,34 @@ export default class Session {
 
         //get from cache
         let daton: any = this.persistonCache[datonKey];
-        if (daton && !options.forceCheckVersion) return daton;
 
         //get from server
-        const datonRequest = {
-            key: datonKey,
-            doSubscribe: options.doSubscribe,
-            forceLoad: options.forceCheckVersion,
-            knownVersion: this.versionCache[datonKey]
-        };
-        const request = { 
-            sessionKey: this.sessionKey, 
-            getDatons: [datonRequest]
-        };
-        const response = await Utils.httpMain(this.baseServerUrl(), request);
-        const isOk = response && !response.errorCode;
-        if (!isOk) throw new Error('Get failed: ' + response.errorCode);
+        if (!daton || options.forceCheckVersion) {
+            const datonRequest = {
+                key: datonKey,
+                doSubscribe: options.doSubscribeEdit,
+                forceLoad: options.forceCheckVersion,
+                knownVersion: this.versionCache[datonKey]
+            };
+            const request = { 
+                sessionKey: this.sessionKey, 
+                getDatons: [datonRequest]
+            };
+            const response = await Utils.httpMain(this.baseServerUrl(), request);
+            const isOk = response && !response.errorCode;
+            if (!isOk) throw new Error('Get failed: ' + response.errorCode);
 
-        //either the known version was up to date or the server supplied it
-        if (response.condensedDatons && response.condensedDatons.length == 1) {
-            const condensedDaton = response?.condensedDatons?.[0];
-            daton = Retrovert.expandCondensedDaton(this.dataDictionary!, condensedDaton)
+            //either the known version was up to date or the server supplied it
+            if (response.condensedDatons && response.condensedDatons.length == 1) {
+                const condensedDaton = response?.condensedDatons?.[0];
+                daton = Retrovert.expandCondensedDaton(this.dataDictionary!, condensedDaton)
+            }
         }
+
         if (!daton) throw new Error('Daton missing'); //if this happens, there is a code bug
 
         //cache it if subscribing
-        if (options.doSubscribe) {
+        if (options.doSubscribeEdit) {
             this.persistonCache[datonKey] = daton;
             const oldSubscribeLevel = this.subscribeLevel[datonKey];
             if (!oldSubscribeLevel)
@@ -151,7 +153,7 @@ export default class Session {
             const pristine = this.persistonCache[modified.key];
             const subscribeLevel = this.subscribeLevel[modified.key];
             if (!datonkey.isNew()) {
-                if (!pristine || !subscribeLevel) throw new Error('daton cannot be saved because it was not cached');
+                if (!pristine || !subscribeLevel) throw new Error('daton cannot be saved because it was not cached; you must get with doSubscribeEdit:true before making edits');
             }
             
             //determine if lock needed
@@ -161,7 +163,8 @@ export default class Session {
             const datondef = Utils.getDatonDef(this.dataDictionary!, datonkey.typeName);
             if (!datondef) throw new Error('invalid type name');
             const diff = DiffTool.generate(datondef, pristine, modified); //pristine is falsy for new single-main-row persistons here
-            diffs.push(diff);
+            if (diff)
+                diffs.push(diff);
         }
 
         //if any need to be locked, do that before save, and recheck all are actually locked

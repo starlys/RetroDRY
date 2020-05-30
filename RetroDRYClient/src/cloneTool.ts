@@ -8,7 +8,7 @@ export default class CloneTool {
             key: daton0.key,
             version: daton0.version
         };
-        if (daton0.isComplete === false) daton1.isComplete = false;
+        daton1.isComplete = daton0.isComplete !== false
 
         if (datonDef.multipleMainRows) {
             const rt0 = TableRecurPoint.FromDaton(datonDef, daton0);
