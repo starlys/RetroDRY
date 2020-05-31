@@ -30,4 +30,15 @@ export default class DatonKey {
     isNew(): boolean {
         return this.otherSegments.length === 1 && this.otherSegments[0] === '=-1';
     }
+
+    persistonKeyAsString(): string {
+        if (this.otherSegments.length != 1) return '';
+        const seg = this.otherSegments[0];
+        if (seg[0] !== '=') return ''; //malformed persiston key
+        return seg.substr(1);
+    }
+
+    persistonKeyAsInt(): number {
+        return parseInt(this.persistonKeyAsString());
+    }
 }

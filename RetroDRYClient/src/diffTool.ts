@@ -34,7 +34,6 @@ export default class DiffTool {
                     hasChanges = true;
                 }
             } else {
-                //todo
                 //special case of new persiton with single main row
                 const topDiff: any = {};
                 for (const coldef of r1.tableDef.cols) {

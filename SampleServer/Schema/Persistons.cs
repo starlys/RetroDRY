@@ -155,7 +155,7 @@ namespace SampleServer.Schema
         public DateTime? ShippedDate;
 
         [Required, ForeignKey(typeof(SaleStatusLookup)), Prompt("Status")]
-        public short SaleStatus;
+        public short Status;
 
         public List<SaleItemRow> SaleItem;
 

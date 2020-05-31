@@ -13,13 +13,14 @@
         <h3>Quick test suite</h3>
         <div>
             The quick test suite runs tests sequentially with a single client and doesn't look at any timing or multi-user effects.
-            It clears the database to start and leaves records in there after it is done, so it must be run before the slow tests.
+            It clears the database to start and leaves records in there after it is done.
         </div>
         <div><button onclick="integrationTestContainer.runTestSuite()">Run Quick Test Suite</button></div>
         <h3>Slow test suite</h3>
         <div>
             The slow test suite connects multiple clients and tests subscriptions, timing, abandoned sessions, and other
-            more complex cases, and so it takes a long time. Watch the console to view progress.
+            more complex cases. Watch the console to view progress.
+            It clears the database to start and leaves records in there after it is done.
         </div>
         <div><button onclick="integrationTestContainer.runSlowTestSuite()">Run Slow Test Suite</button></div>
     </body>

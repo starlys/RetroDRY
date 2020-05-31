@@ -38,17 +38,22 @@ namespace RetroDRY
             //not found, so create it
             string version = Guid.NewGuid().ToString();
             using (var cmd = db.CreateCommand())
-            { 
-                cmd.CommandText = "insert into RetroLock (DatonKey,DatonVersion,Touched) values(@k,@v,@t)";
-                Utils.AddParameterWithValue(cmd, "k", key.ToString());
-                Utils.AddParameterWithValue(cmd, "v", version);
-                Utils.AddParameterWithValue(cmd, "t", DateTime.UtcNow);
-                int nrows = cmd.ExecuteNonQuery();
-                if (nrows == 1) return (version, null);
-
-                //rare failure: another user created the row between when we queried and attempted the insert
-                Thread.Sleep(1);
-                goto retry;
+            {
+                try
+                {
+                    cmd.CommandText = "insert into RetroLock (DatonKey,DatonVersion,Touched) values(@k,@v,@t)";
+                    Utils.AddParameterWithValue(cmd, "k", key.ToString());
+                    Utils.AddParameterWithValue(cmd, "v", version);
+                    Utils.AddParameterWithValue(cmd, "t", DateTime.UtcNow);
+                    cmd.ExecuteNonQuery();
+                    return (version, null);
+                }
+                catch
+                {
+                    //rare failure: another user created the row between when we queried and attempted the insert
+                    Thread.Sleep(1);
+                    goto retry;
+                }
             }
         }
 

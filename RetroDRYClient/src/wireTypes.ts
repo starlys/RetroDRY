@@ -1,5 +1,4 @@
 //Classes documented in C# server tier
-//todo this may not be used
 
 export interface RetroRequest
 {

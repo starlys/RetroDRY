@@ -19,7 +19,8 @@ namespace SampleServer.Controllers
             bool isLocal = Request.Host.Host == "localhost" || Request.Host.Host == "127.0.0.1";
             if (!isLocal) throw new Exception("Must run on localhost");
             var user = UserCache.Users.First(u => u.Id == userId);
-            string sessionKey = Globals.TestingRetroverse[serverNo].CreateSession(user);
+            var retroverse = Globals.TestingRetroverse?[serverNo] ?? Globals.Retroverse;
+            string sessionKey = retroverse.CreateSession(user);
             return new
             {
                 sessionKey

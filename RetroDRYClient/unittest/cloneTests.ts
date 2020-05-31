@@ -9,6 +9,7 @@ describe('cloning', () => {
         const tesla = {
             key: 'Customer|9', 
             version: 'x',
+            isComplete: true,
             CustomerId: 9, 
             Name: 'Tesla Inc',
             DateCreated: '2018-12-31',

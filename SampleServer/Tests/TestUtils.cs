@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+using RetroDRY;
 
 namespace SampleServer.Tests
 {
@@ -31,6 +31,26 @@ namespace SampleServer.Tests
             return cmd.ExecuteScalar();
         }
 
+        /// <summary>
+        /// Load a list of values from one column
+        /// </summary>
+        public static IEnumerable<T> LoadList<T>(string sql)
+        {
+            var ret = new List<T>();
+            using var db = new Npgsql.NpgsqlConnection(Globals.ConnectionString);
+            db.Open();
+            using var cmd = db.CreateCommand();
+            cmd.CommandText = sql;
+            using var rdr = cmd.ExecuteReader();
+            while (rdr.Read())
+            {
+                object value = rdr[0];
+                if (value is DBNull) value = null;
+                ret.Add((T)Convert.ChangeType(value, typeof(T)));
+            }
+            return ret;
+        }
+
         public static int CountRecords(string tableName)
         {
             return Convert.ToInt32(QueryScalar($"select count(*) from {tableName}"));
@@ -41,5 +61,7 @@ namespace SampleServer.Tests
             int count = Convert.ToInt32(QueryScalar("select count(*) from RetroLock where LockedBy is not null"));
             return count;
         }
+
+        public static IEnumerable<Diagnostics.Report> AllDiagnostics => Globals.TestingRetroverse.Select(r => r.Diagnostics.GetStatus());
     }
 }

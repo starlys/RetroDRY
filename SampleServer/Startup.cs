@@ -52,7 +52,7 @@ namespace SampleServer
             });
         }
 
-        public static void InitializeRetroDRY()
+        public static void InitializeRetroDRY(bool integrationTestMode = false)
         {
             //load configuration (for this sample, we are using a separate settings file for retrodry features)
             var configBuilder = new ConfigurationBuilder().SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
@@ -86,13 +86,15 @@ namespace SampleServer
 
             //start up RetroDRY
             ddict.FinalizeInheritance();
-            Globals.Retroverse = new Retroverse(SqlFlavorizer.VendorKind.PostgreSQL, ddict, dbResolver);
+            Globals.Retroverse?.Dispose();
+            Globals.Retroverse = new Retroverse(SqlFlavorizer.VendorKind.PostgreSQL, ddict, dbResolver, integrationTestMode: integrationTestMode);
 
             //error reporting; In a real app you would send this to your logging destinations
             Globals.Retroverse.Diagnostics.ReportClientCallError = msg => Console.WriteLine(msg);
 
             //only for integration testing
-            InitializeRetroDRYIntegrationTesting(ddict, dbResolver);
+            if (integrationTestMode)
+                InitializeRetroDRYIntegrationTesting(ddict, dbResolver);
         }
 
         /// <summary>
@@ -101,8 +103,10 @@ namespace SampleServer
         public static void InitializeRetroDRYIntegrationTesting(DataDictionary ddict, Func<int, DbConnection> dbResolver)
         {
             Globals.TestingRetroverse[0] = Globals.Retroverse;
-            Globals.TestingRetroverse[1] = new Retroverse(SqlFlavorizer.VendorKind.PostgreSQL, ddict, dbResolver);
-            Globals.TestingRetroverse[2] = new Retroverse(SqlFlavorizer.VendorKind.PostgreSQL, ddict, dbResolver);
+            Globals.TestingRetroverse[1]?.Dispose();
+            Globals.TestingRetroverse[1] = new Retroverse(SqlFlavorizer.VendorKind.PostgreSQL, ddict, dbResolver, integrationTestMode: true);
+            Globals.TestingRetroverse[2]?.Dispose();
+            Globals.TestingRetroverse[2] = new Retroverse(SqlFlavorizer.VendorKind.PostgreSQL, ddict, dbResolver, integrationTestMode: true);
         }
     }
 }

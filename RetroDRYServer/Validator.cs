@@ -51,7 +51,7 @@ namespace RetroDRY
                 if (coldef.CSType == typeof(string))
                 {
                     bool minOK = valueS.Length >= coldef.MinLength,
-                        maxOK = coldef.MaxLength > 0 && valueS.Length <= coldef.MaxLength;
+                        maxOK = coldef.MaxLength  == 0 || valueS.Length <= coldef.MaxLength;
                     if (!minOK || !maxOK)
                         Errors.Add(string.Format(DataDictionary.ResolvePrompt(coldef.LengthValidationMessage, User,
                             defaultValue: "{0} must be {2} to {1} characters"), prompt, coldef.MaxLength, coldef.MinLength));

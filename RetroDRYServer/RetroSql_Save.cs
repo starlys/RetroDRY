@@ -95,14 +95,19 @@ namespace RetroDRY
                 var mainListField = diff.DatonDef.Type.GetField(tdata.TableDef.Name);
                 tdata.PristineList = mainListField.GetValue(pristineDaton) as IList;
                 tdata.ModifiedList = mainListField.GetValue(modifiedDaton) as IList;
-            }    
-            await TraverseDiffList(tdata);
+                await TraverseDiffList(tdata, null);
+            } 
+            else
+            {
+                await TraverseDiffList(tdata, modifiedDaton);
+            }
         }
 
         /// <summary>
         /// Call ProcessRowF on all rows in the diff list, and recurse to all child tables. 
         /// </summary>
-        protected async Task TraverseDiffList(TraversalData tdata)
+        /// <param name="singleMainModifiedRow">only set for top level call if there is a single main row</param>
+        protected async Task TraverseDiffList(TraversalData tdata, Row singleMainModifiedRow)
         {
             var pkField = tdata.TableDef.RowType.GetField(tdata.TableDef.PrimaryKeyColName);
 
@@ -120,7 +125,7 @@ namespace RetroDRY
                 }
 
                 //find modified row 
-                Row modifiedRow = null;
+                Row modifiedRow = singleMainModifiedRow;
                 if (tdata.ModifiedList != null)
                 {
                     int rowIdx = Utils.IndexOfPrimaryKeyMatch(tdata.ModifiedList, pkField, rowKey);
@@ -150,7 +155,7 @@ namespace RetroDRY
                     {
                         var childTableDef = child.Key;
                         var childRows = child.Value;
-                        var listField = childTableDef.RowType.GetField(childTableDef.Name);
+                        var listField = tdata.TableDef.RowType.GetField(childTableDef.Name);
 
                         //get pristine list
                         IList childPristineList = null;
@@ -171,7 +176,7 @@ namespace RetroDRY
                             ModifiedList = childModifiedList,
                             ProcessRowF = tdata.ProcessRowF
                         };
-                        await TraverseDiffList(childTdata);
+                        await TraverseDiffList(childTdata, null);
                     }
                 }
             }

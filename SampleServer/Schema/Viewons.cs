@@ -102,4 +102,34 @@ namespace SampleServer.Schema
             public string Description;
         }
     }
+
+    /// <summary>
+    /// List of sales
+    /// </summary>
+    public class SaleList : Viewon
+    {
+        public List<TopRow> Sale;
+
+        [InheritFrom("Sale")]
+        public class TopRow : Row
+        {
+            public int SaleId;
+
+            public int CustomerId;
+
+            [SortColumn]
+            public DateTime SaleDate;
+
+            public short Status;
+        }
+
+        [Criteria]
+        public abstract class Criteria
+        {
+            [InheritFrom("Sale.CustomerId")]
+            public int CustomerId;
+
+            public DateTime SaleDate;
+        }
+    }
 }

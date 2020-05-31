@@ -1,4 +1,5 @@
 import Session from './session';
+import DatonKey from './datonKey';
 
 declare global {
     interface Window { retrodry: any }
@@ -17,5 +18,8 @@ window.retrodry = {
         await ses.start();
         if (ses.dataDictionary) return ses;
         return null;
-    }
+    },
+
+    //expose some utility classes here 
+    DatonKey: DatonKey
 };

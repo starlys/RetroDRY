@@ -20,7 +20,7 @@ namespace RetroDRY
             {
                 var p = cmd.CreateParameter();
                 p.ParameterName = ParameterName;
-                p.Value = Value;
+                p.Value = Value ?? DBNull.Value;
                 return p;
             }
         }

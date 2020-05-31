@@ -1,11 +1,17 @@
 const integrationTestContainer = {
-    sampleApi: 'https://localhost:5001/api/',
+    sampleApi0: 'https://localhost:5001/api/',
+    sampleApi1: 'https://localhost:5002/api/',
+    sampleApi2: 'https://localhost:5003/api/',
 
-    //data that lasts between test steps
+    //quick tests: data that lasts between test steps
     session1: null, //buffy
     session2: null, //nate
     widgetCoId: 0,
     widgetCo: null,
+
+    //slow tests: data that lasts between steps
+    msessions: [], //24 sessions as decribed in server side comments
+    mdata: [], //24 objects with contents defined by steps
 
     //entry point - quick tests
     runTestSuite: async function() {
@@ -28,7 +34,7 @@ const integrationTestContainer = {
     },
 
     getNextStep: async function(stepCode) {
-        const responseRaw = await fetch(this.sampleApi + 'test/nextaction/' + stepCode);
+        const responseRaw = await fetch(this.sampleApi0 + 'test/nextaction/' + stepCode);
         const response = await responseRaw.json();
         if (response.validateError) throw new Error('Server failed: ' + response.validateError);
         return response.nextStepCode;
@@ -50,6 +56,25 @@ const integrationTestContainer = {
         throw new Error("Aborting tests");
     },
 
+    //get integer >=0 and <max
+    randomInt: function(max) {
+        return Math.floor(Math.random() * max);
+    },
+
+    //awaitable delay in millis
+    delay: function(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    },
+
+    //do work in each msession in parallel and complete when all are done;
+    //work signature must be: work(sesIdx, session)=>Promise
+    inParallel: async function(work) {
+        const works = []; //promises
+        let idx = 0;
+        for (let session of this.msessions) works.push(work(idx++, session));
+        await Promise.all(works);
+    },
+
     //each step is a member of this object returning a promise; 
     //see server side code for documentation on sequence
 
@@ -58,17 +83,17 @@ const integrationTestContainer = {
     // ****************************************************************************
 
     'a10-20': async function() {
-        const badSession = await retrodry.start([this.sampleApi], 'nosuchsessionkey', -5 * 60);
+        const badSession = await retrodry.start([this.sampleApi0], 'nosuchsessionkey', -5 * 60);
         if (badSession) this.fail('Expected no session on bad credentials');
     },
     
     'a10-30': async function() {
-        const newSessionResponse = await fetch(this.sampleApi + 'test/newsession/0,buffy');
+        const newSessionResponse = await fetch(this.sampleApi0 + 'test/newsession/0,buffy');
         const sessionKey = (await newSessionResponse.json()).sessionKey;
-        const session = await retrodry.start([this.sampleApi], sessionKey, -5 * 60);
+        const session = await retrodry.start([this.sampleApi0], sessionKey, -5 * 60);
         if (!session) this.fail('Expected successful session start');
         const numDatons = session.dataDictionary.datonDefs.length;
-        if (numDatons !== 9) this.fail('Wrong number of datons in data dict');
+        if (numDatons !== 10) this.fail('Wrong number of datons in data dict');
         this.session1 = session;
     },
     
@@ -177,9 +202,9 @@ const integrationTestContainer = {
 
     'a70-20': async function() {
         //re-login as Nate
-        const newSessionResponse = await fetch(this.sampleApi + 'test/newsession/0,nate');
+        const newSessionResponse = await fetch(this.sampleApi0 + 'test/newsession/0,nate');
         const sessionKey = (await newSessionResponse.json()).sessionKey;
-        const session = await retrodry.start([this.sampleApi], sessionKey, -5 * 60);
+        const session = await retrodry.start([this.sampleApi0], sessionKey, -5 * 60);
         if (!session) this.fail('Expected successful session start');
         this.session2 = session;
 
@@ -221,7 +246,185 @@ const integrationTestContainer = {
     // ***************************** SLOW TEST STEPS ******************************
     // ****************************************************************************
 
-    'b10-20': async function() {
+    'b20-10': async function() {
+        //reset local data
+        this.msessions = [];
+        this.mdata = [];
 
+        const newSessionResponse = await fetch(this.sampleApi1 + 'test/newsession/1,buffy');
+        const sessionKey = (await newSessionResponse.json()).sessionKey;
+        const session = await retrodry.start([this.sampleApi1], sessionKey, -5 * 60);
+
+        //create SaleStatus, Item, Employee for use in later steps
+        const saleStatusses = await session.get('SaleStatusLookup', { doSubscribeEdit: true });
+        saleStatusses.saleStatus.push({ name: 'Hold' });
+        saleStatusses.saleStatus.push({ name: 'Ordered' });
+        saleStatusses.saleStatus.push({ name: 'Shipped' });
+        const item = {
+            key: 'Item|=-1',
+            itemCode: 'XX-1492',
+            description: 'Sailed the ocean blue'
+        };
+        const sammy = {
+            key: 'Employee|=-1',
+            firstName: 'Sammy',
+            lastName: 'Snead',
+            hireDate: new Date(2008, 12, 25),
+        };
+        const saveResult = await session.save([saleStatusses, item, sammy]);
+        if (!saveResult.success) this.fail('Expected to save sale status, item');
+        await session.quit();
+    },
+
+    'b20-20': async function() {
+        //create all client sessions in series
+        const urls = [this.sampleApi0, this.sampleApi1, this.sampleApi2];
+        let urlIdx = -1;
+        for (let cliIdx = 0; cliIdx < 24; ++cliIdx) {
+            urlIdx = ++urlIdx % 3;
+            const newSessionResponse = await fetch(urls[urlIdx] + 'test/newsession/' + urlIdx + ',buffy');
+            const sessionKey = (await newSessionResponse.json()).sessionKey;
+            const session = await retrodry.start([urls[urlIdx]], sessionKey, -5 * 60);
+            session.longPollDelay = 5000;
+            this.msessions.push(session);
+        }
+
+        //create customers and sales 
+        await this.inParallel(async (sesNo, session) => {
+            const customer = {
+                key: 'Customer|=-1',
+                company: 'Customer ' + sesNo,
+                salesRepId: 1 //sammy
+            };
+            let saveResult = await session.save([customer]);
+            if (!saveResult.details.length) 
+                this.fail('Could not save customer');
+            const customerKey = retrodry.DatonKey.parse(saveResult.details[0].newKey);
+            const customerId = customerKey.persistonKeyAsInt();
+            if (!customerId) this.fail('Expected server to return valid customer ID on insert');
+            const sales = [];
+            for (let i = 0; i < 40; ++i)
+                sales.push({
+                    key: 'Sale|=-1',
+                    customerId: customerId, 
+                    saleDate: new Date(2020, this.randomInt(12), this.randomInt(24) + 2), //avoid timezone problems on local server
+                    status: 1
+                });
+            await session.save(sales);
+        });
+    },
+
+    'b30-10': async function() {
+        //set up mdata
+        for (let i = 0; i < 24; ++i) this.mdata.push({});
+
+        //get all sales in one month
+        await this.inParallel(async (sesNo, session) => {
+            await this.delay((sesNo % 2) * 1000);
+            const monthNo = Math.floor(sesNo / 2) + 1;
+            const monthAs2Digits = String(monthNo).padStart(2, '0');
+            const fromDate = '2020' + monthAs2Digits + '01';
+            const toDate = '2020' + monthAs2Digits + '29';
+            const sales = await session.get('SaleList|SaleDate=' + fromDate + '-' + toDate);
+            this.mdata[sesNo].saleRows = sales.sale; //note that elements are rows in SaleList
+        });
+    },
+
+    'b30-20': async function() {
+        //NOTE: If this step fails and it takes more than 2 minutes to complete, it could be the server
+        //cleaned out "old" users and is reporting an unknown session key. To work around, run the server 
+        //in non-debug mode for speed, or temporarily comment out the user cleaning code in the server.
+
+        //get and subscribe to all the sales that were queried
+        await this.inParallel(async (sesNo, session) => {
+            const datonKeys = this.mdata[sesNo].saleRows.map(r => 'Sale|=' + r.saleId);
+            const sales = await session.getMulti(datonKeys, { doSubscribeEdit: true });
+            if (!sales || sales.length !== datonKeys.length) this.fail('Got wrong number of sales back');
+            this.mdata[sesNo].sales = sales;
+        });
+
+        //try to lock all the sales that we subscribed to; since another client will also try to lock the same ones,
+        //one will fail 
+        let totalLocks = 0;
+        await this.inParallel(async (sesNo, session) => {
+            const sales = this.mdata[sesNo].sales; //this array will have elements deleted if they were not locked
+            const watchingSales = []; //including the sales that didn't lock
+            const stateErrors = await session.changeSubscribeState(sales, 2);
+            for (let i = sales.length - 1; i >= 0; --i) {
+                watchingSales.push(sales[i]);
+                if (stateErrors[sales[i].key]) {
+                    sales.splice(i, 1);
+                }
+            }
+            this.mdata[sesNo].sales = sales; //now has only the ones that this client locked successfully
+            this.mdata[sesNo].watchingSales = watchingSales; //this has all sales for the month
+            totalLocks += sales.length;
+        });
+
+        if (totalLocks != 960) this.fail('Expected 960 locks to be successful');
+    },
+
+    'b30-30': async function() {
+        //change shipped date of all sales that are locked by each client
+        await this.inParallel(async (sesNo, session) => {
+            const sales = this.mdata[sesNo].sales; 
+            for (let sale of sales) sale.shippedDate = '2020-12-24T23:00:00';
+            await session.save(sales);
+        });
+    },
+
+    'b40-05': async function() {
+        //december clients quit cleanly, which should release their locks
+        //console.log('Quitting cleanly: ' + this.msessions[23].sessionKey);
+        await this.msessions[23].quit();
+        //console.log('Quitting cleanly: ' + this.msessions[22].sessionKey);
+        await this.msessions[22].quit();
+        this.msessions.splice(22, 2);
+    },
+
+    'b40-10': async function() {
+        //unlock all the sales that we edited above and keep subscription
+        await this.inParallel(async (sesNo, session) => {
+            await session.changeSubscribeState(this.mdata[sesNo].sales, 1);
+            this.mdata[sesNo].sales = null; //once changes are saved, we should forget on the client
+        });
+
+        //wait for all subscriptions to propogate
+        await this.delay(20 * 1000); 
+
+        //confirm all sales that are not locked received update with new shipped date
+        await this.inParallel(async (sesNo, session) => {
+            const watchingSales = this.mdata[sesNo].watchingSales;
+            for (let sale of watchingSales) {
+                const sale2 = session.persistonCache[sale.key]; //using private member of session to get the updated version
+                if (!sale2 || !sale2.shippedDate) 
+                    this.fail('Sale being watched did not get subscription update');
+            }
+        });
+    },
+
+    'b40-20': async function() {
+        //november clients abort uncleanly
+        //console.log('Quitting uncleanly: ' + this.msessions[21].sessionKey);
+        this.msessions[21].dataDictionary = undefined;
+        //console.log('Quitting uncleanly: ' + this.msessions[20].sessionKey);
+        this.msessions[20].dataDictionary = undefined;
+        this.msessions.splice(20, 2);
+    },
+
+    'b40-30': async function() {
+        await this.inParallel(async (sesNo, session) => {
+            const watchingSales = this.mdata[sesNo].watchingSales;
+            const errors = await session.changeSubscribeState(watchingSales, 0);
+            for (let key in session.persistonCache)
+                if (session.persistonCache.hasOwnProperty(key))
+                    this.fail('Expected client cache to be empty');
+        });
+    },
+
+    'b40-80': async function() {
+        await this.inParallel(async (sesNo, session) => {
+            await session.quit();
+        });
     }
 };

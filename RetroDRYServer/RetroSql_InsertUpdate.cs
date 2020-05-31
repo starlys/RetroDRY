@@ -27,7 +27,7 @@ namespace RetroDRY
                 var newKeyValue = await builder.Execute(db, cdata.TableDef.SqlTableName, cdata.TableDef.PrimaryKeyColName, dbAssignsKey);
 
                 //populate the new key value in Modified persiston's row
-                if (newKeyValue != null && cdata.ModifiedRow != null)
+                if (newKeyValue != null)
                 {
                     var rr = new RowRecurPoint() { TableDef = cdata.TableDef, Row = cdata.ModifiedRow };
                     rr.SetPrimaryKey(newKeyValue);

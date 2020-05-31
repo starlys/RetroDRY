@@ -8,6 +8,7 @@ export class Retrovert {
     //given a condensed daton from the wire, expand it to the normal structure
     static expandCondensedDaton(databaseDef: DataDictionaryResponse, condensed: any): any {
         let daton: any = {};
+        if (!condensed.key) throw new Error('Condensed daton has no key');
         daton.key = condensed.key;
         daton.isComplete = condensed.isComplete !== false; //omitted means true
         daton.version = condensed.version;

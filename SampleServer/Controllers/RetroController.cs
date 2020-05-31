@@ -29,7 +29,7 @@ namespace SampleServer.Controllers
         {
             if (Request.Host.Port == 5003) return Globals.TestingRetroverse[2];
             if (Request.Host.Port == 5002) return Globals.TestingRetroverse[1];
-            return Globals.TestingRetroverse[0];
+            return Globals.Retroverse; //port 5001
         }
     }
 }

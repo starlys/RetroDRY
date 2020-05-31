@@ -6,16 +6,17 @@ import 'mocha';
 describe('diff building', () => {
 
     it('should create simple diff with one change', () => {
-        const pristine = { key: 'Widget|9', WidgetId: 9, ItemCode: 'HEXNUT', Notes: 'Has 6 sides' };
-        const modified = { key: 'Widget|9', WidgetId: 9, ItemCode: 'HEXNUT', Notes: 'Has 7 sides' };
+        const pristine = { key: 'Widget|9', version: 'x', WidgetId: 9, ItemCode: 'HEXNUT', Notes: 'Has 6 sides' };
+        const modified = { key: 'Widget|9', version: 'x', WidgetId: 9, ItemCode: 'HEXNUT', Notes: 'Has 7 sides' };
         const diff = DiffTool.generate(Samples.widgetDef, pristine, modified);
-        deepEqual(diff, { key: 'Widget|9', Widget: [ {Notes: 'Has 7 sides'}]});
+        deepEqual(diff, { key: 'Widget|9', version: 'x', Widget: [ {Notes: 'Has 7 sides'}]});
     });
 
     it('should create diff with complex changes', () => {
         
         const pristine = { 
             key: 'Customer|9', 
+            version: 'x',
             CustomerId: 9, 
             Name: 'Tesla',
             DateCreated: '2018-12-31',
@@ -37,6 +38,7 @@ describe('diff building', () => {
 
         const modified = {
             key: 'Customer|9', 
+            version: 'x',
             CustomerId: 9, 
             Name: 'Tesla Inc',
             DateCreated: '2018-12-31',
@@ -58,6 +60,7 @@ describe('diff building', () => {
 
         const expectedDiff = {
             key: 'Customer|9',
+            version: 'x',
             Customer: [
                 {
                     Name: 'Tesla Inc',

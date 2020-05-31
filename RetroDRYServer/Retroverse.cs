@@ -11,7 +11,7 @@ namespace RetroDRY
     /// Top level class for implementing RetroDRY. Generally there is only one of these instances, which the developer should
     /// create and store globally.
     /// </summary>
-    public class Retroverse
+    public class Retroverse : IDisposable
     {
         /// <summary>
         /// Get the database definition (metadata, schema)
@@ -60,14 +60,19 @@ namespace RetroDRY
         /// </summary>
         public readonly Diagnostics Diagnostics;
 
+        /// <summary>
+        /// Affects some timings to allow integration tests to be able to run mamy clients from one browser
+        /// </summary>
+        private readonly bool IntegrationTestMode;
+
         internal readonly SqlFlavorizer.VendorKind DatabaseVendor;
 
         /// <summary>
         /// Construct
         /// </summary>
         /// <param name="connectionResolver">Host app function to get an open database connection, which will be disposed after each use</param>
-        public Retroverse(SqlFlavorizer.VendorKind dbVendor, DataDictionary ddict, Func<int, DbConnection> connectionResolver/*, Func<string, string, IUser> userResolver*/,
-            int lockDatabaseNumber = 0)
+        public Retroverse(SqlFlavorizer.VendorKind dbVendor, DataDictionary ddict, Func<int, DbConnection> connectionResolver,
+            int lockDatabaseNumber = 0, bool integrationTestMode = false)
         {
             if (!ddict.IsFinalized) throw new Exception("DataDictionary must be finalized first");
             DatabaseVendor = dbVendor;
@@ -76,7 +81,8 @@ namespace RetroDRY
             LockManager = new LockManager(() => GetDbConnection(lockDatabaseNumber), PropogatePersistonChanged);
             DefaultSql = new RetroSql();
             DefaultSql.Initialize(DatabaseVendor);
-            Diagnostics = new Diagnostics(ClientPlex);
+            Diagnostics = new Diagnostics(ClientPlex, DatonCache);
+            IntegrationTestMode = integrationTestMode;
 
             //set up process to clean cache
             BackgroundWorker.Register(() =>
@@ -87,14 +93,23 @@ namespace RetroDRY
 
             //set up process to clean abandoned sessions
             void clientCleanerCallback(string sessionKey) => LockManager.ReleaseLocksForSession(sessionKey);
-            BackgroundWorker.Register(() =>
+            if (!integrationTestMode)
             {
-                ClientPlex.Clean(clientCleanerCallback);
-                return Task.CompletedTask;
-            }, 70);
+                BackgroundWorker.Register(() =>
+                {
+                    ClientPlex.Clean(clientCleanerCallback);
+                    return Task.CompletedTask;
+                }, 70);
+            }
 
             //set up process for communication with other servers about locks
-            BackgroundWorker.Register(DoLockRefresh, 90);
+            int interServerInterval = integrationTestMode ? 4 : 30; //seconds
+            BackgroundWorker.Register(DoLockRefresh, interServerInterval); 
+        }
+
+        public void Dispose()
+        {
+            BackgroundWorker?.Dispose();
         }
 
         /// <summary>
@@ -257,7 +272,8 @@ namespace RetroDRY
         public async Task<LongResponse> HandleHttpLong(LongRequest req)
         {
             var user = ClientPlex.GetUser(req.SessionKey);
-            if (user == null) return new LongResponse { ErrorCode = Constants.ERRCODE_BADUSER };
+            if (user == null)
+                return new LongResponse { ErrorCode = Constants.ERRCODE_BADUSER };
 
             //if there is already something to push, then return now, without any awaiting
             var pushGroup = ClientPlex.GetAndClearItemsToPush(req.SessionKey);
@@ -266,7 +282,7 @@ namespace RetroDRY
             //wait up to 30s for something to be ready to send to the client
             var pollTask = ClientPlex.BeginLongPoll(req.SessionKey);
             if (pollTask == null) return new LongResponse { ErrorCode = Constants.ERRCODE_BADUSER };
-            var timeoutTask = Task.Delay(30000);
+            var timeoutTask = Task.Delay(IntegrationTestMode ? 1 : 30000); 
             bool timedOut = (await Task.WhenAny(pollTask, timeoutTask) == timeoutTask);
             
             //timeout - empty return
@@ -281,7 +297,7 @@ namespace RetroDRY
         }
 
         /// <summary>
-        /// Get a daton, from cache or load from database. This is a shared instance so the caller may not modify it.
+        /// Get a daton, from cache or load from database. The reutrn value is a shared instance so the caller may not modify it.
         /// </summary>
         /// <param name="user">if null, the return value is a shared guaranteed complete daton; if user is provided,
         /// the return value may be a clone with some rows removed or columns set to null</param>
@@ -310,6 +326,7 @@ namespace RetroDRY
                     verifiedVersion = LockManager.GetVersion(key);
                 daton.Version = verifiedVersion;
                 DatonCache.Put(daton);
+                Diagnostics.IncrementLoadCount();
             }
 
             //enforce permissions on the user
@@ -384,6 +401,16 @@ namespace RetroDRY
         }
 
         /// <summary>
+        /// For integration testing only; clean out clients that haven't been accessed in 10 seconds
+        /// </summary>
+        public void DiagnosticCleanup()
+        {
+            DatonCache.Clean(ClientPlex, secondsOld: 10);
+            void clientCleanerCallback(string sessionKey) => LockManager.ReleaseLocksForSession(sessionKey);
+            ClientPlex.Clean(clientCleanerCallback, secondsOld: 10);
+        }
+
+        /// <summary>
         /// This is ONLY called via LockManager after unlocked, and only when the persiston changed during the lock.
         /// So it only handles changes made by this server.
         /// </summary>
@@ -437,7 +464,8 @@ namespace RetroDRY
                 var daton = await GetDaton(pair.Item1, null, forceCheckLatest: true);
                 datonsToPush.Add(daton);
             }
-            ClientPlex.NotifyClientsOf(DataDictionary, datonsToPush.ToArray());
+            if (datonsToPush.Any())
+                ClientPlex.NotifyClientsOf(DataDictionary, datonsToPush.ToArray());
         }
     }
 }

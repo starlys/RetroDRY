@@ -56,6 +56,11 @@ namespace RetroDRY
         public int SessionCount => Sessions.Count;
 
         /// <summary>
+        /// Not optimized; use for diagnostics only
+        /// </summary>
+        public int SubscriptionCount => Sessions.Values.Sum(s => s.Subscriptions.Count);
+
+        /// <summary>
         /// Create a session and return a unique key
         /// </summary>
         public string CreateSession(IUser user)
@@ -98,9 +103,9 @@ namespace RetroDRY
         /// Clean sessions that have not been accessed in 2 minutes
         /// </summary>
         /// <param name="callback">if provided, this is called with each session key removed</param>
-        public void Clean(Action<string> callback)
+        public void Clean(Action<string> callback, int secondsOld = 120)
         {
-            DateTime cutoff = DateTime.UtcNow.AddMinutes(-2);
+            DateTime cutoff = DateTime.UtcNow.AddSeconds(0 - secondsOld);
             foreach (var client in Sessions.Values)
             {
                 if (client.LastAccessed < cutoff)
