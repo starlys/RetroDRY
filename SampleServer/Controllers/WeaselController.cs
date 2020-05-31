@@ -11,16 +11,16 @@ namespace SampleServer.Controllers
     /// Sample controller where you might put in endpoints to handle datons in compatible format
     /// </summary>
     [ApiController]
-    [Route("")]
+    [Route("api/[controller]")]
     public class WeaselController : ControllerBase
     {
         /// <summary>
         /// Sample login endpoint
         /// </summary>
-        [HttpPost("/any/login")]
+        [HttpPost("login")]
         public object Login([FromBody]LoginRequest req)
         {
-            //in a real app, validate against database
+            //in a real app, validate user against database
             var user = UserCache.Users.FirstOrDefault(u => u.Id == req.Id);
 
             //check password, register with RetroDRY
@@ -40,11 +40,12 @@ namespace SampleServer.Controllers
                 SessionKey = sessionKey
             };
         }
+
         /// <summary>
         /// Get any daton in compatible format by key
         /// </summary>
-        [HttpGet("/any/{datonKey}")]
-        public async Task<object> Get([FromQuery]string datonKey)
+        [HttpGet("any/{datonKey}")]
+        public async Task<object> Get(string datonKey)
         {
             //authenticate; for demo purposes we will assume the user, but for a real app you would check the authentication 
             //header and look up the user in a cache or databse
@@ -62,7 +63,7 @@ namespace SampleServer.Controllers
         /// <summary>
         /// Save a persiston provided in diff format
         /// </summary>
-        [HttpPost("/any")]
+        [HttpPost("any")]
         public async Task<object> Save([FromBody]JObject diffJson)
         {
             //WARNING: This sample implementation bypasses locking, versioning and subscriptions. If you use it side by side with

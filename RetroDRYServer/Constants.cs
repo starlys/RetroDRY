@@ -1,5 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
+using System;
 
 namespace RetroDRY
 {
@@ -8,8 +9,16 @@ namespace RetroDRY
     /// </summary>
     public static class Constants
     {
+        public static readonly JsonSerializerSettings CamelSerializerSettings = new JsonSerializerSettings
+        {
+            ContractResolver = new CamelCasePropertyNamesContractResolver(),
+            Formatting = Formatting.None
+        };
+
         //error codes returned to http clients
-        public const string ERRCODE_BADUSER = "BADUSER", //unknown user
+        public const string 
+            ERRCODE_INTERNAL = "INTERNAL", //internal error, unplanned for
+            ERRCODE_BADUSER = "BADUSER", //unknown user
             ERRCODE_LOCK = "LOCKED", //cannot complete request because daton is locked by other user
             ERRCODE_VERSION = "VERSION" //cannot complete request due to out-of-date daton version
             ;

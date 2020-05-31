@@ -91,5 +91,15 @@ namespace RetroDRY
             p.Value = value;
             cmd.Parameters.Add(p);
         }
+
+        /// <summary>
+        /// DataReader read value with DBNull conversion to default
+        /// </summary>
+        public static T Read<T>(IDataReader rdr, int idx)
+        {
+            object value = rdr.GetValue(idx);
+            if (value is DBNull) return default;
+            return (T)value;
+        }
     }
 }

@@ -26,7 +26,8 @@ namespace SampleServer
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddControllers().AddNewtonsoftJson(); 
+            services.AddControllers().AddNewtonsoftJson();
+            services.AddCors();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -43,42 +44,69 @@ namespace SampleServer
 
             app.UseAuthorization();
 
+            app.UseCors(builder => builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
             });
         }
 
-        public static void InitializeRetroDRY()
+        public static void InitializeRetroDRY(bool integrationTestMode = false)
         {
-            //load configuration (for this sample, we are using a separate file for retrodry features)
+            //load configuration (for this sample, we are using a separate settings file for retrodry features)
             var configBuilder = new ConfigurationBuilder().SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
                 .AddJsonFile("appsettings_dev.json");
             var config = configBuilder.Build();
             var dbConnection = config["Database"];
+            Globals.ConnectionString = dbConnection;
 
+            //This will tell RetroDRY how to access your database
             DbConnection dbResolver(int databaseNumber)
             {
-                return new Npgsql.NpgsqlConnection(dbConnection);
+                var db = new Npgsql.NpgsqlConnection(dbConnection);
+                db.Open();
+                return db;
             }
 
-            //set up data dictionary from annotations
+            //build data dictionary from annotations
             var ddict = new DataDictionary();
             ddict.AddDatonsUsingClassAnnotation(typeof(Startup).Assembly);
 
             //sample to override data dictionary. In a real app the overrides might come from setup tables or be hardcoded, and this process
             //could be moved to a separate class
-            //ddict.DatonDefs["Cutomer"] = new DatonDef
+            //ddict.DatonDefs["Customer"] = new DatonDef
             //{
             //  ...
             //};
+            //ddict.DatonDefs["Customer"].MainTableDef.Prompt["de"] = "..,";
 
             //sample custom validation
-            ddict.DatonDefs["Cutomer"].CustomValidator = Validators.ValidateCustomer;
+            ddict.DatonDefs["Customer"].CustomValidator = Validators.ValidateCustomer;
 
             //start up RetroDRY
             ddict.FinalizeInheritance();
-            Globals.Retroverse = new Retroverse(SqlFlavorizer.VendorKind.PostgreSQL, ddict, dbResolver);
+            Globals.Retroverse?.Dispose();
+            Globals.Retroverse = new Retroverse(SqlFlavorizer.VendorKind.PostgreSQL, ddict, dbResolver, integrationTestMode: integrationTestMode);
+
+            //error reporting; In a real app you would send this to your logging destinations
+            Globals.Retroverse.Diagnostics.ReportClientCallError = msg => Console.WriteLine(msg);
+
+            //only for integration testing
+            if (integrationTestMode)
+                InitializeRetroDRYIntegrationTesting(ddict, dbResolver);
+        }
+
+        /// <summary>
+        /// Don't include this in a real app; see Program.IntegrationTestingSetup
+        /// </summary>
+        public static void InitializeRetroDRYIntegrationTesting(DataDictionary ddict, Func<int, DbConnection> dbResolver)
+        {
+            Globals.TestingRetroverse[0] = Globals.Retroverse;
+            Globals.TestingRetroverse[1]?.Dispose();
+            Globals.TestingRetroverse[1] = new Retroverse(SqlFlavorizer.VendorKind.PostgreSQL, ddict, dbResolver, integrationTestMode: true);
+            Globals.TestingRetroverse[2]?.Dispose();
+            Globals.TestingRetroverse[2] = new Retroverse(SqlFlavorizer.VendorKind.PostgreSQL, ddict, dbResolver, integrationTestMode: true);
         }
     }
 }

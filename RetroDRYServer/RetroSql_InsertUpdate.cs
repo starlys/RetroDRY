@@ -22,12 +22,14 @@ namespace RetroDRY
                 var builder = new SqlInsertBuilder(SqlFlavor, CustomizeSqlStatement);
                 bool dbAssignsKey = DatabaseAssignsKeysForTable(cdata.TableDef.Name);
                 PopulateWriterColumns(builder, cdata, !dbAssignsKey);
+                if (cdata.TableDef.ParentKeyColumnName != null)
+                    builder.AddNonKey(cdata.TableDef.ParentKeyColumnName, null, cdata.ParentKey);
                 var newKeyValue = await builder.Execute(db, cdata.TableDef.SqlTableName, cdata.TableDef.PrimaryKeyColName, dbAssignsKey);
 
                 //populate the new key value in Modified persiston's row
-                if (newKeyValue != null && cdata.ModifiedRow != null)
+                if (newKeyValue != null)
                 {
-                    var rr = new RowRecurPoint() { TableDef = cdata.TableDef, Row = cdata.PristineRow };
+                    var rr = new RowRecurPoint() { TableDef = cdata.TableDef, Row = cdata.ModifiedRow };
                     rr.SetPrimaryKey(newKeyValue);
                 }
                 return newKeyValue;
@@ -39,7 +41,7 @@ namespace RetroDRY
                 if (!cdata.DiffRow.Columns.TryGetValue(cdata.TableDef.PrimaryKeyColName, out object pkValue))
                     throw new Exception($"Cannot update row in {cdata.TableDef.Name} because no primary key was found in diff");
                 if (builder.NonKeyCount > 0)
-                    await builder.Execute(db, cdata.TableDef.SqlTableName, cdata.TableDef.ParentKeyColumnName, pkValue);
+                    await builder.Execute(db, cdata.TableDef.SqlTableName, cdata.TableDef.PrimaryKeyColName, pkValue);
             }
             return null;
         }

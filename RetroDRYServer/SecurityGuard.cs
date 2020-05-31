@@ -78,7 +78,7 @@ namespace RetroDRY
         /// </summary>
         public void HidePrivateParts(Daton daton)
         {
-            var datondef = Dbdef.DatonDefs[daton.Key.Name];
+            var datondef = Dbdef.FindDef(daton);
             var recur = RecurPoint.FromDaton(datondef, daton);
             if (recur is TableRecurPoint rt)
                 HidePrivateParts(daton, rt);
@@ -100,15 +100,6 @@ namespace RetroDRY
 
         private void HidePrivateParts(Daton daton, TableRecurPoint rt) 
         {
-            var tableLev = FinalLevel(daton, rt.TableDef.Name, null);
-
-            //whole table not visible?
-            if (!CanView(tableLev))
-            {
-                rt.Table.Clear();
-                return;
-            }
-
             //clear out the invisible cols in each row and recur
             var invisibleFields = GetInvisibleFields(daton, rt);
             foreach (var rr in rt.GetRows())
@@ -178,13 +169,14 @@ namespace RetroDRY
         }
 
         /// <summary>
-        /// determine which col names s are not writable
+        /// determine which col names are not writable
         /// </summary>
         private List<string> GetUnwritableColumnNames(Daton pristineDaton, TableDef tabledef)
         {
             var unwritableCols = new List<string>();
             foreach (var coldef in tabledef.Cols)
             {
+                if (coldef.Name == tabledef.PrimaryKeyColName) continue;
                 var colLev = FinalLevel(pristineDaton, tabledef.Name, coldef.Name);
                 if (!CanUpdate(colLev)) unwritableCols.Add(coldef.Name);
             }

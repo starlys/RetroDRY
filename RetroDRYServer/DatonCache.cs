@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Linq;
 
 namespace RetroDRY
 {
@@ -12,6 +13,13 @@ namespace RetroDRY
         }
 
         private readonly ConcurrentDictionary<DatonKey, Item> Cache = new ConcurrentDictionary<DatonKey, Item>();
+
+        public int Count => Cache.Count;
+
+        /// <summary>
+        /// For diagnostics only
+        /// </summary>
+        public int CountViewons => Cache.Keys.Where(k => k is ViewonKey).Count();
 
         public Daton Get(DatonKey key)
         {
@@ -34,9 +42,9 @@ namespace RetroDRY
         /// <summary>
         /// Clean cache of anything that hasn't been accessed in 2 minutes, but keep anything that a client session has subscribed to
         /// </summary>
-        public void Clean(ClientPlex clients)
+        public void Clean(ClientPlex clients, int secondsOld = 120)
         {
-            DateTime cutoff = DateTime.UtcNow.AddMinutes(-2);
+            DateTime cutoff = DateTime.UtcNow.AddSeconds(0 - secondsOld);
             var sacredKeys = clients.GetSubscriptions();
             foreach (var key in Cache.Keys)
             {

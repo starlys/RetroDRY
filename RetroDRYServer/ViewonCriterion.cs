@@ -115,7 +115,7 @@ namespace RetroDRY
                 int yr = int.Parse(s.Substring(0, 4));
                 int mo = int.Parse(s.Substring(4, 2));
                 int da = int.Parse(s.Substring(6, 2));
-                if (isDateOnly) return new DateTime(yr, mo, da, 0, 0, 0, DateTimeKind.Utc);
+                if (isDateOnly || s.Length == 8) return new DateTime(yr, mo, da, 0, 0, 0, DateTimeKind.Utc);
                 int hr = int.Parse(s.Substring(8, 2));
                 int mi = int.Parse(s.Substring(10, 2));
                 return new DateTime(yr, mo, da, hr, mi, 0, DateTimeKind.Utc);

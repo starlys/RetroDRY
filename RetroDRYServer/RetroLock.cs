@@ -31,24 +31,29 @@ namespace RetroDRY
                 using (var rdr = cmd.ExecuteReader())
                 {
                     if (rdr.Read())
-                        return (rdr.GetString(0), rdr.GetString(1));
+                        return (Utils.Read<string>(rdr, 0), Utils.Read<string>(rdr, 1));
                 }
             }
 
             //not found, so create it
             string version = Guid.NewGuid().ToString();
             using (var cmd = db.CreateCommand())
-            { 
-                cmd.CommandText = "insert into RetroLock (DatonKey,DatonVersion,Touched) values(@k,@v,@t)";
-                Utils.AddParameterWithValue(cmd, "k", key.ToString());
-                Utils.AddParameterWithValue(cmd, "v", version);
-                Utils.AddParameterWithValue(cmd, "t", DateTime.UtcNow);
-                int nrows = cmd.ExecuteNonQuery();
-                if (nrows == 1) return (version, null);
-
-                //rare failure: another user created the row between when we queried and attempted the insert
-                Thread.Sleep(1);
-                goto retry;
+            {
+                try
+                {
+                    cmd.CommandText = "insert into RetroLock (DatonKey,DatonVersion,Touched) values(@k,@v,@t)";
+                    Utils.AddParameterWithValue(cmd, "k", key.ToString());
+                    Utils.AddParameterWithValue(cmd, "v", version);
+                    Utils.AddParameterWithValue(cmd, "t", DateTime.UtcNow);
+                    cmd.ExecuteNonQuery();
+                    return (version, null);
+                }
+                catch
+                {
+                    //rare failure: another user created the row between when we queried and attempted the insert
+                    Thread.Sleep(1);
+                    goto retry;
+                }
             }
         }
 
@@ -147,9 +152,12 @@ namespace RetroDRY
                 Utils.AddParameterWithValue(cmd, "u", serverLifeNumber);
                 using (var rdr = cmd.ExecuteReader())
                 {
-                    var key = DatonKey.Parse(rdr.GetString(0));
-                    string version = rdr.GetString(1);
-                    ret.Add((key, version));
+                    while (rdr.Read())
+                    {
+                        var key = DatonKey.Parse(Utils.Read<string>(rdr, 0));
+                        string version = Utils.Read<string>(rdr, 1);
+                        ret.Add((key, version));
+                    }
                 }
             }
             return ret;

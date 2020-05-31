@@ -21,7 +21,8 @@ namespace SampleServer.Schema
 
             //This longer return expression is used when we are not doing async validation. For async validation,
             //make the validation method async and return errors directly.
-            return Task.FromResult(errors as IEnumerable<string>);
+            return Task.FromResult(errors as IEnumerable<string>); //sync return
+            //return errors; //async return
         }
     }
 }

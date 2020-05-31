@@ -21,6 +21,25 @@ namespace RetroDRY
         public bool IsFinalized { get; private set; }
 
         /// <summary>
+        /// Alternative to DatonDefs[d.Key.Name] with clearer error reporting
+        /// </summary>
+        public DatonDef FindDef(Daton d) => FindDef(d.Key.Name);
+
+        /// <summary>
+        /// Alternative to DatonDefs[key.name] with clearer error reporting
+        /// </summary>
+        public DatonDef FindDef(DatonKey key) => FindDef(key.Name);
+
+        /// <summary>
+        /// Alternative to DatonDefs[name] with clearer error reporting
+        /// </summary>
+        public DatonDef FindDef(string name)
+        {
+            if (DatonDefs.TryGetValue(name, out var datondef)) return datondef;
+            throw new Exception($"The daton type '{name}' is not registered.");
+        }
+
+        /// <summary>
         /// Call AddDatonUsingClassAnnotation for all Daton subclasses in the given assembly
         /// </summary>
         public void AddDatonsUsingClassAnnotation(Assembly assembly)

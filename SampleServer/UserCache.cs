@@ -1,4 +1,5 @@
-﻿using RetroDRY;
+﻿using Microsoft.AspNetCore.Mvc.Formatters;
+using RetroDRY;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,6 +34,23 @@ namespace SampleServer
                 new TablePermission { TableName = "Sale", BaseLevel = PermissionLevel.Create } 
             }
         };
+        private static readonly RetroRole CustomerNotesRole = new RetroRole
+        {
+            BaseLevel = PermissionLevel.None,
+            TableOverrides = new List<TablePermission>
+            {
+                new TablePermission 
+                {
+                    TableName = "Customer", 
+                    BaseLevel = PermissionLevel.None,
+                    ColumnOverrides = new List<ColumnPermission>
+                    {
+                        new ColumnPermission { ColumnName = "CustomerId", BaseLevel = PermissionLevel.View },
+                        new ColumnPermission { ColumnName = "Notes", BaseLevel = PermissionLevel.View | PermissionLevel.Modify }
+                    }
+                }
+            }
+        };
 
         public class User : IUser
         {
@@ -51,11 +69,13 @@ namespace SampleServer
         {
             new User { Id = "buffy", Password = "spiffy", TimeOffsetMinutes = -4 * 60, Roles = new[] { AdminRole } },
             new User { Id = "spot", Password = "arfarf", TimeOffsetMinutes = -6 * 60, Roles = new[] { SalesRole } },
-            new User { Id = "public", Password = "public", TimeOffsetMinutes = -4 * 60, Roles = new[] { PublicRole } }
+            new User { Id = "public", Password = "public", TimeOffsetMinutes = -4 * 60, Roles = new[] { PublicRole } },
+            new User { Id = "nate", Password = "steno", TimeOffsetMinutes = -4 * 60, Roles = new[] { PublicRole, CustomerNotesRole } }
         };
 
         public static User Buffy_The_Admin => Users[0];
         public static User Spot_The_Salesman => Users[1];
         public static User PublicUser => Users[2];
+        public static User Nate_The_Noter => Users[3];
     }
 }

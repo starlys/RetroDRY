@@ -61,9 +61,12 @@ namespace RetroDRY
             }
             else
             {
-                //handle top level edge cases
-                if (MainTable.Count != 1 || MainTable[0].Kind == DiffKind.NewRow)
-                    throw new Exception("For single-main-table persistons the diff may only include the single main row as updated or deleted");
+                //handle top level edge cases to ensure the key matches the new/modified/delete status of the top row
+                if (MainTable.Count != 1)
+                    throw new Exception("For single-main-table persistons the diff may only include the single main row");
+                bool diffIsNewRow = MainTable[0].Kind == DiffKind.NewRow;
+                if (diffIsNewRow != target.Key.IsNew)
+                    throw new Exception("The key specifies a new row but the diff does not indicate a new row; or the key specifies modified/delete but the diff indicates a new row");
                 var source = MainTable[0];
                 if (source.Kind == DiffKind.DeletedRow) 
                     return ApplyAction.PersistonDeleted;

@@ -53,6 +53,13 @@ namespace RetroDRY
         /// </summary>
         private readonly ConcurrentDictionary<string, SessionInfo> Sessions = new ConcurrentDictionary<string, SessionInfo>();
 
+        public int SessionCount => Sessions.Count;
+
+        /// <summary>
+        /// Not optimized; use for diagnostics only
+        /// </summary>
+        public int SubscriptionCount => Sessions.Values.Sum(s => s.Subscriptions.Count);
+
         /// <summary>
         /// Create a session and return a unique key
         /// </summary>
@@ -76,6 +83,7 @@ namespace RetroDRY
         /// </summary>
         public IUser GetUser(string sessionKey)
         {
+            if (sessionKey == null) return null;
             if (!Sessions.TryGetValue(sessionKey, out SessionInfo client)) return null;
             client.LastAccessed = DateTime.UtcNow;
             return client.User;
@@ -95,9 +103,9 @@ namespace RetroDRY
         /// Clean sessions that have not been accessed in 2 minutes
         /// </summary>
         /// <param name="callback">if provided, this is called with each session key removed</param>
-        public void Clean(Action<string> callback)
+        public void Clean(Action<string> callback, int secondsOld = 120)
         {
-            DateTime cutoff = DateTime.UtcNow.AddMinutes(-2);
+            DateTime cutoff = DateTime.UtcNow.AddSeconds(0 - secondsOld);
             foreach (var client in Sessions.Values)
             {
                 if (client.LastAccessed < cutoff)
@@ -207,7 +215,7 @@ namespace RetroDRY
                     thisClientChanged = true;
 
                     //hide cols by permissions
-                    var datondef = dbdef.DatonDefs[daton.Key.Name];
+                    var datondef = dbdef.FindDef(daton);
                     var trimmedDaton = daton.Clone(datondef);
                     var guard = new SecurityGuard(dbdef, cli.User);
                     guard.HidePrivateParts(trimmedDaton);
