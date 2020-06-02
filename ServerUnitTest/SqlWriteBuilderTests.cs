@@ -18,7 +18,7 @@ namespace UnitTest
             var pk = builder.Execute(db, "Emp", "EmpId", true).Result;
 
             Assert.AreEqual("Jane", db.TheCommand.TheParameters[0].Value);
-            Assert.IsNull(db.TheCommand.TheParameters[1].Value);
+            Assert.IsInstanceOfType(db.TheCommand.TheParameters[1].Value, typeof(DBNull));
             Assert.AreEqual("", db.TheCommand.TheParameters[2].Value);
 
             Assert.AreEqual("insert into Emp (FirstName,MiddleName,LastName) values (@p0,@p1,@p2) returning EmpId (customized)", db.TheCommand.CommandText);

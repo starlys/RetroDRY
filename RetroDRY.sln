@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SampleServer", "SampleServe
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RetroDRY", "RetroDRYServer\RetroDRY.csproj", "{35533F6F-0A6B-4A74-9CB1-0B1AC0B0FB9A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnitTest", "UnitTest\UnitTest.csproj", "{11A3E2EF-CDF4-48DA-8440-E7D72E04616C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "UnitTest", "ServerUnitTest\UnitTest.csproj", "{11A3E2EF-CDF4-48DA-8440-E7D72E04616C}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{56C0D02C-8672-455F-83A0-B1A3BA7318D5}"
 	ProjectSection(SolutionItems) = preProject

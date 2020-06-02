@@ -17,9 +17,9 @@
   "scripts": {
     "buildlib": "tsc",
     "builddev": "webpack --watch --config webpack.config.js",
-    "test": "mocha -r ts-node/register unittest/*.ts",
+    "utest": "mocha -r ts-node/register unittest/*.ts",
     "buildprod": "webpack --config webpack.prod.config.js",
-    "sample": "http-server ../ -o SampleClient/index.html"
+    "itest": "http-server ../ -o IntegrationTestClient/index.html"
   },
   "devDependencies": {
     "@types/assert": "^1.4.7",
