@@ -311,8 +311,14 @@ namespace RetroDRY
             Daton daton = DatonCache.Get(key);
             if (forceCheckLatest && daton != null)
             {
-                verifiedVersion = LockManager.GetVersion(key);
-                if (verifiedVersion != daton.Version) daton = null;
+                //viewons: always ignore cache; persistons: use cached only if known to be latest
+                if (daton is Persiston)
+                {
+                    verifiedVersion = LockManager.GetVersion(key);
+                    if (verifiedVersion != daton.Version) daton = null;
+                }
+                else
+                    daton = null;
             }
 
             //get from database if needed (and cache it)

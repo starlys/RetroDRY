@@ -1,4 +1,7 @@
 import React from 'react';
+import { Session } from 'retrodry';
+
 export default function() {
-    return <div>Hey</div>
+    let ses = new Session();  
+    return <div>Hey, {ses.longPollDelay}</div>
 }
