@@ -65,51 +65,52 @@ namespace RetroDRY
         /// <returns>true if successful</returns>
         public static bool Lock(DbConnection db, DatonKey key, string version, string sessionKey)
         {
-            //update touched date: this tells us if the record exists, and ensures it won't be cleaned up during the lock process
-            bool recordExists;
+            //assuming first there is a record, attempt to get the lock by updating it 
             using (var cmd = db.CreateCommand())
             {
-                cmd.CommandText = "update RetroLock set Touched=@t where DatonKey=@k";
+                cmd.CommandText = "update RetroLock set Touched=@t, LockedBy=@s where DatonKey=@k and DatonVersion=@v and (LockedBy is null or Touched<@old)";
                 Utils.AddParameterWithValue(cmd, "t", DateTime.UtcNow);
-                Utils.AddParameterWithValue(cmd, "k", key.ToString());
-                int nrows = cmd.ExecuteNonQuery();
-                recordExists = nrows == 1;
-            }
-
-            //if there was no record, create one with lock 
-            //(this won't occur if everything is working, since reading the version should happen before attempting to lock)
-            if (!recordExists)
-            {
-                using (var cmd = db.CreateCommand())
-                {
-                    cmd.CommandText = "insert into RetroLock (DatonKey,DatonVersion,Touched,LockedBy) values(@k,@v,@t,@s)";
-                    Utils.AddParameterWithValue(cmd, "k", key.ToString());
-                    Utils.AddParameterWithValue(cmd, "v", version);
-                    Utils.AddParameterWithValue(cmd, "t", DateTime.UtcNow);
-                    Utils.AddParameterWithValue(cmd, "s", sessionKey);
-                    try
-                    {
-                        cmd.ExecuteNonQuery();
-                        return true;
-                    }
-                    catch
-                    {
-                        return false; //another user created the lock record since we queried it above
-                    }
-                }
-            }
-
-            //there is a record, so attempt to get the lock by updating it 
-            using (var cmd = db.CreateCommand())
-            {
-                cmd.CommandText = "update RetroLock set LockedBy=@s where DatonKey=@k and DatonVersion=@v and (LockedBy is null or Touched<@old)";
                 Utils.AddParameterWithValue(cmd, "s", sessionKey);
                 Utils.AddParameterWithValue(cmd, "k", key.ToString());
                 Utils.AddParameterWithValue(cmd, "v", version);
                 Utils.AddParameterWithValue(cmd, "old", DateTime.UtcNow.AddSeconds(-120));
                 int nrows = cmd.ExecuteNonQuery();
-                return nrows == 1;
+                if (nrows == 1) return true;
             }
+
+            //update touched date: this tells us if the record exists, and ensures it won't be cleaned up during the lock process;
+            //also unlock it if the lock is too old
+            //bool recordExists;
+            //using (var cmd = db.CreateCommand())
+            //{
+            //    cmd.CommandText = "update RetroLock set LockedBy=(case when Touched<@old then null else LockedBy end), Touched=@t where DatonKey=@k";
+            //    Utils.AddParameterWithValue(cmd, "old", DateTime.UtcNow.AddSeconds(-120));
+            //    Utils.AddParameterWithValue(cmd, "t", DateTime.UtcNow);
+            //    Utils.AddParameterWithValue(cmd, "k", key.ToString());
+            //    int nrows = cmd.ExecuteNonQuery();
+            //    recordExists = nrows == 1;
+            //}
+
+            //reached here, so there was no record; create one with lock 
+            //(this won't occur if everything is working, since reading the version should happen before attempting to lock)
+            using (var cmd = db.CreateCommand())
+            {
+                cmd.CommandText = "insert into RetroLock (DatonKey,DatonVersion,Touched,LockedBy) values(@k,@v,@t,@s)";
+                Utils.AddParameterWithValue(cmd, "k", key.ToString());
+                Utils.AddParameterWithValue(cmd, "v", version);
+                Utils.AddParameterWithValue(cmd, "t", DateTime.UtcNow);
+                Utils.AddParameterWithValue(cmd, "s", sessionKey);
+                try
+                {
+                    cmd.ExecuteNonQuery();
+                    return true;
+                }
+                catch
+                {
+                    return false; //another user created the lock record since we queried it above
+                }
+            }
+
         }
 
         /// <summary>

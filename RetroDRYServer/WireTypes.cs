@@ -83,6 +83,8 @@ namespace RetroDRY
     {
         public string Name { get; set; }
 
+        public bool IsPersiston { get; set; }
+
         public TableDefResponse MainTableDef { get; set; }
 
         /// <summary>

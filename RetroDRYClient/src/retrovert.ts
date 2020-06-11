@@ -1,5 +1,5 @@
 import { DataDictionaryResponse, TableDefResponse } from "./wireTypes";
-import DatonKey from "./datonKey";
+import {parseDatonKey} from "./datonKey";
 import Utils from "./utils";
 
 //utilities for type conversion
@@ -12,7 +12,7 @@ export class Retrovert {
         daton.key = condensed.key;
         daton.isComplete = condensed.isComplete !== false; //omitted means true
         daton.version = condensed.version;
-        const datonKey = DatonKey.parse(daton.key);
+        const datonKey = parseDatonKey(daton.key);
         const datondef = Utils.getDatonDef(databaseDef, datonKey.typeName); 
         if (!datondef) throw new Error(`No type ${datonKey.typeName}`);
         if (datondef.multipleMainRows) {

@@ -435,6 +435,7 @@ namespace RetroDRY
                 datonWires.Add(new DatonDefResponse
                 {
                     Name = name,
+                    IsPersiston = typeof(Persiston).IsAssignableFrom(datondef.Type),
                     CriteriaDef = ToWire(datondef.CriteriaDef, user),
                     MainTableDef = ToWire(datondef.MainTableDef, user),
                     MultipleMainRows = datondef.MultipleMainRows

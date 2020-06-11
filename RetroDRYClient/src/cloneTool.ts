@@ -1,5 +1,5 @@
 import { DatonDefResponse } from "./wireTypes";
-import { RowRecurPoint, TableRecurPoint } from "./recurPoint";
+import { RowRecurPoint, TableRecurPoint, TableRecurPointFromDaton } from "./recurPoint";
 
 //utility for cloning datons
 export default class CloneTool {
@@ -11,8 +11,8 @@ export default class CloneTool {
         daton1.isComplete = daton0.isComplete !== false
 
         if (datonDef.multipleMainRows) {
-            const rt0 = TableRecurPoint.FromDaton(datonDef, daton0);
-            const rt1 = TableRecurPoint.FromDaton(datonDef, daton1);
+            const rt0 = TableRecurPointFromDaton(datonDef, daton0);
+            const rt1 = TableRecurPointFromDaton(datonDef, daton1);
             CloneTool.cloneTable(rt0, rt1);
         } else {
             const r0 = new RowRecurPoint(datonDef.mainTableDef, daton0);

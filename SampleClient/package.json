@@ -12,7 +12,8 @@
     "retrodry": "file:../RetroDRYClient"
   },
   "scripts": {
-    "start": "set HTTPS=true&&react-scripts start",
+    "start": "set HTTPS=true&&react-scripts start --no-cache",
+    "start_COMMENT": "added --no-cache above due to a temporary bug that prevents Chrome breakpoints from being hit; may remove after bug is fixed",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

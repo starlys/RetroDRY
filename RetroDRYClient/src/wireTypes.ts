@@ -72,6 +72,7 @@ export interface DataDictionaryResponse
 export interface DatonDefResponse
 {
     name: string;
+    isPersiston: boolean,
     mainTableDef: TableDefResponse;
     criteriaDef?: TableDefResponse;
     multipleMainRows: boolean;

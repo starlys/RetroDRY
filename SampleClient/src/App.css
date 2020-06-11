@@ -1,38 +1,90 @@
-.App {
-  text-align: center;
+/* BEGIN SAMPLE APP STYLES - only useful within sample app */
+body {
+  margin:1em;
 }
+/* END SAMPLE APP STYLES */
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+/* BEGIN IMPORTABLE RETRODRY STYLES - These will be needed in any app using a datonstack */
+/*todo prefix all this with datonstack*/
+.daton {
+  max-width: 90em; 
+  margin-bottom: 2em;
 }
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
+.daton .daton-banner {
   color: white;
+  background-color: gray;
+  font-size: 1.2em;
+  padding: 1px 0.5em;
+}
+.daton .daton-banner button {
+  margin: 0 1em;
+  position: relative;
+  top: -2px;
+}
+.daton-errors {
+  color: red;
+}
+.criteria-block {
+  background-color: #ffe;
+  border: solid 1px gray;
+  padding: 0.4em;
+}
+fieldset.card.border {
+  border-color: blue;
+}
+legend {
+  color: blue;
+}
+fieldset {
+  display: inline-block;
+}
+fieldset.card.no-border {
+  border: none;
+  padding: 0;
+}
+.card-vert {
+  display: block;
+  margin-top: 0.3em;
+}
+.card-horz {
+  display: inline-block;
+}
+.card-label {
+  display:block;
+  font-weight: bold;
+  color:silver;
+}
+.card-value {
+  padding: 0 1em;
+}
+.grid {
+  border-collapse: collapse;
+}
+.grid td {
+  margin: 0;
+  border: solid silver 1px;
+  background-color: #eef;
+}
+td.card-in-grid {
+  background-color: inherit;
+  border:none;
+}
+.inputwrap {
+  display: inline-block;
+}
+.inputwrap.invalid {
+  outline: solid red 1px;
+  background-color: pink;
+}
+.inputwrap input {
+  width: calc(100% - 1em);
+  box-sizing: border-box;
+}
+.criterion {
+  width: 5em;
+}
+.criterion.number {
+  width: 3em;
 }
 
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
+/* END IMPORTABLE RETRODRY STYLES */

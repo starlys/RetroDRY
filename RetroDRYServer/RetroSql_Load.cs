@@ -30,6 +30,7 @@ namespace RetroDRY
         /// Load daton from database. Caller is responsible for setting the version (this does not deal with locks or versions)
         /// </summary>
         /// <param name="pageSize">only inspected for viewons main table</param>
+        /// <returns>null if not found</returns>
         public virtual async Task<Daton> Load(IDbConnection db, DataDictionary dbdef, DatonKey key, int pageSize)
         {
             var datondef = dbdef.FindDef(key);
@@ -49,6 +50,9 @@ namespace RetroDRY
             var whereClause = MainTableWhereClause(datondef.MainTableDef, key);
             var loadResult = await LoadTable(db, dbdef, datondef.MainTableDef, whereClause, sortColName, pageSize, pageNo);
             loadResult.RowsByParentKey.TryGetValue("", out var rowsForParent);
+
+            //single-main-row datons cannot have zero main rows
+            if (!datondef.MultipleMainRows && (rowsForParent == null || rowsForParent.Count == 0)) return null; //was throw new Exception("Single-main-row not found using: " + whereClause.ToString());
 
             Daton daton = Utils.Construct(datondef.Type) as Daton;
             if (datondef.MultipleMainRows)

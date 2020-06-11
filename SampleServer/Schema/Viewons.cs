@@ -42,6 +42,7 @@ namespace SampleServer.Schema
     /// </summary>
     public class CustomerList : Viewon
     {
+        [Prompt("Customer List")]
         public List<TopRow> Customer; 
 
         [InheritFrom("Customer")]

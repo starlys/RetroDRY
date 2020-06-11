@@ -39,7 +39,7 @@ namespace RetroDRY
             {
                 try
                 {
-                    (string lo, string hi) = SplitHyphenated(PackedValue);
+                    (string lo, string hi) = SplitOnTilde(PackedValue);
                     if (lo != null)
                     {
                         decimal dlo = decimal.Parse(lo);
@@ -61,7 +61,7 @@ namespace RetroDRY
             else if (ColDef.CSType == typeof(DateTime))
             {
                 bool isDateOnly = ColDef.WireType == Constants.TYPE_DATE;
-                (string lo, string hi) = SplitHyphenated(PackedValue);
+                (string lo, string hi) = SplitOnTilde(PackedValue);
                 if (lo != null)
                 {
                     var dlo = ParseDateTimeCriterion(lo, isDateOnly); 
@@ -92,12 +92,12 @@ namespace RetroDRY
         }
 
         /// <summary>
-        /// Split a string in the form "1-2", "-2", or "1-" into the low and high parts of the range, ensuring nulls
+        /// Split a string in the form "1~2", "~2", or "1~" into the low and high parts of the range, ensuring nulls
         /// are returned if no values provided.
         /// </summary>
-        public static (string, string) SplitHyphenated(string s)
+        public static (string, string) SplitOnTilde(string s)
         {
-            int h = s.IndexOf('-');
+            int h = s.IndexOf('~');
             if (h < 0) return(null, null);
             string lo = s.Substring(0, h), hi = s.Substring(h + 1);
             if (lo.Length == 0) lo = null;
