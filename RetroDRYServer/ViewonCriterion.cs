@@ -22,17 +22,7 @@ namespace RetroDRY
             ColDef = c; PackedValue = packedValue;
         }
 
-        /// <summary>
-        /// Create from viewon key
-        /// </summary>
-        public ViewonCriterion(TableDef tabledef, ViewonKey.Criterion cri)
-        {
-            ColDef = tabledef.FindCol(cri.Name);
-            if (ColDef == null) throw new Exception($"No such name {cri.Name} in data dictionary");
-            PackedValue = cri.PackedValue;
-        }
-
-        public void ExportWhereClause(SqlSelectBuilder.Where w)
+        public void ExportWhereClause(SqlSelectBuilder.Where w, SqlFlavorizer sqlFlavor)
         {
             //numeric ranges
             if (Utils.IsSupportedNumericType(ColDef.CSType))
@@ -85,7 +75,8 @@ namespace RetroDRY
 
             else if (ColDef.CSType == typeof(string))
             {
-                w.AddWhere($"{ColDef.Name} like {w.NextParameterName()}", PackedValue + "%");
+                
+                w.AddWhere($"{ColDef.Name} {sqlFlavor.LikeOperator()} {w.NextParameterName()}", sqlFlavor.LikeParamValue(PackedValue));
             }
 
             else throw new Exception($"Type {ColDef.CSType.Name} not supported as a viewon parameter");

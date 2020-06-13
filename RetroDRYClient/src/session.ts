@@ -3,7 +3,7 @@ import { Retrovert } from "./retrovert";
 import DiffTool from "./diffTool";
 import {parseDatonKey} from "./datonKey";
 import SaveInfo from "./saveInfo";
-import Utils from "./utils";
+import NetUtils from "./netUtils";
 import GetOptions from "./getOptions";
 import CloneTool from "./cloneTool";
 import { PanelLayout, GridLayout } from "./layout";
@@ -110,6 +110,9 @@ export default class Session {
         this.ensureInitialized();
         if (!options) options = new GetOptions();
 
+        //convert datonKeys to parallel array of parsed keys
+        const parsedDatonKeys = datonKeys.map(k => parseDatonKey(k));
+
         //get from cache; array will have undefined elements for any keys that weren't found
         let datons: any[] = datonKeys.map(k => this.persistonCache[k]);
 
@@ -117,9 +120,10 @@ export default class Session {
         const datonRequests: GetDatonRequest[] = [];
         for (let i = 0; i < datonKeys.length; ++i) {
             if (!datons[i] || options.forceCheckVersion) {
+                const isNew = parsedDatonKeys[i].isNew();
                 const datonRequest = {
                     key: datonKeys[i],
-                    doSubscribe: options.doSubscribeEdit,
+                    doSubscribe: options.doSubscribeEdit && !isNew,
                     forceLoad: options.forceCheckVersion,
                     knownVersion: this.versionCache[datonKeys[i]]
                 };
@@ -133,14 +137,14 @@ export default class Session {
                 sessionKey: this.sessionKey, 
                 getDatons: datonRequests
             };
-            const response = await Utils.httpMain(this.baseServerUrl(), request);
+            const response = await NetUtils.httpMain(this.baseServerUrl(), request);
             const isOk = response && !response.errorCode;
             if (!isOk) throw new Error('Get failed: ' + response.errorCode);
 
             //reinflate what we got back; if any daton is missing from the response, it means the known version was the most up to date
             if (response.condensedDatons) {
                 for (let condensed of response.condensedDatons) {
-                    const daton = Retrovert.expandCondensedDaton(this.dataDictionary!, condensed);
+                    const daton = Retrovert.expandCondensedDaton(this, condensed);
 
                     //stick this one in the datons list in the right place, as defined by the position of the daton key in the caller's array
                     const idxOfKey = datonKeys.findIndex(d => d === daton.key);
@@ -156,10 +160,14 @@ export default class Session {
         //if (datons.some(d => !d)) throw new Error('Daton missing'); 
         datons = datons.filter(d => !!d);
 
-        //cache if subscribing
+        //cache and clone if subscribing (unless is new)
         if (options.doSubscribeEdit) {
             for (let i = 0; i < datons.length; ++i) {
                 let daton = datons[i];
+                const isNew = parseDatonKey(daton.key).isNew();
+                if (isNew) continue;
+
+                //cache
                 this.persistonCache[daton.key] = daton;
                 const oldSubscribeLevel = this.subscribeLevel[daton.key];
                 if (!oldSubscribeLevel)
@@ -168,7 +176,7 @@ export default class Session {
     
                 //clone it so caller cannot clobber our nice cached version
                 const parsedKey = parseDatonKey(daton.key);
-                const datondef = Utils.getDatonDef(this.dataDictionary!, parsedKey.typeName);
+                const datondef = this.getDatonDef(parsedKey.typeName);
                 if (!datondef) throw new Error('Unknown type name ' + parsedKey.typeName);
                 daton = CloneTool.clone(datondef, daton);
                 datons[i] = daton;
@@ -205,7 +213,7 @@ export default class Session {
             sessionKey: this.sessionKey,
             manageDatons: requestDetails
         };
-        const response = await Utils.httpMain(this.baseServerUrl(), request);
+        const response = await NetUtils.httpMain(this.baseServerUrl(), request);
 
         if (!response.manageDatons) return {};
         const ret: any = {};
@@ -234,7 +242,9 @@ export default class Session {
 
             //get pristine version
             const datonkey = parseDatonKey(modified.key);
-            const pristine = this.persistonCache[modified.key];
+            let pristine = null;
+            if (!datonkey.isNew())
+                pristine = this.persistonCache[modified.key];
             const subscribeLevel = this.subscribeLevel[modified.key];
             if (!datonkey.isNew()) {
                 if (!pristine || !subscribeLevel) throw new Error('daton cannot be saved because it was not cached; you must get with doSubscribeEdit:true before making edits');
@@ -244,7 +254,7 @@ export default class Session {
             if (pristine && subscribeLevel === 1) datonsToLock.push(pristine);
 
             //generate diff
-            const datondef = Utils.getDatonDef(this.dataDictionary!, datonkey.typeName);
+            const datondef = this.getDatonDef(datonkey.typeName);
             if (!datondef) throw new Error('invalid type name');
             const diff = DiffTool.generate(datondef, pristine, modified); //pristine is falsy for new single-main-row persistons here
             if (diff)
@@ -263,7 +273,7 @@ export default class Session {
             sessionKey: this.sessionKey,
             saveDatons: diffs
         };
-        const saveResponse = await Utils.httpMain(this.baseServerUrl(), request);
+        const saveResponse = await NetUtils.httpMain(this.baseServerUrl(), request);
 
         //unlock whatever we locked (even if failed save)
         if (datonsToLock.length) {
@@ -315,12 +325,12 @@ export default class Session {
         this.dataDictionary = undefined;
 
         const request = { sessionKey: this.sessionKey, doQuit: true };
-        await Utils.httpMain(this.baseServerUrl(), request);
+        await NetUtils.httpMain(this.baseServerUrl(), request);
     }
 
     private async callInitialize() {
         const request = { sessionKey: this.sessionKey, initialze: { languageCode: this.languageCode}};
-        const response = await Utils.httpMain(this.baseServerUrl(), request);
+        const response = await NetUtils.httpMain(this.baseServerUrl(), request);
         if (response?.dataDictionary)
             this.dataDictionary = response.dataDictionary;
         if (response?.permissionSet) {
@@ -341,7 +351,7 @@ export default class Session {
 
         let pollOk = false;
         try {
-            const response = await Utils.httpPost<LongResponse>(this.baseServerUrl() + 'retro/long', { sessionKey: this.sessionKey });
+            const response = await NetUtils.httpPost<LongResponse>(this.baseServerUrl() + 'retro/long', { sessionKey: this.sessionKey });
             if (response?.errorCode) {
                 console.log(response.errorCode);
                 return; //ends long polling permanently
@@ -352,7 +362,7 @@ export default class Session {
             }
             if (response?.condensedDatons) {
                 for (let condensed of response.condensedDatons) {
-                    const daton = Retrovert.expandCondensedDaton(this.dataDictionary!, condensed);
+                    const daton = Retrovert.expandCondensedDaton(this, condensed);
                     this.persistonCache[daton.key] = daton;
                     this.versionCache[daton.key] = daton.version;
                     if (this.onSubscriptionUpdate) this.onSubscriptionUpdate(daton);

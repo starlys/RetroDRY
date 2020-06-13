@@ -2,11 +2,11 @@ import React, {useState} from 'react';
 
 //return a 2-element array with low and high string values for a criterion that supports tilde-delimited parts
 function splitOnTilde(s) {
-    const h = s.indexOf('~');
+    let h = s.indexOf('~');
     if (h < 0) return[null, null];
-    const lo = s.substr(0, h), hi = s.substr(h + 1);
-    if (lo.length == 0) lo = null;
-    if (hi.length == 0) hi = null;
+    let lo = s.substr(0, h), hi = s.substr(h + 1);
+    if (lo.length === 0) lo = null;
+    if (hi.length === 0) hi = null;
     return [lo, hi];
 }
 
@@ -84,7 +84,7 @@ export default React.memo((props) => {
         const stringChanged = (ev) => {
             setInvalidMessage(processString(colDef, criset, ev.target.value, invalidMemberName));
         };
-        return <span className={containerClass} s>
+        return <span className={containerClass}>
             <input className="criterion" defaultValue={criset[colDef.name]} onChange={stringChanged} />
         </span>;
     }

@@ -103,7 +103,7 @@ namespace RetroDRY
             if (SortColumnName == null) throw new Exception("Sort column must be defined");
 
             string retCols = string.Join(",", ReturnColumnNames);
-            string sql = $"select {retCols} from {MainTable} {WhereClause.ToString() ?? ""} order by {SortColumnName}";
+            string sql = $"select {retCols} from {MainTable} {WhereClause.ToString() ?? ""} order by {MainTable}.{SortColumnName}";
             if (PageSize > 0) sql += SqlFlavor.BuildPagingClause(PageNo, PageSize);
             return sql;
         }

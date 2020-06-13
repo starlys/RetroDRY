@@ -119,7 +119,7 @@ namespace RetroDRY
                 if (coldef != null)
                 {
                     var crihelper = new ViewonCriterion(coldef, cri.PackedValue);
-                    crihelper.ExportWhereClause(w);
+                    crihelper.ExportWhereClause(w, SqlFlavor);
                 }
             }
             return w;
@@ -294,7 +294,8 @@ namespace RetroDRY
                 if (fkCol == null) throw new Exception($"Invalid foreign key column name in LeftJoin info on {coldef.Name}; it must be the name of a column in the same table");
                 if (fkCol.ForeignKeyDatonTypeName == null) throw new Exception($"Invalid use of foreign key column in LeftJoin; {fkCol.Name} must use a ForeignKey annotation to identify the foriegn table");
                 var foreignTabledef = dbdef.FindDef(fkCol.ForeignKeyDatonTypeName).MainTableDef;
-                return $"(select {coldef.LeftJoin.RemoteDisplayColumnName} from {foreignTabledef.SqlTableName} where {foreignTabledef.PrimaryKeyColName}={tabledef.SqlTableName}.{fkCol.Name})";
+                string tableAlias = "_t_" + (++MaxtDynamicAliasUsed);
+                return $"(select {coldef.LeftJoin.RemoteDisplayColumnName} from {foreignTabledef.SqlTableName} {tableAlias} where {tableAlias}.{foreignTabledef.PrimaryKeyColName}={tabledef.SqlTableName}.{fkCol.Name})";
             }
 
             if (coldef.IsCustom || coldef.IsComputed) throw new Exception("Cannot load custom or computed column from database");

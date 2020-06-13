@@ -8,6 +8,7 @@ import CardView from './CardView';
 //props.datonDef is the DatonDefResponse (metadat for whole daton)
 //props.tableDef is the TableDefResponse which is the metadata for props.rows
 //props.edit is true to allow editing of child cards
+//props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
 export default props => {
     const {rows, datonDef, tableDef, edit, session} = props;
     const [expandRowIdx, setExpandRowIdx] = useState(-1);
@@ -40,13 +41,18 @@ export default props => {
         const row = rows[idx];
         children.push(
             <tr key={idx} onClick={() => clickRow(idx)}>
-                {colInfos.map((ci, idx2) =>
-                    <td key={idx2}><DisplayValue colDef={ci.colDef} row={row} /></td>
-                )}
+                {colInfos.map((ci, idx2) => {
+                    const outValue = <DisplayValue colDef={ci.colDef} row={row} />;
+                    let cellContent = outValue;
+                    const isClickable = props.layer && (ci.colDef.foreignKeyDatonTypeName); //todo need this?: || ci.colDef.name === tableDef.primaryKeyColName);
+                    if (isClickable)
+                        cellContent = <span className="grid-fk" onClick={e => props.layer.stackstate.gridKeyClicked(e, props.layer, tableDef, row, ci.colDef)}>{cellContent}</span>;
+                    return <td key={idx2}>{cellContent}</td>;
+                })}
             </tr>
         );
         if (expandRowIdx === idx)
-            children.push(<tr><td className="card-in-grid" colspan={colInfos.length + 1}><CardView session={session} edit={edit} row={row} datonDef={datonDef} tableDef={tableDef} /></td></tr>);
+            children.push(<tr key={'expand' + idx}><td className="card-in-grid" colSpan={colInfos.length + 1}><CardView session={session} edit={edit} row={row} datonDef={datonDef} tableDef={tableDef} /></td></tr>);
     }
 
     return (

@@ -15,7 +15,7 @@ export default function() {
         setStackState(dss);
 
         //auto remove from stack after saving
-        dss.onLayerSaved = daton => dss.removeByKey(daton.key, true);
+        dss.onLayerSaved = datonKey => dss.removeByKey(datonKey, true);
 
         return <div>Loading 4</div>;
     }
@@ -25,8 +25,10 @@ export default function() {
             <button onClick={() => stackstate.add('Employee|=1', false)}>View Employee 1</button>
             <button onClick={() => stackstate.add('Customer|=1', false)}>View Customer 1</button>
             <button onClick={() => stackstate.add('Customer|=2', false)}>View Customer 2</button>
-            <button onClick={() => stackstate.add('Customer|=-1', false)}>Create Customer</button>
-            <button onClick={() => stackstate.add('CustomerList', false)}>View Customer List</button>
+            <button onClick={() => stackstate.add('Employee|=-1', true)}>Create Employee</button>
+            <button onClick={() => stackstate.add('Customer|=-1', true)}>Create Customer</button>
+            <button onClick={() => stackstate.add('CustomerList|Company=wid', false)}>View Customer List</button>
+            <button onClick={() => stackstate.add('EmployeeList', false)}>View Employee List</button>
             <hr/>
             <DatonStack session={globals.session} stackstate={stackstate} />
         </>

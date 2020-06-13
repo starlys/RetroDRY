@@ -84,6 +84,9 @@ namespace SampleServer
             //sample custom validation
             ddict.DatonDefs["Customer"].CustomValidator = Validators.ValidateCustomer;
 
+            //sample default values initializer
+            ddict.DatonDefs["Customer"].Initializer = Initializers.InitializeCustomer;
+
             //start up RetroDRY
             ddict.FinalizeInheritance();
             Globals.Retroverse?.Dispose();

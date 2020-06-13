@@ -1,3 +1,9 @@
+/* BEGIN RESET STYLES - you probably already have these in your app */
+input, textarea, body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+/* END RESET STYLES */
+
 /* BEGIN SAMPLE APP STYLES - only useful within sample app */
 body {
   margin:1em;
@@ -5,7 +11,6 @@ body {
 /* END SAMPLE APP STYLES */
 
 /* BEGIN IMPORTABLE RETRODRY STYLES - These will be needed in any app using a datonstack */
-/*todo prefix all this with datonstack*/
 .daton {
   max-width: 90em; 
   margin-bottom: 2em;
@@ -21,70 +26,97 @@ body {
   position: relative;
   top: -2px;
 }
-.daton-errors {
-  color: red;
+.daton .daton-errors {
+  background-color: #fde;
+  border: solid 1px red;
+  list-style-position: inside;
+  padding: 0.5em;
 }
-.criteria-block {
+.daton .criteria-block {
   background-color: #ffe;
   border: solid 1px gray;
   padding: 0.4em;
 }
-fieldset.card.border {
+.daton fieldset.card.border {
   border-color: blue;
 }
-legend {
+.daton legend {
   color: blue;
 }
-fieldset {
+.daton fieldset {
   display: inline-block;
 }
-fieldset.card.no-border {
+.daton fieldset.card.no-border {
   border: none;
   padding: 0;
 }
-.card-vert {
+.daton .card-vert {
   display: block;
   margin-top: 0.3em;
 }
-.card-horz {
+.daton .card-horz {
   display: inline-block;
 }
-.card-label {
+.daton .card-label {
   display:block;
   font-weight: bold;
   color:silver;
 }
-.card-value {
+.daton .card-value {
   padding: 0 1em;
 }
-.grid {
+.daton .grid {
   border-collapse: collapse;
 }
-.grid td {
+.daton .grid td {
   margin: 0;
   border: solid silver 1px;
   background-color: #eef;
+  cursor: pointer;
 }
-td.card-in-grid {
+.daton .grid-fk:hover {
+  text-decoration: underline;
+}
+.daton td.card-in-grid {
   background-color: inherit;
   border:none;
+  cursor: inherit;
 }
-.inputwrap {
+.daton .inputwrap {
   display: inline-block;
-}
-.inputwrap.invalid {
-  outline: solid red 1px;
-  background-color: pink;
-}
-.inputwrap input {
-  width: calc(100% - 1em);
+  position: relative;
   box-sizing: border-box;
 }
-.criterion {
+.daton .inputwrap.invalid {
+  border-right: solid red 10px;
+}
+.daton .inputwrap input, .inputwrap textarea {
+  width: calc(100% - 12px);
+}
+.daton .inputwrap textarea {
+  height: 3.5em;
+  resize: vertical;
+}
+.daton .popup-error {
+  position: absolute;
+  display: inline-block;
+  width: 30em;
+  height: 1.1em;
+  overflow: hidden;
+  top: -1.6em;
+  left: 2px;
+  outline: solid red 1px;
+  background-color: #fde;
+  padding: 0.2em;
+}
+.daton .criterion {
   width: 5em;
 }
-.criterion.number {
+.daton .criterion.number {
   width: 3em;
 }
-
+.daton .btn-lookup {
+  position: absolute;
+  right: 4px;
+}
 /* END IMPORTABLE RETRODRY STYLES */

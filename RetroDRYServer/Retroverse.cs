@@ -304,6 +304,7 @@ namespace RetroDRY
 
         /// <summary>
         /// Get a daton, from cache or load from database. The reutrn value is a shared instance so the caller may not modify it.
+        /// For new unsaved persistons with -1 as the key, this will create the instance with default values.
         /// </summary>
         /// <param name="user">if null, the return value is a shared guaranteed complete daton; if user is provided,
         /// the return value may be a clone with some rows removed or columns set to null</param>
@@ -311,7 +312,15 @@ namespace RetroDRY
         /// <returns>null if not found</returns>
         public async Task<Daton> GetDaton(DatonKey key, IUser user, bool forceCheckLatest = false)
         {
-            if (key.IsNew) throw new Exception("Cannot get daton that hasn't been persisted");
+            //new persiston: return now
+            if (key.IsNew)
+            {
+                var datondef2 = DataDictionary.FindDef(key);
+                Daton newDaton = Utils.Construct(datondef2.Type) as Daton;
+                newDaton.Key = key;
+                if (datondef2.Initializer != null) await datondef2.Initializer(newDaton);
+                return newDaton;
+            }
 
             //get from cache if possible, and optionally ignore cached version if it is not the latest
             string verifiedVersion = null;

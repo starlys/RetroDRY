@@ -10,11 +10,12 @@ import React from 'react';
 export default (props) => {
     const {datonDef, editState} = props;
 
+    //todo language
     return (
         <div className="daton-banner">
             {editState !== 2 && <button onClick={props.removeClicked}> X </button>}
             {datonDef.mainTableDef.prompt}
-            {editState === -1 && <button>Saving...</button>}
+            {editState === -1 && <button>Working...</button>}
             {editState === 1 && <button onClick={props.editClicked}>Edit</button>}
             {editState === 2 && <button onClick={props.saveClicked}>Save</button>}
             {editState === 2 && <button onClick={props.cancelClicked}>Cancel</button>}

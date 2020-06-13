@@ -43,5 +43,23 @@ namespace RetroDRY
                 return $" returning {pkColName}";
             return "";
         }
+
+        /// <summary>
+        /// Get the LIKE operator for case-insensitive search
+        /// </summary>
+        public string LikeOperator()
+        {
+            if (Vendor == VendorKind.PostgreSQL) return "ilike";
+            return "like";
+        }
+
+        /// <summary>
+        /// Convert a user-entered value into a parameter value to be used with the LIKE operator (appends %)
+        /// </summary>
+        public string LikeParamValue(string s)
+        {
+            //For SQL Server, another way if we need to is to convert "abc" to "[Aa][Bb][Cc]" which is more performant than "lower(colname) like value"
+            return s + "%";
+        }
     }
 }

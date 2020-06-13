@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import CardView from './CardView';
 import GridView from './GridView';
-import {TableRecurPointFromDaton, DatonKey, parseDatonKey} from 'retrodry';
+import {TableRecurPointFromDaton, DatonKey, parseDatonKey, validateAll} from 'retrodry';
 import DatonBanner from './DatonBanner';
 import CardStack from './CardStack';
 
@@ -11,9 +11,26 @@ function buildViewonKey(oldKey, tableDef, criset) {
     const segments = [];
     for (let colDef of tableDef.cols) {
         const criValue = criset[colDef.name];
-        if (criValue) segments.push(colDef.name + '=' + criValue);
+        let name = colDef.name;
+        name = name[0].toUpperCase() + name.substr(1);
+        if (criValue) segments.push(name + '=' + criValue);
     }
     return new DatonKey(parsedOldKey.typeName, segments).toKeyString();
+}
+
+//given the string version of a viewon key, return a criset object indexed by critierion name
+function unpackViewonKey(key) {
+    const ret = {};
+    const parsedKey = parseDatonKey(key);
+    for (let segment of parsedKey.otherSegments) {
+        const eq = segment.indexOf('=');
+        if (eq > 0) {
+            let name = segment.substr(0, eq);
+            name = name[0].toLowerCase() + name.substr(1);
+            ret[name] = segment.substr(eq + 1);
+        }
+    }
+    return ret;
 }
 
 //Displays or edits one daton
@@ -21,15 +38,17 @@ function buildViewonKey(oldKey, tableDef, criset) {
 //props.daton is the daton (non-editable version)
 //props.session is the session for obtaining layouts
 //props.edit is true to display initially with editors; false for read only
-//props.stackstate is the optional DatonStackState instance for the containing stack (can be omitted if this is used outside a stack)
+//props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
+//props.renderCount is a number incremented by the caller to force rerender of uncontrolled inputs
 export default React.memo(props => {
-    const {datonDef, session, edit, stackstate} = props;
+    const {datonDef, session, edit, layer} = props;
     const [topStyle, setTopStyle] = useState(null); //'c' or 'g' for card or grid; null on first render
-    const [isEditing, setIsEditing] = useState(edit);
-    const [isWorking, setIsWorking] = useState(edit);
+    const [isEditing, setIsEditing] = useState(edit); //note we have to set layer.edit whenever we set this so other controls know the mode
+    const [isWorking, setIsWorking] = useState(false);
     const [daton, setDaton] = useState(props.daton);
     const [errorItems, setErrorItems] = useState([]); //array of strings to display as errors
     const criset = useRef({});
+    const validationCount = useRef(0); //used to force rerender of EditValues after validation is run
 
     const isFirstRender = !topStyle;
 
@@ -55,6 +74,14 @@ export default React.memo(props => {
 
     //event handlers
     const editClicked = () => {
+        const isNew = parseDatonKey(daton.key).isNew();
+        if (isNew) {
+            setIsEditing(true);
+            if (layer) layer.edit = true;
+            return;
+        }
+        
+        //get latest version if existing persiston
         setIsWorking(true);
         session.get(daton.key, {doSubscribeEdit:true, forceCheckVersion:true}).then(d => {
             setDaton(d);
@@ -64,28 +91,53 @@ export default React.memo(props => {
                 if (myerrors) {
                     setErrorItems(['Cannot lock']); //todo language
                     setIsEditing(false);
+                    if (layer) layer.edit = false;
                 } else {
                     setIsEditing(true);
+                    if (layer) layer.edit = true;
                     setErrorItems([]);
                 }
             })
         });
     };
     const saveClicked = () => {
+        const isNew = parseDatonKey(daton.key).isNew();
+        validationCount.current = validationCount.current + 1;
+
+        //local errors
+        const localErrors = validateAll(datonDef, daton);
+        if (localErrors.length) {
+            setErrorItems(localErrors);
+            return;
+        }
+
+        //server attempt save and get errors
         setIsWorking(true);
         session.save([daton]).then(saveInfo => {
             setIsWorking(false);
             if (saveInfo.success) {
                 setIsEditing(false);
-                session.changeSubscribeState([daton], 1).then(errors => {
-                    const myerrors = errors[daton.key];
-                    if (myerrors) {
-                        setErrorItems(['Cannot unlock']); //todo language
-                    } else {
-                        setErrorItems([]);
-                    }
-                    if (stackstate.onLayerSaved) stackstate.onLayerSaved(daton);
-                });
+                if (layer) layer.edit = false;
+                if (isNew) {
+                    const newKey = saveInfo.details[0].newKey;
+                    if (newKey) {
+                        layer.stackstate.replaceKey(daton.key, newKey).then(() => {
+                            //note that here, this DatonView instance is no longer mounted
+                            if (layer.stackstate.onLayerSaved) layer.stackstate.onLayerSaved(newKey);
+                        });
+                    } else
+                        layer.stackstate.removeByKey(daton.key, false);
+                } else {
+                    session.changeSubscribeState([daton], 1).then(errors => {
+                        const myerrors = errors[daton.key];
+                        if (myerrors) {
+                            setErrorItems(['Cannot unlock']); //todo language
+                        } else {
+                            setErrorItems([]);
+                        }
+                        if (layer.stackstate.onLayerSaved) layer.stackstate.onLayerSaved(daton.key);
+                    });
+                }
             } else {
                 const result = saveInfo.details[0];
                 setErrorItems(result.errors || []);
@@ -94,18 +146,26 @@ export default React.memo(props => {
     };
     const cancelClicked = () => {
         setIsEditing(false);
-        session.get(daton.key, {doSubscribeEdit:false, forceCheckVersion:true}).then(d => {
-            setDaton(d);
-        });
+        if (layer) layer.edit = false;
+        const isNew = parseDatonKey(daton.key).isNew();
+        if (isNew)
+            layer.stackstate.removeByKey(daton.key, false);
+        else {
+            session.changeSubscribeState([daton], 1).then(() => {
+                session.get(daton.key, {doSubscribeEdit:false, forceCheckVersion:true}).then(d => {
+                    setDaton(d);
+                });    
+            })
+        }
     };
     const removeClicked = () => {
-        if (isEditing) return;
-        stackstate.removeByKey(daton.key, true);
+        if (isEditing || !layer) return;
+        layer.stackstate.removeByKey(daton.key, true);
     };
     const doSearch = () => {
-        if (!stackstate) return;
+        if (!layer) return;
         const newKey = buildViewonKey(daton.key, datonDef.criteriaDef, criset.current);
-        stackstate.replaceViewonKey(daton.key, newKey);
+        layer.stackstate.replaceKey(daton.key, newKey);
     };
 
     //optionally start editing on first render
@@ -116,14 +176,15 @@ export default React.memo(props => {
     if (localTopStyle === 'c') {
         if (datonDef.multipleMainRows) {
             const rt = TableRecurPointFromDaton(datonDef, daton); 
-            topContent = <CardStack session={session} rows={rt.table} datonDef={datonDef} tableDef={datonDef.mainTableDef} edit={isEditing}/>;
+            topContent = <CardStack session={session} rows={rt.table} datonDef={datonDef} tableDef={datonDef.mainTableDef} edit={isEditing} layer={layer}/>;
         } else {
-            topContent = <CardView session={session} row={daton} datonDef={datonDef} tableDef={datonDef.mainTableDef} edit={isEditing} />;
+            topContent = <CardView key={'c' + props.renderCount} session={session} row={daton} datonDef={datonDef} tableDef={datonDef.mainTableDef} edit={isEditing} 
+                layer={layer} validationCount={validationCount.current} />;
         }
     } else { //grid
         if (datonDef.multipleMainRows) {
             const rt = TableRecurPointFromDaton(datonDef, daton); 
-            topContent = <GridView session={session} rows={rt.table} datonDef={datonDef} tableDef={datonDef.mainTableDef} edit={isEditing} />;
+            topContent = <GridView session={session} rows={rt.table} datonDef={datonDef} tableDef={datonDef.mainTableDef} edit={isEditing} layer={layer} />;
         } else {
             topContent = null; //should not use grids with single main row
         }
@@ -132,6 +193,8 @@ export default React.memo(props => {
     //set criteriaContent to optional criteria card
     let criteriaContent = null;
     if (datonDef.criteriaDef) {
+        if (isFirstRender) criset.current = unpackViewonKey(daton.key);
+
         criteriaContent = 
             <div className="criteria-block">
                 <CardView session={session} criset={criset.current} datonDef={datonDef} tableDef={datonDef.criteriaDef} />
@@ -152,7 +215,7 @@ export default React.memo(props => {
             <DatonBanner datonDef={datonDef} editState={bannerState} editClicked={editClicked} saveClicked={saveClicked} 
                 cancelClicked={cancelClicked} removeClicked={removeClicked} />
             {errorItems.length > 0 && <ul className="daton-errors">
-                {errorItems.map(s => <li>{s}</li>)}
+                {errorItems.map((s, idx3) => <li key={idx3}>{s}</li>)}
             </ul>}
             {criteriaContent}
             {topContent}

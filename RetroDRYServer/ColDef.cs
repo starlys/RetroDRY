@@ -62,6 +62,16 @@ namespace RetroDRY
         public string ForeignKeyDatonTypeName;
 
         /// <summary>
+        /// The viewon type name used to choose values for this column
+        /// </summary>
+        public string LookupViewonTypeName;
+
+        /// <summary>
+        /// Used with LookupViewonTypeName; refers to the key column in the viewon whose value should be copied into this column
+        /// </summary>
+        public string LookupViewonKeyColumnName;
+
+        /// <summary>
         /// Information needed to load this column via a left-join.
         /// </summary>
         public LeftJoinInfo LeftJoin;

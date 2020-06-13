@@ -5,3 +5,4 @@ export {PanelLayout, GridLayout, GridColumnLayout} from './src/layout';
 export {TableRecurPoint, TableRecurPointFromDaton, RowRecurPoint} from './src/recurPoint';
 export * from './src/wireTypes';
 export {default as DatonKey, parseDatonKey} from './src/datonKey';
+export * from './src/utils';

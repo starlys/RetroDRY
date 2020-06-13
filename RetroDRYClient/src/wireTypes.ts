@@ -94,6 +94,10 @@ export interface ColDefResponse
     isComputed: boolean; 
     allowSort: boolean;
     foreignKeyDatonTypeName: string;
+    lookupViewonTypeName: string;
+    lookupViewonKeyColumnName: string;
+    leftJoinForeignKeyColumnName: string;
+    leftJoinRemoteDisplayColumnName: string;
     isMainColumn: boolean;
     isVisibleInDropdown: boolean;
     prompt?: string;

@@ -9,9 +9,10 @@ namespace RetroDRY
 {
     public class DataDictionary
     {
-        //these 2 lists are populated during AddDatonUsingClassAnnotation (they can't be filled any other way) and then cleared out in Finalize
+        //these lists are populated during AddDatonUsingClassAnnotation (they can't be filled any other way) and then cleared out in Finalize
         private List<(TableDef, InheritFromAttribute)> TableInheritances = new List<(TableDef, InheritFromAttribute)>();
         private List<(ColDef, InheritFromAttribute)> ColumnInheritances = new List<(ColDef, InheritFromAttribute)>();
+        private List<ColDef> IncompleteLookupBehaviors = new List<ColDef>();
 
         /// <summary>
         /// daton definitions indexed by name
@@ -131,8 +132,18 @@ namespace RetroDRY
                 CopyColumnInheritance(sourceColdef, targetColdef);
             }
 
+            //fix any assumed defaults in lookup behavior
+            foreach (var coldef in IncompleteLookupBehaviors)
+            {
+                if (DatonDefs.TryGetValue(coldef.LookupViewonTypeName, out var viewonDef))
+                {
+                    coldef.LookupViewonKeyColumnName = viewonDef.MainTableDef?.PrimaryKeyColName;
+                }
+            }
+
             TableInheritances = null;
             ColumnInheritances = null;
+            IncompleteLookupBehaviors = null;
             IsFinalized = true;
         }
 
@@ -283,7 +294,15 @@ namespace RetroDRY
                     
                     var foreignkey = field.GetCustomAttribute<ForeignKeyAttribute>();
                     if (foreignkey != null) coldef.ForeignKeyDatonTypeName = foreignkey.Target.Name;
-                    
+
+                    var lookupBehavior = field.GetCustomAttribute<LookupBehaviorAttribute>();
+                    if (lookupBehavior != null)
+                    {
+                        coldef.LookupViewonTypeName = lookupBehavior.ViewonType.Name;
+                        coldef.LookupViewonKeyColumnName = lookupBehavior.KeyColumnName;
+                        if (coldef.LookupViewonKeyColumnName == null) IncompleteLookupBehaviors.Add(coldef); //to be fixed during finalization
+                    }
+
                     var prompt = field.GetCustomAttribute<PromptAttribute>();
                     if (prompt != null) coldef.Prompt = SetPrompt(coldef.Prompt, prompt.Prompt); 
                     
