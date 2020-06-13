@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 
 namespace RetroDRY
@@ -58,7 +59,11 @@ namespace RetroDRY
         /// <summary>
         /// Convenience method to get the column by name or null 
         /// </summary>
-        public ColDef FindCol(string name) => Cols.FirstOrDefault(c => c.Name == name);
+        public ColDef FindCol(string name, bool caseSensitive = true)
+        {
+            if (caseSensitive) return Cols.FirstOrDefault(c => c.Name == name);
+            return Cols.FirstOrDefault(c => string.Compare(c.Name, name, true, CultureInfo.InvariantCulture) == 0);
+        }
 
         /// <summary>
         /// Convenience method to get the child table by name or null 

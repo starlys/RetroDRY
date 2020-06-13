@@ -1,3 +1,10 @@
+export function parseDatonKey(s: string): DatonKey {
+    const parts = s.split('|');
+    const typeName = parts.shift();
+    if (!typeName) throw new Error('Invalid daton key');
+    return new DatonKey(typeName, parts);
+}
+
 //A parsed daton key string
 export default class DatonKey {
     //type name (the first pipe-delimited segment)
@@ -5,13 +12,6 @@ export default class DatonKey {
     
     //all other segments
     otherSegments: string[];
-
-    static parse(s: string): DatonKey {
-        const parts = s.split('|');
-        const typeName = parts.shift();
-        if (!typeName) throw new Error('Invalid daton key');
-        return new DatonKey(typeName, parts);
-    }
 
     constructor(typeName: string, otherSegments: string[]) {
         this.typeName = typeName;
@@ -31,6 +31,13 @@ export default class DatonKey {
         return this.otherSegments.length === 1 && this.otherSegments[0] === '=-1';
     }
 
+    //true if key refers to a persiston; false if refers to a viewon
+    isPersiston(): boolean {
+        if (this.otherSegments.length !== 1) return false;
+        const seg1 = this.otherSegments[0];
+        return seg1 === '+' || seg1[0] === '=';
+    }
+
     persistonKeyAsString(): string {
         if (this.otherSegments.length != 1) return '';
         const seg = this.otherSegments[0];
@@ -39,6 +46,6 @@ export default class DatonKey {
     }
 
     persistonKeyAsInt(): number {
-        return parseInt(this.persistonKeyAsString());
+        return parseInt(this.persistonKeyAsString(), 10);
     }
 }

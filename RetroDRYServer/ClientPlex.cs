@@ -94,6 +94,7 @@ namespace RetroDRY
         /// </summary>
         public void ManageSubscribe(string sessionKey, DatonKey datonKey, string version, bool subscribe)
         {
+            if (datonKey.IsNew) throw new Exception("Cannot subscribe to an unsaved persiston");
             if (!Sessions.TryGetValue(sessionKey, out var ses)) return;
             if (subscribe) ses.Subscriptions[datonKey] = version;
             else ses.Subscriptions.TryRemove(datonKey, out _);

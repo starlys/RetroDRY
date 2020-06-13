@@ -70,6 +70,14 @@ namespace RetroDRY
     }
 
     [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
+    public class LookupBehaviorAttribute : Attribute
+    {
+        public Type ViewonType { get; set; }
+        public string KeyColumnName { get; set; }
+        public LookupBehaviorAttribute(Type target) { ViewonType = target; }
+    }
+
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
     public class ImageColumnAttribute : Attribute
     {
         public string UrlColumnName { get; set; }
@@ -81,7 +89,7 @@ namespace RetroDRY
     {
         public string SourceName { get; set; }
         public bool IncludeCustom { get; set; }
-        public InheritFromAttribute(string source, bool includeCustom = false) { SourceName = source; IncludeCustom = includeCustom; }
+        public InheritFromAttribute(string source) { SourceName = source; }
     }
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]

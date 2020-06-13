@@ -159,7 +159,8 @@ namespace RetroDRY
         /// <param name="value">any supported value or null</param>
         public static string FormatRawJsonValue(ColDef coldef, object value) 
         {
-            string jsonQuote(string s) => QUOTE + s.ToString().Replace(@"""", @"""""") + QUOTE;
+            //string jsonQuote(string s) => QUOTE + s.ToString().Replace(@"""", @"""""") + QUOTE;
+            string jsonQuote(string s) => JsonConvert.ToString(s);
 
             //null
             if (value == null) return "null";
@@ -435,6 +436,7 @@ namespace RetroDRY
                 datonWires.Add(new DatonDefResponse
                 {
                     Name = name,
+                    IsPersiston = typeof(Persiston).IsAssignableFrom(datondef.Type),
                     CriteriaDef = ToWire(datondef.CriteriaDef, user),
                     MainTableDef = ToWire(datondef.MainTableDef, user),
                     MultipleMainRows = datondef.MultipleMainRows
@@ -468,6 +470,10 @@ namespace RetroDRY
             {
                 AllowSort = c.AllowSort,
                 ForeignKeyDatonTypeName = c.ForeignKeyDatonTypeName,
+                LookupViewonTypeName = c.LookupViewonTypeName,
+                LookupViewonKeyColumnName = CamelCasify(c.LookupViewonKeyColumnName),
+                LeftJoinForeignKeyColumnName = CamelCasify(c.LeftJoin?.ForeignKeyColumnName),
+                LeftJoinRemoteDisplayColumnName = CamelCasify(c.LeftJoin?.RemoteDisplayColumnName),
                 ImageUrlColumName = c.Image?.UrlColumName,
                 IsComputed = c.IsComputed,
                 IsMainColumn = c.IsMainColumn,

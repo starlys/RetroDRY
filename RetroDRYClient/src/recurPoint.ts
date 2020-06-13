@@ -1,5 +1,11 @@
 import { TableDefResponse, DatonDefResponse } from "./wireTypes"
 
+// Create a TableRecurPoint for the top level of a daton having multiple main rows
+export function TableRecurPointFromDaton(datondef: DatonDefResponse, daton: any): TableRecurPoint
+{
+    return new TableRecurPoint(datondef.mainTableDef, RecurPoint.getChildTable(daton, datondef.mainTableDef.name, true));
+}
+
 // Base class for the functionality to recurse over all rows and child tables in a daton.
 export class RecurPoint {
     tableDef: TableDefResponse;
@@ -8,8 +14,23 @@ export class RecurPoint {
         this.tableDef = tabledef;
     }
 
+    //Recurse to find all table definitions found in this daton definition
+    static getTables(datonDef: DatonDefResponse): TableDefResponse[] {
+        const ret: TableDefResponse[] = [];
+        this.getTablesRecursive(ret, datonDef.mainTableDef);
+        return ret;
+    }
+
+    //add this and all child tabledefs to list
+    private static getTablesRecursive(list: TableDefResponse[], t: TableDefResponse) {
+        list.push(t);
+        if (t.children) {
+            for (const child of t.children) this.getTablesRecursive(list, child);
+        }
+    }
+
     // Get a child table within a parent row 
-    protected static getChildTable(parent: any, f: string, createIfMissing: boolean): any[] {
+    static getChildTable(parent: any, f: string, createIfMissing: boolean): any[] {
         let list = parent[f];
         if (list) return list;
         if (createIfMissing) parent[f] = [];
@@ -20,12 +41,6 @@ export class RecurPoint {
 // RecurPoint for a table
 export class TableRecurPoint extends RecurPoint {
     table: any[];
-
-    // Create a TableRecurPoint for the top level of a daton having multiple main rows
-    static FromDaton(datondef: DatonDefResponse, daton: any): TableRecurPoint
-    {
-        return new TableRecurPoint(datondef.mainTableDef, RecurPoint.getChildTable(daton, datondef.mainTableDef.name, true));
-    }
 
     constructor(tableDef: TableDefResponse, table: any[]) {
         super(tableDef);

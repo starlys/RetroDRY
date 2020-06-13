@@ -176,9 +176,11 @@ namespace RetroDRY
                 foreach (var drequest in req.GetDatons)
                 {
                     var daton = await GetDaton(DatonKey.Parse(drequest.Key), user, forceCheckLatest: drequest.ForceLoad);
+                    if (daton == null) //not found by key, usually
+                        continue;
                     if (daton.Version == null || drequest.KnownVersion != daton.Version) //omit if client already has the current version
                         datons.Add(daton);
-                    if (drequest.DoSubscribe)
+                    if (drequest.DoSubscribe && daton is Persiston)
                         ClientPlex.ManageSubscribe(req.SessionKey, daton.Key, daton.Version, true);
                 }
                 resp.CondensedDatons = datons.Select(daton =>
@@ -232,8 +234,12 @@ namespace RetroDRY
                     //(Performance note: unsubscribe should happen before unlock so that the unlock-propogation can short circuit reloading. Ultimately
                     //if only one client is dealing with a daton and that client releases the lock and subscription, this server can forget about it
                     //immediately.)
-                    ClientPlex.ManageSubscribe(req.SessionKey, datonKey, mrequest.Version, wantsSubscribe);
-                    bool isSubscribed = wantsSubscribe;
+                    bool isSubscribed = false;
+                    if (datonKey is PersistonKey)
+                    {
+                        ClientPlex.ManageSubscribe(req.SessionKey, datonKey, mrequest.Version, wantsSubscribe);
+                        isSubscribed = wantsSubscribe;
+                    }
 
                     //handle change in lock
                     string lockErrorCode = "";
@@ -298,30 +304,47 @@ namespace RetroDRY
 
         /// <summary>
         /// Get a daton, from cache or load from database. The reutrn value is a shared instance so the caller may not modify it.
+        /// For new unsaved persistons with -1 as the key, this will create the instance with default values.
         /// </summary>
         /// <param name="user">if null, the return value is a shared guaranteed complete daton; if user is provided,
         /// the return value may be a clone with some rows removed or columns set to null</param>
         /// <param name="forceCheckLatest">if true then checks database to ensure latest version even if it was cached</param>
+        /// <returns>null if not found</returns>
         public async Task<Daton> GetDaton(DatonKey key, IUser user, bool forceCheckLatest = false)
         {
-            if (key.IsNew) throw new Exception("Cannot get daton that hasn't been persisted");
+            //new persiston: return now
+            if (key.IsNew)
+            {
+                var datondef2 = DataDictionary.FindDef(key);
+                Daton newDaton = Utils.Construct(datondef2.Type) as Daton;
+                newDaton.Key = key;
+                if (datondef2.Initializer != null) await datondef2.Initializer(newDaton);
+                return newDaton;
+            }
 
             //get from cache if possible, and optionally ignore cached version if it is not the latest
             string verifiedVersion = null;
             Daton daton = DatonCache.Get(key);
             if (forceCheckLatest && daton != null)
             {
-                verifiedVersion = LockManager.GetVersion(key);
-                if (verifiedVersion != daton.Version) daton = null;
+                //viewons: always ignore cache; persistons: use cached only if known to be latest
+                if (daton is Persiston)
+                {
+                    verifiedVersion = LockManager.GetVersion(key);
+                    if (verifiedVersion != daton.Version) daton = null;
+                }
+                else
+                    daton = null;
             }
 
-            //get from database if needed (and cache it)
+            //get from database if needed (and cache it), or abort
             var datondef = DataDictionary.FindDef(key);
             if (daton == null)
             {
                 var sql = GetSqlInstance(key);
                 using (var db = GetDbConnection(datondef.DatabaseNumber))
                     daton = await sql.Load(db, DataDictionary, key, ViewonPageSize);
+                if (daton == null) return null;
                 if (verifiedVersion == null && daton is Persiston)
                     verifiedVersion = LockManager.GetVersion(key);
                 daton.Version = verifiedVersion;

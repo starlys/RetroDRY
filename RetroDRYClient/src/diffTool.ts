@@ -1,5 +1,5 @@
 import { DatonDefResponse } from "./wireTypes";
-import { RowRecurPoint, TableRecurPoint } from "./recurPoint";
+import { RowRecurPoint, TableRecurPoint, TableRecurPointFromDaton } from "./recurPoint";
 
 //utility for creating diffs 
 export default class DiffTool {
@@ -14,8 +14,8 @@ export default class DiffTool {
         let hasChanges = false;
         if (datonDef.multipleMainRows) {
             if (pristine) {
-                const rt0 = TableRecurPoint.FromDaton(datonDef, pristine);
-                const rt1 = TableRecurPoint.FromDaton(datonDef, modified);
+                const rt0 = TableRecurPointFromDaton(datonDef, pristine);
+                const rt1 = TableRecurPointFromDaton(datonDef, modified);
                 const topDiffs = DiffTool.diffTable(rt0, rt1);
                 for (const key in topDiffs) {
                     diff[key] = topDiffs[key];

@@ -96,6 +96,7 @@ namespace SampleServer.Schema
         public string Company;
 
         [ForeignKey(typeof(Employee))]
+        [LookupBehavior(typeof(EmployeeList))]
         public int SalesRepId;
 
         [LeftJoin("SalesRepId", "LastName"), Prompt("Sales rep.")]

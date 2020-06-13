@@ -1,0 +1,122 @@
+/* BEGIN RESET STYLES - you probably already have these in your app */
+input, textarea, body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+/* END RESET STYLES */
+
+/* BEGIN SAMPLE APP STYLES - only useful within sample app */
+body {
+  margin:1em;
+}
+/* END SAMPLE APP STYLES */
+
+/* BEGIN IMPORTABLE RETRODRY STYLES - These will be needed in any app using a datonstack */
+.daton {
+  max-width: 90em; 
+  margin-bottom: 2em;
+}
+.daton .daton-banner {
+  color: white;
+  background-color: gray;
+  font-size: 1.2em;
+  padding: 1px 0.5em;
+}
+.daton .daton-banner button {
+  margin: 0 1em;
+  position: relative;
+  top: -2px;
+}
+.daton .daton-errors {
+  background-color: #fde;
+  border: solid 1px red;
+  list-style-position: inside;
+  padding: 0.5em;
+}
+.daton .criteria-block {
+  background-color: #ffe;
+  border: solid 1px gray;
+  padding: 0.4em;
+}
+.daton fieldset.card.border {
+  border-color: blue;
+}
+.daton legend {
+  color: blue;
+}
+.daton fieldset {
+  display: inline-block;
+}
+.daton fieldset.card.no-border {
+  border: none;
+  padding: 0;
+}
+.daton .card-vert {
+  display: block;
+  margin-top: 0.3em;
+}
+.daton .card-horz {
+  display: inline-block;
+}
+.daton .card-label {
+  display:block;
+  font-weight: bold;
+  color:silver;
+}
+.daton .card-value {
+  padding: 0 1em;
+}
+.daton .grid {
+  border-collapse: collapse;
+}
+.daton .grid td {
+  margin: 0;
+  border: solid silver 1px;
+  background-color: #eef;
+  cursor: pointer;
+}
+.daton .grid-fk:hover {
+  text-decoration: underline;
+}
+.daton td.card-in-grid {
+  background-color: inherit;
+  border:none;
+  cursor: inherit;
+}
+.daton .inputwrap {
+  display: inline-block;
+  position: relative;
+  box-sizing: border-box;
+}
+.daton .inputwrap.invalid {
+  border-right: solid red 10px;
+}
+.daton .inputwrap input, .inputwrap textarea {
+  width: calc(100% - 12px);
+}
+.daton .inputwrap textarea {
+  height: 3.5em;
+  resize: vertical;
+}
+.daton .popup-error {
+  position: absolute;
+  display: inline-block;
+  width: 30em;
+  height: 1.1em;
+  overflow: hidden;
+  top: -1.6em;
+  left: 2px;
+  outline: solid red 1px;
+  background-color: #fde;
+  padding: 0.2em;
+}
+.daton .criterion {
+  width: 5em;
+}
+.daton .criterion.number {
+  width: 3em;
+}
+.daton .btn-lookup {
+  position: absolute;
+  right: 4px;
+}
+/* END IMPORTABLE RETRODRY STYLES */

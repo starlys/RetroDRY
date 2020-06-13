@@ -1,19 +1,19 @@
-import { DataDictionaryResponse, TableDefResponse } from "./wireTypes";
-import DatonKey from "./datonKey";
-import Utils from "./utils";
+import { TableDefResponse } from "./wireTypes";
+import {parseDatonKey} from "./datonKey";
+import Session from "./session";
 
 //utilities for type conversion
 export class Retrovert {
     
     //given a condensed daton from the wire, expand it to the normal structure
-    static expandCondensedDaton(databaseDef: DataDictionaryResponse, condensed: any): any {
+    static expandCondensedDaton(session: Session, condensed: any): any {
         let daton: any = {};
         if (!condensed.key) throw new Error('Condensed daton has no key');
         daton.key = condensed.key;
         daton.isComplete = condensed.isComplete !== false; //omitted means true
         daton.version = condensed.version;
-        const datonKey = DatonKey.parse(daton.key);
-        const datondef = Utils.getDatonDef(databaseDef, datonKey.typeName); 
+        const datonKey = parseDatonKey(daton.key);
+        const datondef = session.getDatonDef(datonKey.typeName); 
         if (!datondef) throw new Error(`No type ${datonKey.typeName}`);
         if (datondef.multipleMainRows) {
             const maintargetlist: any[] = daton[datondef.mainTableDef.name] = [];

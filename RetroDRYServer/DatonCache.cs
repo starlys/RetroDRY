@@ -25,7 +25,8 @@ namespace RetroDRY
         {
             if (Cache.TryGetValue(key, out Item i))
             {
-                i.LastAccessedUtc = DateTime.UtcNow;
+                if (key is PersistonKey) //don't keep viewons in cache very long
+                    i.LastAccessedUtc = DateTime.UtcNow;
                 return i.Daton;
             }
             return null;

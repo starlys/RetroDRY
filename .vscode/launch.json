@@ -19,9 +19,9 @@
             "internalConsoleOptions": "openOnSessionStart",
             //"internalConsoleOptions": "neverOpen",
             "protocol": "inspector",
-            "cwd": "${workspaceFolder}/unittest",
+            "cwd": "${workspaceFolder}/RetroDRYClient/unittest",
             "env":{
-                "TS_NODE_PROJECT": "../RetroDRYClient/tsconfig.json"
+                "TS_NODE_PROJECT": "../tsconfig.json"
             }
         }
     ]

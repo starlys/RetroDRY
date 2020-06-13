@@ -13,6 +13,11 @@ namespace RetroDRY
 
         protected SqlFlavorizer SqlFlavor;
 
+        /// <summary>
+        /// incremented when used to generate unique alias names
+        /// </summary>
+        protected int MaxtDynamicAliasUsed = 0;
+
         public void Initialize(SqlFlavorizer.VendorKind sqlVendor)
         {
             SqlFlavor = new SqlFlavorizer(sqlVendor);

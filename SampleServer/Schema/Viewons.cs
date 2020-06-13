@@ -15,6 +15,7 @@ namespace SampleServer.Schema
         [InheritFrom("Employee")]
         public class TopRow : Row
         {
+            [Key, ForeignKey(typeof(Employee))]
             public int EmployeeId;
 
             [SortColumn(false)]
@@ -23,6 +24,7 @@ namespace SampleServer.Schema
             [SortColumn(true)]
             public string LastName;
 
+            [ForeignKey(typeof(Employee))]
             public int SupervisorId;
 
             [LeftJoin("SupervisorId", "LastName"), Prompt("Supervisor")]
@@ -42,12 +44,13 @@ namespace SampleServer.Schema
     /// </summary>
     public class CustomerList : Viewon
     {
+        [Prompt("Customer List")]
         public List<TopRow> Customer; 
 
         [InheritFrom("Customer")]
         public class TopRow : Row
         {
-            [Key]
+            [Key, ForeignKey(typeof(Customer))]
             public int CustomerId;
 
             [SortColumn]

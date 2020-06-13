@@ -59,7 +59,9 @@ namespace UnitTest
 
             Assert.IsNotNull(xorg.Name);
             Assert.IsNull(xorg.Money);
-            Assert.AreEqual(0, xorg.PaymentMethod.Count);
+            Assert.AreEqual(1, xorg.PaymentMethod.Count);
+            Assert.IsNull(xorg.PaymentMethod[0].Method);
+            Assert.IsNull(xorg.PaymentMethod[0].Notes);
         }
 
         [TestMethod]
