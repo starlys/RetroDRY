@@ -63,7 +63,8 @@ body {
   color:silver;
 }
 .daton .card-value {
-  padding: 0 1em;
+  display: inline-block;
+  box-sizing: border-box;
 }
 .daton .grid {
   border-collapse: collapse;

@@ -39,7 +39,7 @@ function unpackViewonKey(key) {
 //props.session is the session for obtaining layouts
 //props.edit is true to display initially with editors; false for read only
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
-//props.renderCount is a number incremented by the caller to force rerender of uncontrolled inputs
+//props.renderCount is a number incremented by the caller to force rerender of inputs
 export default React.memo(props => {
     const {datonDef, session, edit, layer} = props;
     const [topStyle, setTopStyle] = useState(null); //'c' or 'g' for card or grid; null on first render
@@ -118,6 +118,7 @@ export default React.memo(props => {
             if (saveInfo.success) {
                 setIsEditing(false);
                 if (layer) layer.edit = false;
+                if (layer && layer.propogateSaveToViewon) layer.propogateSaveToViewon(daton);
                 if (isNew) {
                     const newKey = saveInfo.details[0].newKey;
                     if (newKey) {

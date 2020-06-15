@@ -75,6 +75,16 @@ const integrationTestContainer = {
         await Promise.all(works);
     },
 
+    //start a session and return Session
+    startSession: async function(serverList, sessionKey) {
+        const ses = new retrodry.Session();
+        ses.sessionKey = sessionKey;
+        ses.serverList = serverList;
+        ses.timeZoneOffset = -5 * 60;
+        await ses.start();
+        return ses;
+    },
+
     //each step is a member of this object returning a promise; 
     //see server side code for documentation on sequence
 
@@ -83,14 +93,14 @@ const integrationTestContainer = {
     // ****************************************************************************
 
     'a10-20': async function() {
-        const badSession = await retrodry.start([this.sampleApi0], 'nosuchsessionkey', -5 * 60);
-        if (badSession) this.fail('Expected no session on bad credentials');
+        const badSession = await this.startSession([this.sampleApi0], 'nosuchsessionkey');
+        if (badSession && badSession.dataDictionary) this.fail('Expected no session on bad credentials');
     },
     
     'a10-30': async function() {
         const newSessionResponse = await fetch(this.sampleApi0 + 'test/newsession/0,buffy');
         const sessionKey = (await newSessionResponse.json()).sessionKey;
-        const session = await retrodry.start([this.sampleApi0], sessionKey, -5 * 60);
+        const session = await this.startSession([this.sampleApi0], sessionKey);
         if (!session) this.fail('Expected successful session start');
         const numDatons = session.dataDictionary.datonDefs.length;
         if (numDatons !== 10) this.fail('Wrong number of datons in data dict');
@@ -105,7 +115,7 @@ const integrationTestContainer = {
     
     'a30-10': async function() {
         //add rows to PhoneType and save
-        const phoneTypes = await this.session1.get('PhoneTypeLookup', { doSubscribeEdit: true });
+        const phoneTypes = await this.session1.get('PhoneTypeLookup|+', { doSubscribeEdit: true });
         phoneTypes.phoneType.push({phoneTypeId: -1, typeOfPhone: 'Office'});
         phoneTypes.phoneType.push({phoneTypeId: -1, typeOfPhone: 'Cell'});
         const saveResult = await this.session1.save([phoneTypes]);
@@ -204,7 +214,7 @@ const integrationTestContainer = {
         //re-login as Nate
         const newSessionResponse = await fetch(this.sampleApi0 + 'test/newsession/0,nate');
         const sessionKey = (await newSessionResponse.json()).sessionKey;
-        const session = await retrodry.start([this.sampleApi0], sessionKey, -5 * 60);
+        const session = await this.startSession([this.sampleApi0], sessionKey);
         if (!session) this.fail('Expected successful session start');
         this.session2 = session;
 
@@ -253,10 +263,10 @@ const integrationTestContainer = {
 
         const newSessionResponse = await fetch(this.sampleApi1 + 'test/newsession/1,buffy');
         const sessionKey = (await newSessionResponse.json()).sessionKey;
-        const session = await retrodry.start([this.sampleApi1], sessionKey, -5 * 60);
+        const session = await this.startSession([this.sampleApi1], sessionKey);
 
         //create SaleStatus, Item, Employee for use in later steps
-        const saleStatusses = await session.get('SaleStatusLookup', { doSubscribeEdit: true });
+        const saleStatusses = await session.get('SaleStatusLookup|+', { doSubscribeEdit: true });
         saleStatusses.saleStatus.push({ name: 'Hold' });
         saleStatusses.saleStatus.push({ name: 'Ordered' });
         saleStatusses.saleStatus.push({ name: 'Shipped' });
@@ -284,7 +294,7 @@ const integrationTestContainer = {
             urlIdx = ++urlIdx % 3;
             const newSessionResponse = await fetch(urls[urlIdx] + 'test/newsession/' + urlIdx + ',buffy');
             const sessionKey = (await newSessionResponse.json()).sessionKey;
-            const session = await retrodry.start([urls[urlIdx]], sessionKey, -5 * 60);
+            const session = await this.startSession([urls[urlIdx]], sessionKey);
             session.longPollDelay = 5000;
             this.msessions.push(session);
         }
@@ -299,7 +309,7 @@ const integrationTestContainer = {
             let saveResult = await session.save([customer]);
             if (!saveResult.details.length) 
                 this.fail('Could not save customer');
-            const customerKey = retrodry.DatonKey.parse(saveResult.details[0].newKey);
+            const customerKey = retrodry.parseDatonKey(saveResult.details[0].newKey);
             const customerId = customerKey.persistonKeyAsInt();
             if (!customerId) this.fail('Expected server to return valid customer ID on insert');
             const sales = [];
@@ -325,7 +335,7 @@ const integrationTestContainer = {
             const monthAs2Digits = String(monthNo).padStart(2, '0');
             const fromDate = '2020' + monthAs2Digits + '01';
             const toDate = '2020' + monthAs2Digits + '29';
-            const sales = await session.get('SaleList|SaleDate=' + fromDate + '-' + toDate);
+            const sales = await session.get('SaleList|SaleDate=' + fromDate + '~' + toDate);
             this.mdata[sesNo].saleRows = sales.sale; //note that elements are rows in SaleList
         });
     },

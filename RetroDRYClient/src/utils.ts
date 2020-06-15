@@ -94,16 +94,18 @@ export function validateNumber(colDef: ColDefResponse, baseType: string, value: 
 //the user entered the key value manually, then it loads the persiston and assumes the single main row of that persiston
 //also contains the needed description columns.
 //session is optional
-//returns true if anything changed
+//returns 0 if lookup failed, 1 if ok but nothing changed, or 2 if this caused cascaded changes to editingRow
 async function setLookupDescription(session: Session, editingTableDef: TableDefResponse, editingColDef: ColDefResponse, 
-    editingRow: any, sourceRow: any): Promise<boolean> {
+    editingRow: any, sourceRow: any): Promise<number> {
     //if viewon row not given, get main row of persiston
-    if (!sourceRow && session) {
+    let sourceIsValid = !!sourceRow;
+    if (!sourceIsValid && session) {
         const sourcePersiston = await session.get(editingColDef.foreignKeyDatonTypeName + '|=' + editingRow[editingColDef.name]);
+        sourceIsValid = !!sourcePersiston;
         sourceRow = sourcePersiston || {}; //might be missing
     }
 
-    //copy from source row to editing row; if sourceRow is undefined, this will have the effect of clearing the description columns
+    //copy from source row to editing row; if sourceRow was undefined, this will have the effect of clearing the description columns
     let anyChanges = false;
     for (let descrColDef of editingTableDef.cols) {
         if (descrColDef.leftJoinForeignKeyColumnName === editingColDef.name) {
@@ -112,53 +114,62 @@ async function setLookupDescription(session: Session, editingTableDef: TableDefR
             anyChanges = true;
         }
     }
-    return anyChanges;
+    if (!sourceIsValid) return 0;
+    return anyChanges ? 2 : 1;
 }
 
-//Set a row value and/or set the invalid message for the value. All code paths that change row values should go through here.
-//In the case of user editing, the change events from uncontrolled inputs lead to here.
-//In the case of programmatic changes, the caller must also cause the daton view to rerender so the uncontrolled inputs re-read the row values.
+//Set or clear the invalid message for the value, then optionally cascade to other changes based on this change. 
+//All code paths that change row values should go through here.
+//In the case of user editing, the input element causes row updates on each keystroke, but only calls this after editing is done.
+//In the case of programmatic changes, the caller must also cause the daton view to rerender.
 //invalidMemberName must be from getInvalidMemberName().
-//invalidMessage is falsy if the value is ok; if it is set, the value does not get put in the row.
+//invalidMessage is falsy if the value is ok.
 //lookupRow is only used if the value is a foreign key and it is being set from a lookup viewon
 //returns true if this edit cascaded to any additional column changes
-export async function setRowValue(session:Session, tableDef: TableDefResponse, colDef: ColDefResponse, row: any, value: any, 
+export async function afterSetRowValue(session:Session, tableDef: TableDefResponse, colDef: ColDefResponse, row: any,  
     invalidMemberName: string, invalidMessage: string|null,
     lookupRow: any): Promise<boolean> {
-    const ok = !invalidMessage;
+    let ok = !invalidMessage;
     let anyCascades = false;
+
+    //cascade changes to description cols for a changed lookup value;
+    //this might change ok and invalid message
+    if (ok && colDef.foreignKeyDatonTypeName) {
+        const lookupCascadeResult = await setLookupDescription(session, tableDef, colDef, row, lookupRow);
+        anyCascades = lookupCascadeResult === 2;
+        if (lookupCascadeResult === 0) {
+            ok = false;
+            invalidMessage = 'Lookup value does not exist'; //todo language
+        }
+    }
+
     if (ok) {
-        row[colDef.name] = value;
         delete row[invalidMemberName];
-        if (colDef.foreignKeyDatonTypeName) 
-            anyCascades = await setLookupDescription(session, tableDef, colDef, row, lookupRow);
     } else {
         row[invalidMemberName] = invalidMessage;
     }
     return anyCascades;
 }
 
-//todo code dup below
-//if string is ok, sets row value and returns null; if bad, sets row invalid message and returns message
-export function processStringEntry(colDef: ColDefResponse, row: any, stringValue: string, invalidMemberName: string) {
-    const msg = validateString(colDef, stringValue);
-    const ok = !msg;
-    if (ok) {
-        row[colDef.name] = stringValue;
-        delete row[invalidMemberName];
-    } else {
-        row[invalidMemberName] = msg;
-    }
-    return msg;
+//if string is ok, returns null; if bad, sets row invalid message and returns message.
+//session is optinal.
+//Return is 2-element array with invalid message and bool flag indicating if any additional columns were updated
+export async function processStringEntry(session: Session, tableDef: TableDefResponse, colDef: ColDefResponse, 
+    row: any, invalidMemberName: string): Promise<[string|null, boolean]> {
+    const value = row[colDef.name];
+    const msg = validateString(colDef, value);
+    const anyCascades = await afterSetRowValue(session, tableDef, colDef, row, invalidMemberName, msg, null);
+    return [msg, anyCascades];
 }
 
 //if number ok, sets row value; if bad, sets row invalid message and returns message.
-//session is optinoal
+//session is optinal.
 //Return is 2-element array with invalid message and bool flag indicating if any additional columns were updated
 export async function processNumberEntry(session: Session, tableDef: TableDefResponse, colDef: ColDefResponse, 
-    baseType: string, row: any, stringValue: string, invalidMemberName: string): Promise<[string|null, boolean]> {
-    const [msg, value] = validateNumber(colDef, baseType, stringValue);
-    const anyCascades = await setRowValue(session, tableDef, colDef, row, value, invalidMemberName, msg, null);
+    baseType: string, row: any, invalidMemberName: string): Promise<[string|null, boolean]> {
+    const [msg, value] = validateNumber(colDef, baseType, row[colDef.name]);
+    row[colDef.name] = value; //this might round a non-integer entry in an int field, for example
+    const anyCascades = await afterSetRowValue(session, tableDef, colDef, row, invalidMemberName, msg, null);
     return [msg, anyCascades];
 }
 
@@ -167,12 +178,11 @@ export async function processNumberEntry(session: Session, tableDef: TableDefRes
 function validateAnyType(colDef: ColDefResponse, row: any, baseType: string, value: any, invalidMemberName: string) {
     let msg: string|null|undefined = row[invalidMemberName];
     if (msg) return msg;
-    let fixedValue: any;
 
     if (baseType === 'string') 
         msg = validateString(colDef, value);
     else if (isNumericBaseType(baseType))
-        [msg, fixedValue] = validateNumber(colDef, baseType, value);
+        [msg, ] = validateNumber(colDef, baseType, value);
     else
         msg = null; //todo other types
     

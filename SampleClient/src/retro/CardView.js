@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useReducer } from 'react';
 import DisplayValue from './DisplayValue';
 import CardView from './CardView';
 import GridView from './GridView';
@@ -26,6 +26,7 @@ function widthByType(colDef) {
 export default props => {
     const {session, nestCard, row, criset, datonDef, tableDef, edit, layer} = props;
     const [cardLayout, setCardLayout] = useState(null);
+    const [, incrementRenderCount] = useReducer(x => x + 1, 0); 
 
     //determine if top level or nested, and get top layout
     let card = nestCard;
@@ -66,7 +67,8 @@ export default props => {
                 if (isCriteria)
                     cells = colDefs.map((c, idx2) => <EditCriterion key={idx2} colDef={c.colDef} criset={criset} />);
                 else if (edit)
-                    cells = colDefs.map((c, idx2) => <EditValue key={'_' + idx2 + '_' + props.rerenderCode} tableDef={tableDef} colDef={c.colDef} row={row} width={c.width} layer={layer} />);
+                    cells = colDefs.map((c, idx2) => <EditValue key={'_' + idx2 + '_' + props.rerenderCode} tableDef={tableDef} colDef={c.colDef} 
+                        row={row} width={c.width} layer={layer} onChanged={incrementRenderCount}/>);
                 else //display row
                     cells = colDefs.map((c, idx2) => <DisplayValue key={idx2} colDef={c.colDef} row={row} width={c.width} />);
                 child = <>

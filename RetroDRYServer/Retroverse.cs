@@ -339,6 +339,8 @@ namespace RetroDRY
 
             //get from database if needed (and cache it), or abort
             var datondef = DataDictionary.FindDef(key);
+            if (typeof(Persiston).IsAssignableFrom(datondef.Type) && (key is ViewonKey)) throw new Exception("Persiston requested but key format is for viewon");
+            if (typeof(Viewon).IsAssignableFrom(datondef.Type) && (key is PersistonKey)) throw new Exception("Viewon requested but key format is for persiston");
             if (daton == null)
             {
                 var sql = GetSqlInstance(key);

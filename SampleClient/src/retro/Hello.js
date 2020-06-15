@@ -22,6 +22,7 @@ export default function() {
 
     return (
         <>
+            <button onClick={() => stackstate.add('PhoneTypeLookup|+', false)}>View Phone Types</button>
             <button onClick={() => stackstate.add('Employee|=1', false)}>View Employee 1</button>
             <button onClick={() => stackstate.add('Customer|=1', false)}>View Customer 1</button>
             <button onClick={() => stackstate.add('Customer|=2', false)}>View Customer 2</button>

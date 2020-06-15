@@ -164,8 +164,9 @@ export default class Session {
         if (options.doSubscribeEdit) {
             for (let i = 0; i < datons.length; ++i) {
                 let daton = datons[i];
-                const isNew = parseDatonKey(daton.key).isNew();
-                if (isNew) continue;
+                const parsedKey = parseDatonKey(daton.key);
+                if (parsedKey.isNew()) continue;
+                if (!parsedKey.isPersiston()) continue;
 
                 //cache
                 this.persistonCache[daton.key] = daton;
@@ -175,7 +176,6 @@ export default class Session {
                 this.versionCache[daton.key] = daton.version;
     
                 //clone it so caller cannot clobber our nice cached version
-                const parsedKey = parseDatonKey(daton.key);
                 const datondef = this.getDatonDef(parsedKey.typeName);
                 if (!datondef) throw new Error('Unknown type name ' + parsedKey.typeName);
                 daton = CloneTool.clone(datondef, daton);

@@ -9,28 +9,46 @@ import {getInvalidMemberName, processNumberEntry, processStringEntry, getBaseTyp
 //props.row is the row object being edited
 //props.width is the css width string
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
-export default React.memo((props) => {
+//props.onChanged is called with no arguments after a change is saved to the row (on each keystroke)
+export default (props) => {
     const {colDef, row, width, layer} = props;
     const invalidMemberName = getInvalidMemberName(colDef);
     const [hasFocus, setHasFocus] = useState(false);
+    const [valueAtFocus, setValueAtFocus] = useState(null);
     const [, setInvalidMessage] = useState(row[invalidMemberName]);
     const containerClass = row[invalidMemberName] ? 'invalid inputwrap' : 'valid inputwrap';
     const wrapStyle = {width: width};
     const baseType = getBaseType(colDef.wireType);
 
     //event handlers
-    const ctrlFocused = () => setHasFocus(true);
-    const ctrlBlurred = () => setHasFocus(false);
+    const ctrlFocused = () => {
+        setHasFocus(true);
+        setValueAtFocus(row[colDef.name]);
+    };
     const boolChanged = (ev) => row[colDef.name] = ev.target.checked;
     const numberChanged = (ev) => {
-        processNumberEntry(layer?.stackstate?.session, props.tableDef, colDef, baseType, row, ev.target.value, invalidMemberName).then(pe => {
-            const [msg, anyCascades] = pe;
-            setInvalidMessage(msg);
-            if (anyCascades && layer) layer.stackstate.callOnChanged();
-        });
+        row[colDef.name] = parseFloat(ev.target.value);
+        props.onChanged();
     };
     const stringChanged = (ev) => {
-        setInvalidMessage(processStringEntry(colDef, row, ev.target.value, invalidMemberName));
+        row[colDef.name] = ev.target.value;
+        props.onChanged();
+    };
+    const afterEntryProcessed = ([msg, anyCascades]) => {
+        setInvalidMessage(msg);
+        if (anyCascades && layer) layer.stackstate.callOnChanged(); 
+    };
+    const ctrlBlurred = () => {
+        setHasFocus(false);
+
+        //validate on tab-out if any change
+        if (valueAtFocus !== row[colDef.name]) {
+            if (isNumericBaseType(baseType)) {
+                processNumberEntry(layer?.stackstate?.session, props.tableDef, colDef, baseType, row, invalidMemberName).then(afterEntryProcessed);
+            } else if (baseType === 'string') {
+                processStringEntry(layer?.stackstate?.session, props.tableDef, colDef, row, invalidMemberName).then(afterEntryProcessed);
+            }
+        }
     };
     const startLookup = () => {
         layer.stackstate.startLookup(layer, props.tableDef, row, colDef);
@@ -50,21 +68,21 @@ export default React.memo((props) => {
         inputCtrl = <input type="checkbox" checked={row[colDef.name]} onChange={boolChanged} onFocus={ctrlFocused} onBlur={ctrlBlurred}/>;
     }
     else if (isNumericBaseType(baseType)) {
-        inputCtrl = <input type="number" defaultValue={row[colDef.name]} onChange={numberChanged} onFocus={ctrlFocused} onBlur={ctrlBlurred}/>;
+        inputCtrl = <input type="number" value={row[colDef.name] || ''} onChange={numberChanged} onFocus={ctrlFocused} onBlur={ctrlBlurred}/>;
     }
     else if (baseType === 'string') {
         //string renders multiline control if max length is > 200
         if (colDef.maxLength > 200) {
-            inputCtrl = <textarea defaultValue={row[colDef.name]} onChange={stringChanged} onFocus={ctrlFocused} onBlur={ctrlBlurred} />;
+            inputCtrl = <textarea value={row[colDef.name] || ''} onChange={stringChanged} onFocus={ctrlFocused} onBlur={ctrlBlurred} />;
         } else {
-            inputCtrl = <input defaultValue={row[colDef.name]} onChange={stringChanged} onFocus={ctrlFocused} onBlur={ctrlBlurred} />;
+            inputCtrl = <input value={row[colDef.name] || ''} onChange={stringChanged} onFocus={ctrlFocused} onBlur={ctrlBlurred} />;
         }
     }
     else if (baseType === 'date') { //todo
-        inputCtrl = <input defaultValue={row[colDef.name]} onChange={stringChanged} onFocus={ctrlFocused} onBlur={ctrlBlurred}/>;
+        inputCtrl = <input value={row[colDef.name] || ''} onChange={stringChanged} onFocus={ctrlFocused} onBlur={ctrlBlurred}/>;
     }
     else if (baseType === 'datetime') { //todo
-        inputCtrl = <input defaultValue={row[colDef.name]} onChange={stringChanged} onFocus={ctrlFocused} onBlur={ctrlBlurred}/>;
+        inputCtrl = <input value={row[colDef.name] || ''} onChange={stringChanged} onFocus={ctrlFocused} onBlur={ctrlBlurred}/>;
     }
 
     return (
@@ -73,4 +91,4 @@ export default React.memo((props) => {
             {inputCtrl}
             {lookupButton}
         </span>);
-});
+};

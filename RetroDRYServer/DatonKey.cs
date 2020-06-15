@@ -104,7 +104,9 @@ namespace RetroDRY
         {
             unchecked
             {
-                return Name.GetHashCode() + PrimaryKey.GetHashCode();
+                int h = Name.GetHashCode();
+                if (PrimaryKey != null) h += PrimaryKey.GetHashCode();
+                return h;
             }
         }
     }

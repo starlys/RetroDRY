@@ -1,4 +1,4 @@
-import {parseDatonKey, setRowValue} from 'retrodry';
+import {parseDatonKey, afterSetRowValue} from 'retrodry';
 
 //Nonvisual container for the state of a daton stack.
 //To use, pass new instance as props to a DatonStack, then after the stack is rendered, any
@@ -17,13 +17,14 @@ export default class DatonStackState {
     //  daton //noneditable daton version
     //  datonDef 
     //  lookupSelected //optional function when this layer is a viewon used for lookup; called when item selected; defined in startLookup()
+    //  propagateSaveToViewon //optional function when this layer is a persiston that was opened from a viewon; reflects persison changes in the displayed viewon; defined in gridKeyClicked
     //}
     layers = [];
 
     //if set by host app, DatonView will call this after a successful save, passing args: (datonkey string)
     onLayerSaved;
 
-    //incremented by DatonStack as a way to force rerender of datons (which use uncontrolled inputs)
+    //incremented by DatonStack as a way to force rerender of datons 
     rerenderCount = 0;
 
     //called only by DatonStack in its initialization
@@ -71,10 +72,10 @@ export default class DatonStackState {
 
     //replace a viewon key, which performs a search on the new criteria;
     //OR replace a new persiston key with the actual key; cannot be used to change the type!
-    async replaceKey(oldKey, newKey) {
+    async replaceKey(oldKey, newKey, forceLoad) {
         const idx = this.layers.findIndex(x => x.datonKey === oldKey);
         if (idx < 0) return;
-        const daton = await this.session.get(newKey);
+        const daton = await this.session.get(newKey, {forceCheckVersion: forceLoad});
         if (!daton) return;
         const layer = this.layers[idx];
         layer.datonKey = newKey;
@@ -84,19 +85,37 @@ export default class DatonStackState {
     }
 
     //called from click event on a foreign key in a grid
-    async gridKeyClicked(ev, layer, tableDef, row, colDef) {
+    async gridKeyClicked(ev, gridLayer, gridTableDef, gridRow, gridColDef) {
         ev.stopPropagation();
 
         //if this layer is a lookup for some other layer and the user clicked on the key of the main table,
         //then copy key/description back and close this layer
-        if (layer.lookupSelected && layer.datonDef.mainTableDef === tableDef) {
-            if (await layer.lookupSelected(row, colDef))
+        if (gridLayer.lookupSelected && gridLayer.datonDef.mainTableDef === gridTableDef) {
+            if (await gridLayer.lookupSelected(gridRow, gridColDef))
                 return;
         }
 
         //fall through to here, so open the persiston referred to by the clicked key value
-        const targetDatonKey = colDef.foreignKeyDatonTypeName + '|=' + row[colDef.name];
-        this.add(targetDatonKey, false);
+        const targetDatonKey = gridColDef.foreignKeyDatonTypeName + '|=' + gridRow[gridColDef.name];
+        const editLayer = await this.add(targetDatonKey, false);
+
+        //set up behavior for changes saved on edit layer to show up in the calling viewon
+        editLayer.propogateSaveToViewon = (persiston) => {
+            //abort if viewon layer is no longer in the stack 
+            const gridLayerIdx = this.layers.findIndex(x => x === gridLayer);
+            if (gridLayerIdx === -1) return;
+
+            //abort if grid isn't part of a viewon or persiston isn't single-main-row
+            if (parseDatonKey(gridLayer.datonKey).isPersiston()) return;
+            if (editLayer.datonDef.multipleMainRows) return;
+
+            //copy anything over where column names match
+            for (let targetColDef of gridTableDef.cols) {
+                const sourceColDef = editLayer.datonDef.mainTableDef.cols.find(c => c.name === targetColDef.name);
+                if (sourceColDef) gridRow[targetColDef.name] = persiston[sourceColDef.name];
+            }
+            this.callOnChanged();
+        };
     }
 
     //called from click event on a lookup button to open a viewon for lookup
@@ -116,16 +135,9 @@ export default class DatonStackState {
             //abort if clicked col is not the one we need for the editing col
             if (editingColDef.lookupViewonKeyColumnName !== clickedColDef.name) return false;
 
-            //copy key value from viewon (this cascades to also update the description columns)
-            await setRowValue(this.session, editingTableDef, editingColDef, editingRow, viewonRow[clickedColDef.name], null, null, viewonRow);
-            //todo old: editingRow[editingColDef.name] = viewonRow[clickedColDef.name];
-            // //set any leftjoin-defined columns in target row from viewon
-            // for (let descrColDef of editingTableDef.cols) {
-            //     if (descrColDef.leftJoinForeignKeyColumnName === editingColDef.name) {
-            //         const descrValue = viewonRow[descrColDef.leftJoinRemoteDisplayColumnName];
-            //         editingRow[descrColDef.name] = descrValue || null;
-            //     }
-            // }
+            //copy key value from viewon then cascade to also update the description columns
+            editingRow[editingColDef.name] = viewonRow[clickedColDef.name];
+            await afterSetRowValue(this.session, editingTableDef, editingColDef, editingRow, null, null, viewonRow);
             this.removeByKey(lookupLayer.datonKey);
             return true;
         };
