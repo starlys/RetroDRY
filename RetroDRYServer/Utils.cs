@@ -53,6 +53,21 @@ namespace RetroDRY
         }
 
         /// <summary>
+        /// Wrapper to Convert.ChangeType that allows for nullable types, treating empty strings as null
+        /// </summary>
+        public static object ChangeType(object value, Type type)
+        {
+            if (value == null || (value is string vs && vs.Length == 0))
+            {
+                if (type.IsValueType) return Activator.CreateInstance(type);
+                return null;
+            }
+            if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+                return Convert.ChangeType(value, type.GetGenericArguments()[0]);
+            return Convert.ChangeType(value, type);
+        }
+
+        /// <summary>
         /// Given an object o, get the value of field; but if it is null, then construct an instance of the field
         /// type and set it. The generic type T can be identical to the known field type, or an ancestor.
         /// The use case is for daton rows with member List of child rows, to get the child list using IList as the type T.

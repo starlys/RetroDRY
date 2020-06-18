@@ -59,10 +59,10 @@ namespace RetroDRY
                 string segi = segments[i].Replace(ESCAPEDESCAPE, "\x1");
                 if (segi.EndsWith(ESCAPE))
                 {
-                    segments[i] = segi.Substring(0, segi.Length - 1) + segments[i + 1];
+                    segi = segi.Substring(0, segi.Length - 1) + "|" + segments[i + 1];
                     segments.RemoveAt(i + 1);
                 }
-                segments[i] = segments[i].Replace("\x1", ESCAPE);
+                segments[i] = segi.Replace("\x1", ESCAPE);
             }
 
             return segments;

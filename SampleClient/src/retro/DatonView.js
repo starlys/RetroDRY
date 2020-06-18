@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import CardView from './CardView';
 import GridView from './GridView';
 import {TableRecurPointFromDaton, DatonKey, parseDatonKey, validateAll} from 'retrodry';
@@ -10,10 +10,11 @@ function buildViewonKey(oldKey, tableDef, criset) {
     const parsedOldKey = parseDatonKey(oldKey);
     const segments = [];
     for (let colDef of tableDef.cols) {
-        const criValue = criset[colDef.name];
+        let criValue = criset[colDef.name];
+        if (!criValue) continue;
         let name = colDef.name;
         name = name[0].toUpperCase() + name.substr(1);
-        if (criValue) segments.push(name + '=' + criValue);
+        segments.push(name + '=' + criValue);
     }
     return new DatonKey(parsedOldKey.typeName, segments).toKeyString();
 }
@@ -33,13 +34,13 @@ function unpackViewonKey(key) {
     return ret;
 }
 
-//Displays or edits one daton
+//Displays or edits one daton; also scrolls to it
 //props.datonDef is the daton definition (DatonDefResponse)
 //props.daton is the daton (non-editable version)
 //props.session is the session for obtaining layouts
 //props.edit is true to display initially with editors; false for read only
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
-//props.renderCount is a number incremented by the caller to force rerender of inputs
+//props.renderCount is a number incremented by the caller to force rerender when no other props changed
 export default React.memo(props => {
     const {datonDef, session, edit, layer} = props;
     const [topStyle, setTopStyle] = useState(null); //'c' or 'g' for card or grid; null on first render
@@ -48,9 +49,16 @@ export default React.memo(props => {
     const [daton, setDaton] = useState(props.daton);
     const [errorItems, setErrorItems] = useState([]); //array of strings to display as errors
     const criset = useRef({});
+    const domElement = useRef();
     const validationCount = useRef(0); //used to force rerender of EditValues after validation is run
 
     const isFirstRender = !topStyle;
+
+    //scroll on first render
+    useEffect(() => {
+        if (domElement && domElement.current) 
+            domElement.current.parentElement.scrollTo(0, domElement.current.offsetTop);
+    }, [domElement]);
 
     //grid or card?
     let localTopStyle = topStyle;
@@ -166,7 +174,7 @@ export default React.memo(props => {
     const doSearch = () => {
         if (!layer) return;
         const newKey = buildViewonKey(daton.key, datonDef.criteriaDef, criset.current);
-        layer.stackstate.replaceKey(daton.key, newKey);
+        layer.stackstate.replaceKey(daton.key, newKey, true);
     };
 
     //optionally start editing on first render
@@ -179,7 +187,7 @@ export default React.memo(props => {
             const rt = TableRecurPointFromDaton(datonDef, daton); 
             topContent = <CardStack session={session} rows={rt.table} datonDef={datonDef} tableDef={datonDef.mainTableDef} edit={isEditing} layer={layer}/>;
         } else {
-            topContent = <CardView key={'c' + props.renderCount} session={session} row={daton} datonDef={datonDef} tableDef={datonDef.mainTableDef} edit={isEditing} 
+            topContent = <CardView session={session} row={daton} datonDef={datonDef} tableDef={datonDef.mainTableDef} edit={isEditing} 
                 layer={layer} validationCount={validationCount.current} />;
         }
     } else { //grid
@@ -212,7 +220,7 @@ export default React.memo(props => {
     if (isWorking) bannerState = -1;
 
     return (
-        <div className="daton">
+        <div className="daton" ref={domElement}>
             <DatonBanner datonDef={datonDef} editState={bannerState} editClicked={editClicked} saveClicked={saveClicked} 
                 cancelClicked={cancelClicked} removeClicked={removeClicked} />
             {errorItems.length > 0 && <ul className="daton-errors">

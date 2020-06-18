@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import {getBaseType} from 'retrodry';
 
 //return a 2-element array with low and high string values for a criterion that supports tilde-delimited parts
 function splitOnTilde(s) {
@@ -11,7 +12,7 @@ function splitOnTilde(s) {
 }
 
 //if string is ok, sets criset value and returns null; if bad, sets criset invalid message and returns message
-//todo current implementation never allows for invalid
+//note: current implementation never allows for invalid
 function processString(colDef, criset, stringValue, invalidMemberName) {
     const s = stringValue ?? '';
     criset[colDef.name] = s;
@@ -20,7 +21,7 @@ function processString(colDef, criset, stringValue, invalidMemberName) {
 }
 
 //if number range ok, sets criset value and returns null; if bad, sets criset invalid message and returns message
-//todo current implementation never allows for invalid
+//note: current implementation never allows for invalid
 function processNumberRange(colDef, baseType, criset, lo, hi, invalidMemberName) {
     const isFloat = baseType === 'double' || baseType === 'decimal'; 
     if (lo) {
@@ -49,10 +50,7 @@ export default React.memo((props) => {
     const invalidMemberName = colDef.name + '$v';
     const [invalidMessage, setInvalidMessage] = useState(criset[invalidMemberName]);
     const containerClass = invalidMessage ? 'invalid inputwrap' : 'valid inputwrap';
-
-    //convert nint32 to int32, etc.
-    let baseType = colDef.wireType;
-    if (baseType[0] === 'n') baseType = baseType.substr(1); 
+    const baseType = getBaseType(colDef.wireType);
 
     if (baseType === 'bool') {
         const boolChanged = (ev) => criset[colDef.name] = ev.target.value;

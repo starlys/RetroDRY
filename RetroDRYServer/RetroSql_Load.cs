@@ -101,7 +101,7 @@ namespace RetroDRY
             var pkType = tabledef.FindCol(tabledef.PrimaryKeyColName).CSType;
             object pk = key.PrimaryKey; //always string here
             if (pkType != typeof(string))
-                pk = Convert.ChangeType(pk, pkType);
+                pk = Utils.ChangeType(pk, pkType);
             var w = new SqlSelectBuilder.Where();
             w.AddWhere($"{tabledef.PrimaryKeyColName}={w.NextParameterName()}", pk);
             return w;

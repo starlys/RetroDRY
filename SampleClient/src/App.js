@@ -1,11 +1,54 @@
-import React from 'react';
+import React, {useState} from 'react';
+import globals from './globals';
+import DatonStack from './retro/DatonStack';
+import DatonStackState from './retro/DatonStackState';
+
 import './App.css';
-import Hello from './retro/Hello'; 
 
 export default function App() {
+  const [stackstate, setStackState] = useState(null);
+  if (!globals.session) return <div>Initializing session...</div>;
+
+  //initialize stack
+  if (!stackstate) {
+      const dss = new DatonStackState()
+      setStackState(dss);
+
+      //uncomment to auto remove persistons from stack after saving
+      //dss.onLayerSaved = datonKey => dss.removeByKey(datonKey, true);
+
+      return null;
+  }
+
+  const addToStack = (datonKey, asEmpty) => {
+    if (asEmpty)
+      stackstate.addEmptyViewon(datonKey);
+    else
+      stackstate.add(datonKey, datonKey.indexOf('|=-1') > 0);
+  };
+
+  //this is a sample whole-page layout for an app with the menu on the left and the daton stack in the main area
   return (
-    <div>
-      <Hello />
-    </div>
+      <>
+        <div className="main-left">
+          <div style={{fontSize:'32pt', color:'#8b8', fontWeight: 'bold'}}>RetroDRY Sample App</div>
+          <h3>Setup tables</h3>
+          <button onClick={() => addToStack('PhoneTypeLookup|+')}>Phone Types</button>
+          <button onClick={() => addToStack('SaleStatusLookup|+')}>Sale Statuses</button>
+          <h3>Query</h3>
+          <button onClick={() => addToStack('EmployeeList', false)}>Employees</button>
+          <button onClick={() => addToStack('CustomerList', true)}>Customers</button>
+          <button onClick={() => addToStack('ItemList', true)}>Items</button>
+          <button onClick={() => addToStack('SaleList', true)}>Sales</button>
+          <h3>Create new..</h3>
+          <button onClick={() => addToStack('Employee|=-1')}>Employee</button>
+          <button onClick={() => addToStack('Customer|=-1')}>Customer</button>
+          <button onClick={() => addToStack('Item|=-1')}>Item</button>
+          <button onClick={() => addToStack('Sale|=-1')}>Sale</button>
+        </div>
+        <div className="main-right">
+          <DatonStack session={globals.session} stackstate={stackstate} />          
+        </div>
+      </>
   );
 }

@@ -12,6 +12,8 @@ export default class DatonStackState {
 
     //each layer consists of {
     //  stackstate //reference to owning object
+    //  renderCount //integer, incremented to cause the DatonView to be rerendered
+    //  mountCount //integer, incremented to cause the DatonView to be remounted
     //  datonKey
     //  edit //true if edit mode 
     //  daton //noneditable daton version
@@ -23,9 +25,6 @@ export default class DatonStackState {
 
     //if set by host app, DatonView will call this after a successful save, passing args: (datonkey string)
     onLayerSaved;
-
-    //incremented by DatonStack as a way to force rerender of datons 
-    rerenderCount = 0;
 
     //called only by DatonStack in its initialization
     initialize(session, onChanged) { 
@@ -48,9 +47,33 @@ export default class DatonStackState {
         //add layer
         const layer = {
             stackstate: this,
+            renderCount: 0,
+            mountCount: 0,
             datonKey: key,
             edit: edit,
             daton: daton,
+            datonDef: datonDef
+        };
+        this.layers.push(layer);
+        this.callOnChanged();
+        return layer;
+    }
+
+    //add a layer by viewon type name (having no initial rows); return layer
+    addEmptyViewon(datonType) {
+        //if already there, exit
+        const existingIdx = this.layers.findIndex(x => x.datonKey === datonType);
+        if (existingIdx >= 0) return this.layers[existingIdx];
+        const datonDef = this.session.getDatonDef(datonType);
+
+        //add layer
+        const layer = {
+            stackstate: this,
+            renderCount: 0,
+            mountCount: 0,
+            datonKey: datonType,
+            edit: false,
+            daton: this.session.createEmptyViewon(datonType),
             datonDef: datonDef
         };
         this.layers.push(layer);
@@ -81,6 +104,8 @@ export default class DatonStackState {
         layer.datonKey = newKey;
         layer.daton = daton;
         layer.edit = false;
+        ++layer.renderCount;
+        ++layer.mountCount;
         this.callOnChanged();
     }
 
@@ -114,6 +139,7 @@ export default class DatonStackState {
                 const sourceColDef = editLayer.datonDef.mainTableDef.cols.find(c => c.name === targetColDef.name);
                 if (sourceColDef) gridRow[targetColDef.name] = persiston[sourceColDef.name];
             }
+            ++gridLayer.renderCount;
             this.callOnChanged();
         };
     }
@@ -123,7 +149,7 @@ export default class DatonStackState {
         //add layer for viewon lookup
         const viewonDef = this.session.getDatonDef(editingColDef.lookupViewonTypeName);
         if (!viewonDef) return;
-        const lookupLayer = await this.add(editingColDef.lookupViewonTypeName, false);
+        const lookupLayer = await this.addEmptyViewon(editingColDef.lookupViewonTypeName);
 
         //define callback when user clicks on a key in the viewon result row;
         //the function is called in gridKeyClicked and returns true on success
@@ -138,6 +164,7 @@ export default class DatonStackState {
             //copy key value from viewon then cascade to also update the description columns
             editingRow[editingColDef.name] = viewonRow[clickedColDef.name];
             await afterSetRowValue(this.session, editingTableDef, editingColDef, editingRow, null, null, viewonRow);
+            ++editingLayer.renderCount;
             this.removeByKey(lookupLayer.datonKey);
             return true;
         };

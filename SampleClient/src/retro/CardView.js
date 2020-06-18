@@ -21,12 +21,11 @@ function widthByType(colDef) {
 //props.datonDef is the DatonDefResponse (metadata for whole daton)
 //props.tableDef is the TableDefResponse which is the metadata for props.row
 //props.edit is true to display with editors; false for read only (ignored for criteria)
-//props.rerenderCode is a string that changes as a way to  force rerender of memoized EditValues
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
 export default props => {
     const {session, nestCard, row, criset, datonDef, tableDef, edit, layer} = props;
     const [cardLayout, setCardLayout] = useState(null);
-    const [, incrementRenderCount] = useReducer(x => x + 1, 0); 
+    const [, incrementCardRenderCount] = useReducer(x => x + 1, 0); //todo in sale, this causes child grid to collapse - needed?
 
     //determine if top level or nested, and get top layout
     let card = nestCard;
@@ -66,11 +65,11 @@ export default props => {
                 let cells;
                 if (isCriteria)
                     cells = colDefs.map((c, idx2) => <EditCriterion key={idx2} colDef={c.colDef} criset={criset} />);
-                else if (edit)
-                    cells = colDefs.map((c, idx2) => <EditValue key={'_' + idx2 + '_' + props.rerenderCode} tableDef={tableDef} colDef={c.colDef} 
-                        row={row} width={c.width} layer={layer} onChanged={incrementRenderCount}/>);
+                else if (edit) 
+                    cells = colDefs.map((c, idx2) => <EditValue key={idx2} tableDef={tableDef} colDef={c.colDef} 
+                        row={row} width={c.width} session={session} layer={layer} onChanged={incrementCardRenderCount}/>);
                 else //display row
-                    cells = colDefs.map((c, idx2) => <DisplayValue key={idx2} colDef={c.colDef} row={row} width={c.width} />);
+                    cells = colDefs.map((c, idx2) => <DisplayValue key={idx2} session={session} colDef={c.colDef} row={row} width={c.width} />);
                 child = <>
                         <span className="card-label">{colDefs[0].colDef.prompt}</span>
                         {cells}
@@ -81,7 +80,7 @@ export default props => {
         //if item is a nested panel, recur
         else if (item.content) {
             child = <CardView session={session} edit={edit} row={row} criset={criset} nestCard={item} datonDef={datonDef} tableDef={tableDef} 
-                layer={layer} rerenderCode={props.rerenderCode} />
+                layer={layer} />
         }
 
         maxWidth = Math.max(maxWidth, totalWidth);
@@ -101,7 +100,8 @@ export default props => {
             const childTableDef = tableDef.children[i];
             const childRows = row[childTableDef.name] || [];
             childGridElements.push(<hr key={'hr' + i} />);
-            childGridElements.push(<GridView key={'g' + i} session={session} rows={childRows} datonDef={datonDef} tableDef={childTableDef} edit={edit} />);
+            childGridElements.push(<GridView key={'g' + i} session={session} rows={childRows} datonDef={datonDef} tableDef={childTableDef} 
+                edit={edit} layer={layer} />);
         }
     }
 

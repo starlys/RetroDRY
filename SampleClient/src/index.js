@@ -1,6 +1,5 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-import './index.css';
 import App from './App';
 import globals from './globals';
 import { Session } from 'retrodry';
@@ -14,13 +13,17 @@ function mainRender() {
 Your actual client side app will need to log in somewhere in a manner similar to this function.
 You will obtain the session key through your own means from the server, then set members of
 Session, then call Session.start(). Your app will likely have other features that don't use retroDRY
-so you will code the initialization sequence somewhere else - not in index.js.
+so you might code the initialization sequence somewhere else besides in index.js.
  */
 (async function() {
     mainRender();
+
+    //start session on server
     const apiUrl = 'https://localhost:5001/api/';
     const newSessionResponse = await fetch(apiUrl + 'test/newsession/0,buffy');
     const sessionKey = (await newSessionResponse.json()).sessionKey;
+
+    //start session on client
     const ses = new Session();
     ses.sessionKey = sessionKey;
     ses.serverList = [apiUrl];
@@ -30,6 +33,8 @@ so you will code the initialization sequence somewhere else - not in index.js.
         globals.session = ses;
     else
         console.log('Could not start retrodry session');
+
+    //register layouts
     ses.registerCardLayout('Customer', 'customer', sampleLayouts.customerCard);
     ses.registerCardLayout('CustomerList', 'customer', sampleLayouts.customerListCard);
     ses.registerCardLayout('CustomerList', 'criteria', sampleLayouts.customerListCriteriaCard);

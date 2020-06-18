@@ -1,12 +1,38 @@
 /* BEGIN RESET STYLES - you probably already have these in your app */
+html, body {
+  margin:0;
+  height: 100%;
+}
 input, textarea, body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 /* END RESET STYLES */
 
 /* BEGIN SAMPLE APP STYLES - only useful within sample app */
-body {
-  margin:1em;
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+#root > .main-left {
+  width: 20%;
+  max-width: 300px;
+  background-color: #eee;
+  display: inline-block;
+  height: 100%;
+  padding: 1em;
+  vertical-align: top;;
+}
+#root > .main-left button{
+  margin:3px;
+}
+#root > .main-right {
+  width: 75%;
+  max-width: 1200px;
+  display: inline-block;
+  margin-left: 1em;
+  height: 100%;
+  overflow: auto;
+  vertical-align: top;;
 }
 /* END SAMPLE APP STYLES */
 
@@ -65,6 +91,7 @@ body {
 .daton .card-value {
   display: inline-block;
   box-sizing: border-box;
+  text-decoration: inherit;
 }
 .daton .grid {
   border-collapse: collapse;
@@ -91,7 +118,7 @@ body {
 .daton .inputwrap.invalid {
   border-right: solid red 10px;
 }
-.daton .inputwrap input, .inputwrap textarea {
+.daton .inputwrap input, .daton .inputwrap textarea, .daton .inputwrap select {
   width: calc(100% - 12px);
 }
 .daton .inputwrap textarea {

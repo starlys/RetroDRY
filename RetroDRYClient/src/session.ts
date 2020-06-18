@@ -104,6 +104,13 @@ export default class Session {
         return responses[0];
     }
 
+    //create a valid empty viewon locally (use this for seeding a searchable viewon for display without loading all rows)
+    createEmptyViewon(datonType: string): any {
+        return {
+            key: datonType
+        };
+    }
+
     //get one or more datons from cache or server; if any requested datons are not found, they will be omitted from the results
     //so it will not always return an array of the same size as the provided keys array
     async getMulti(datonKeys: string[], options?: GetOptions): Promise<any[]> {

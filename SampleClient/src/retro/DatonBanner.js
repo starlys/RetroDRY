@@ -14,6 +14,7 @@ export default (props) => {
     return (
         <div className="daton-banner">
             {editState !== 2 && <button onClick={props.removeClicked}> X </button>}
+            {datonDef.criteriaDef && <span>Query: </span>}
             {datonDef.mainTableDef.prompt}
             {editState === -1 && <button>Working...</button>}
             {editState === 1 && <button onClick={props.editClicked}>Edit</button>}

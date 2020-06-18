@@ -174,7 +174,6 @@ export async function processNumberEntry(session: Session, tableDef: TableDefRes
 }
 
 //wrapper for validateXX functions; sets invalid message in row and returns message, but if there was already a message there, just use it
-//(Complication: invalid user input is not stored in the row so we can't rely on the row value if the editor is open and has a bad value showing)
 function validateAnyType(colDef: ColDefResponse, row: any, baseType: string, value: any, invalidMemberName: string) {
     let msg: string|null|undefined = row[invalidMemberName];
     if (msg) return msg;

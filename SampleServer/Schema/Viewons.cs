@@ -87,6 +87,7 @@ namespace SampleServer.Schema
         [InheritFrom("Item")]
         public class TopRow : Row
         {
+            [Key, ForeignKey(typeof(Item))]
             public int ItemId;
 
             [SortColumn]
@@ -116,13 +117,16 @@ namespace SampleServer.Schema
         [InheritFrom("Sale")]
         public class TopRow : Row
         {
+            [Key, ForeignKey(typeof(Sale))]
             public int SaleId;
 
+            [ForeignKey(typeof(Customer))]
             public int CustomerId;
 
             [SortColumn]
             public DateTime SaleDate;
 
+            [ForeignKey(typeof(SaleStatusLookup))]
             public short Status;
         }
 
@@ -130,9 +134,13 @@ namespace SampleServer.Schema
         public abstract class Criteria
         {
             [InheritFrom("Sale.CustomerId")]
+            [ForeignKey(typeof(Customer))]
             public int CustomerId;
 
             public DateTime SaleDate;
+
+            [ForeignKey(typeof(SaleStatusLookup))]
+            public short Status;
         }
     }
 }

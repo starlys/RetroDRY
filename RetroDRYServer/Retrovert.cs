@@ -17,8 +17,6 @@ namespace RetroDRY
     /// </summary>
     public static class Retrovert
     {
-        const char QUOTE = '"';
-
         /// <summary>
         /// JSON serializing conversion for preserving raw JSON
         /// </summary>
@@ -130,7 +128,7 @@ namespace RetroDRY
                 if (!mainDiffRow.Columns.ContainsKey(datondef.MainTableDef.PrimaryKeyColName))
                 {
                     var pkColdef = datondef.MainTableDef.FindCol(datondef.MainTableDef.PrimaryKeyColName);
-                    var pk = Convert.ChangeType(((PersistonKey)datonKey).PrimaryKey, pkColdef.CSType);
+                    var pk = Utils.ChangeType(((PersistonKey)datonKey).PrimaryKey, pkColdef.CSType);
                     mainDiffRow.Columns[datondef.MainTableDef.PrimaryKeyColName] = pk;
                 }
             }
@@ -215,7 +213,7 @@ namespace RetroDRY
                     //if the client omits -1 primary key value on new rows, add it here; the save logic needs it but it is redundant from the client perspective
                     if (fillInMissingNegativeKey && !target.Columns.ContainsKey(tableDef.PrimaryKeyColName))
                     {
-                        var newRowPK = Convert.ChangeType(-1, tableDef.FindCol(tableDef.PrimaryKeyColName).CSType);
+                        var newRowPK = Utils.ChangeType(-1, tableDef.FindCol(tableDef.PrimaryKeyColName).CSType);
                         target.Columns[tableDef.PrimaryKeyColName] = newRowPK;
                     }
                 }
