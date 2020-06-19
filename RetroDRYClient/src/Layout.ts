@@ -20,7 +20,8 @@ export class PanelLayout extends BaseLayout {
 
     //each element is single input or nested panel; if it is a string, it is the name of the column.
     //Or it can be a series of space-separated names which causes the first to include the prompt and the others
-    //to appear in compact form after it
+    //to appear in compact form after it. Each column name can have the width appended in ems. For example:
+    //'firstName:15 lastName:20'
     content?: (string|PanelLayout)[];
 
     static autoGenerate(tabledef: TableDefResponse): PanelLayout {

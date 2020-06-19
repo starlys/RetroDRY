@@ -46,7 +46,7 @@ export default props => {
                     let cellContent = outValue;
                     const isClickable = layer && ci.colDef.foreignKeyDatonTypeName; 
                     if (isClickable)
-                        cellContent = <span className="grid-fk" onClick={e => layer.stackstate.gridKeyClicked(e, layer, tableDef, row, ci.colDef)}>{cellContent}</span>;
+                        cellContent = <span className="grid-fk" onClick={e => {layer.stackstate.gridKeyClicked(e, layer, tableDef, row, ci.colDef); setExpandRowIdx(-1);}}>{cellContent}</span>;
                     return <td key={idx2}>{cellContent}</td>;
                 })}
             </tr>
@@ -58,18 +58,24 @@ export default props => {
 
     return (
         <>
-            <table className="grid">
-                <thead>
-                    <tr>
-                        {colInfos.map((ci, idx) => 
-                            <th key={idx} style={{width: ci.width + 'em'}}>{ci.colDef.prompt}</th>
-                        )}
-                    </tr>
-                </thead>
-                <tbody>
-                    {children}
-                </tbody>
-            </table>
+
+            {rows.length > 0 && 
+                <>
+                    <div className="grid-banner">{tableDef.prompt}</div>
+                    <table className="grid">
+                        <thead>
+                            <tr>
+                                {colInfos.map((ci, idx) => 
+                                    <th key={idx} style={{width: ci.width + 'em'}}>{ci.colDef.prompt}</th>
+                                )}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {children}
+                        </tbody>
+                    </table>
+                </>
+            }
             {edit && 
                 <div>
                     <button onClick={addRow}> + {tableDef.prompt} </button>

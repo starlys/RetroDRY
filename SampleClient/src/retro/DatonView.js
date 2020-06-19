@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import CardView from './CardView';
 import GridView from './GridView';
-import {TableRecurPointFromDaton, DatonKey, parseDatonKey, validateAll} from 'retrodry';
+import {TableRecurPointFromDaton, DatonKey, parseDatonKey, validateAll, validateCriteria} from 'retrodry';
 import DatonBanner from './DatonBanner';
 import CardStack from './CardStack';
 
@@ -44,6 +44,7 @@ function unpackViewonKey(key) {
 export default React.memo(props => {
     const {datonDef, session, edit, layer} = props;
     const [topStyle, setTopStyle] = useState(null); //'c' or 'g' for card or grid; null on first render
+    const [parsedDatonKey, setParsedDatonKey] = useState(null); 
     const [isEditing, setIsEditing] = useState(edit); //note we have to set layer.edit whenever we set this so other controls know the mode
     const [isWorking, setIsWorking] = useState(false);
     const [daton, setDaton] = useState(props.daton);
@@ -62,7 +63,7 @@ export default React.memo(props => {
 
     //grid or card?
     let localTopStyle = topStyle;
-    if (!topStyle) {
+    if (isFirstRender) {
         //try using grid if possible
         if (datonDef.multipleMainRows) {
             const mainGridLayout = session.getGridLayout(datonDef.name, datonDef.mainTableDef.name);
@@ -78,6 +79,9 @@ export default React.memo(props => {
             setTopStyle('c');
             localTopStyle = 'c';
         }
+
+        //save parsed key
+        setParsedDatonKey(parseDatonKey(daton.key));
     }
 
     //event handlers
@@ -109,7 +113,7 @@ export default React.memo(props => {
         });
     };
     const saveClicked = () => {
-        const isNew = parseDatonKey(daton.key).isNew();
+        const isNew = parsedDatonKey.isNew();
         validationCount.current = validationCount.current + 1;
 
         //local errors
@@ -156,7 +160,7 @@ export default React.memo(props => {
     const cancelClicked = () => {
         setIsEditing(false);
         if (layer) layer.edit = false;
-        const isNew = parseDatonKey(daton.key).isNew();
+        const isNew = parsedDatonKey.isNew();
         if (isNew)
             layer.stackstate.removeByKey(daton.key, false);
         else {
@@ -173,7 +177,15 @@ export default React.memo(props => {
     };
     const doSearch = () => {
         if (!layer) return;
+
+        //local errors
+        const localErrors = validateCriteria(datonDef.criteriaDef, criset.current);
+        if (localErrors.length) {
+            setErrorItems(localErrors);
+            return;
+        }
         const newKey = buildViewonKey(daton.key, datonDef.criteriaDef, criset.current);
+        validationCount.current = validationCount.current + 1;
         layer.stackstate.replaceKey(daton.key, newKey, true);
     };
 
@@ -206,7 +218,7 @@ export default React.memo(props => {
 
         criteriaContent = 
             <div className="criteria-block">
-                <CardView session={session} criset={criset.current} datonDef={datonDef} tableDef={datonDef.criteriaDef} />
+                <CardView session={session} criset={criset.current} datonDef={datonDef} tableDef={datonDef.criteriaDef} layer={layer} />
                 <div>
                     <button className="search-button" onClick={doSearch}>Search</button>
                 </div>
@@ -221,7 +233,7 @@ export default React.memo(props => {
 
     return (
         <div className="daton" ref={domElement}>
-            <DatonBanner datonDef={datonDef} editState={bannerState} editClicked={editClicked} saveClicked={saveClicked} 
+            <DatonBanner datonDef={datonDef} editState={bannerState} parsedDatonKey={parsedDatonKey} editClicked={editClicked} saveClicked={saveClicked} 
                 cancelClicked={cancelClicked} removeClicked={removeClicked} />
             {errorItems.length > 0 && <ul className="daton-errors">
                 {errorItems.map((s, idx3) => <li key={idx3}>{s}</li>)}

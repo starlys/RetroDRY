@@ -15,6 +15,7 @@ export default class DatonStackState {
     //  renderCount //integer, incremented to cause the DatonView to be rerendered
     //  mountCount //integer, incremented to cause the DatonView to be remounted
     //  datonKey
+    //  parsedDatonKey
     //  edit //true if edit mode 
     //  daton //noneditable daton version
     //  datonDef 
@@ -50,6 +51,7 @@ export default class DatonStackState {
             renderCount: 0,
             mountCount: 0,
             datonKey: key,
+            parsedDatonKey: parsedKey,
             edit: edit,
             daton: daton,
             datonDef: datonDef
@@ -76,6 +78,7 @@ export default class DatonStackState {
             daton: this.session.createEmptyViewon(datonType),
             datonDef: datonDef
         };
+        layer.parsedDatonKey = parseDatonKey(layer.daton.key);
         this.layers.push(layer);
         this.callOnChanged();
         return layer;
@@ -156,16 +159,22 @@ export default class DatonStackState {
         lookupLayer.lookupSelected = async (viewonRow, clickedColDef) => {
             //abort if editing layer is no longer in the stack or is not in edit mode
             const editLayerIdx = this.layers.findIndex(x => x === editingLayer);
-            if (editLayerIdx === -1 || !this.layers[editLayerIdx].edit) return false;
+            if (editLayerIdx === -1) return false;
+            const editingPersiston = editingLayer.parsedDatonKey.isPersiston();
+            if (editingPersiston && !editingLayer.edit) return false;
 
             //abort if clicked col is not the one we need for the editing col
             if (editingColDef.lookupViewonKeyColumnName !== clickedColDef.name) return false;
 
             //copy key value from viewon then cascade to also update the description columns
-            editingRow[editingColDef.name] = viewonRow[clickedColDef.name];
-            await afterSetRowValue(this.session, editingTableDef, editingColDef, editingRow, null, null, viewonRow);
+            let fkValue = viewonRow[clickedColDef.name];
+            if (!editingPersiston) fkValue = fkValue.toString(); //viewon criteria must be strings
+            editingRow[editingColDef.name] = fkValue;
             ++editingLayer.renderCount;
+            this.callOnChanged();
+            await afterSetRowValue(this.session, editingTableDef, editingColDef, editingRow, null, null, viewonRow);
             this.removeByKey(lookupLayer.datonKey);
+            ++editingLayer.renderCount;
             return true;
         };
     }

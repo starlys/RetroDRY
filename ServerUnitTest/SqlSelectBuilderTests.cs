@@ -30,5 +30,11 @@ namespace UnitTest
             Assert.AreEqual("select f1,f2 from Emp where IsActive<>0 and State=@p0 order by Emp.LastName limit 101 offset 100", builder.ToString());
         }
 
+        [TestMethod]
+        public void FormatInClause()
+        {
+            string inclause = SqlSelectBuilder.FormatInClauseList(new object[] { 1, "2", "three", 4.0 });
+            Assert.AreEqual("1,'2','three',4", inclause);
+        }
     }
 }

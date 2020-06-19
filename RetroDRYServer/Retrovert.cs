@@ -435,8 +435,8 @@ namespace RetroDRY
                 {
                     Name = name,
                     IsPersiston = typeof(Persiston).IsAssignableFrom(datondef.Type),
-                    CriteriaDef = ToWire(datondef.CriteriaDef, user),
-                    MainTableDef = ToWire(datondef.MainTableDef, user),
+                    CriteriaDef = ToWire(datondef.CriteriaDef, user, true),
+                    MainTableDef = ToWire(datondef.MainTableDef, user, false),
                     MultipleMainRows = datondef.MultipleMainRows
                 });
             }
@@ -447,7 +447,7 @@ namespace RetroDRY
         }
 
         //see DataDictionaryToWire
-        private static TableDefResponse ToWire(TableDef source, IUser user)
+        private static TableDefResponse ToWire(TableDef source, IUser user, bool isCriteria)
         {
             if (source == null) return null;
             var wire = new TableDefResponse()
@@ -456,7 +456,8 @@ namespace RetroDRY
                 Cols = source.Cols.Select(c => ToWire(c, user)).ToList(),
                 PrimaryKeyColName = CamelCasify(source.PrimaryKeyColName),
                 Prompt = DataDictionary.ResolvePrompt(source.Prompt, user, source.Name),
-                Children = source.Children?.Select(t => ToWire(t, user)).ToList()
+                IsCriteria = isCriteria,
+                Children = source.Children?.Select(t => ToWire(t, user, false)).ToList()
             };
             return wire;
         }

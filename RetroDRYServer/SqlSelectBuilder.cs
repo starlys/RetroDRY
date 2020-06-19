@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 
 namespace RetroDRY
@@ -117,6 +118,7 @@ namespace RetroDRY
             var buf = new StringBuilder(keys.Count() * 4);
             foreach (var x in keys)
             {
+                if (buf.Length > 0) buf.Append(',');
                 if (x is string s) buf.Append(EscapedQuotedString(s));
                 else buf.Append(x.ToString());
             }

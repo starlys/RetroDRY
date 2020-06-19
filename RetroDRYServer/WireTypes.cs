@@ -122,6 +122,8 @@ namespace RetroDRY
         /// Table prompt in natural language 
         /// </summary>
         public string Prompt { get; set; }
+
+        public bool IsCriteria { get; set; }
     }
 
     public class ColDefResponse

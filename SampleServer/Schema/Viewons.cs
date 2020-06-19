@@ -135,12 +135,13 @@ namespace SampleServer.Schema
         {
             [InheritFrom("Sale.CustomerId")]
             [ForeignKey(typeof(Customer))]
-            public int CustomerId;
+            [LookupBehavior(typeof(CustomerList))]
+            public int? CustomerId;
 
-            public DateTime SaleDate;
+            public DateTime? SaleDate;
 
             [ForeignKey(typeof(SaleStatusLookup))]
-            public short Status;
+            public short? Status;
         }
     }
 }

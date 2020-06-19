@@ -3,10 +3,14 @@ import DisplayValue from './DisplayValue';
 import CardView from './CardView';
 import GridView from './GridView';
 import EditValue from './EditValue';
-import EditCriterion from './EditCriterion';
 
 //get width in em units for a colDef
-function widthByType(colDef) {
+//forcedWidth is optional string width specified in layout; if missing it uses the colun type and length
+function widthByType(colDef, forcedWidth) {
+    if (forcedWidth) {
+        const w2 = parseInt(forcedWidth);
+        if (w2 && !isNaN(w2)) return w2;
+    } 
     if (colDef.wireType === 'string' || colDef.wireType === 'nstring') return Math.max(8, Math.min(50, 0.8 * (colDef.maxLength || 50)))
     if (colDef.wireType === 'bool' || colDef.wireType === 'nbool') return 3;
     if (colDef.wireType.indexOf('date') >= 0) return 12;
@@ -50,12 +54,13 @@ export default props => {
 
         //if item is one or more colum names, set child to the prompt and display value(s)
         if (typeof item === 'string') {
-            const colNames = item.split(' ');
+            const colNamesAndWidths = item.split(' ');
             const colDefs = []; //members are {colDef, emw, width} where emw is numeric width is in em units, and width is css string
-            for (let colName of colNames) {
+            for (let colNameAndWidth of colNamesAndWidths) {
+                let [colName, width] = colNameAndWidth.split(':'); //width can be missing
                 const colDef = tableDef.cols.find(c => c.name === colName);
                 if (colDef) {
-                    let width = widthByType(colDef);
+                    width = widthByType(colDef, width);
                     totalWidth += width;
                     colDefs.push({colDef: colDef, emw: width});
                 }
@@ -63,11 +68,9 @@ export default props => {
             for (let c of colDefs) c.width = ((c.emw / totalWidth) * 100) + '%';
             if (colDefs.length) {
                 let cells;
-                if (isCriteria)
-                    cells = colDefs.map((c, idx2) => <EditCriterion key={idx2} colDef={c.colDef} criset={criset} />);
-                else if (edit) 
-                    cells = colDefs.map((c, idx2) => <EditValue key={idx2} tableDef={tableDef} colDef={c.colDef} 
-                        row={row} width={c.width} session={session} layer={layer} onChanged={incrementCardRenderCount}/>);
+                if (isCriteria || edit)
+                    cells = colDefs.map((c, idx2) => <EditValue key={idx2} tableDef={tableDef} colDef={c.colDef} isCriterion={isCriteria}
+                        row={row || criset} width={c.width} session={session} layer={layer} onChanged={incrementCardRenderCount}/>);
                 else //display row
                     cells = colDefs.map((c, idx2) => <DisplayValue key={idx2} session={session} colDef={c.colDef} row={row} width={c.width} />);
                 child = <>
@@ -98,11 +101,16 @@ export default props => {
         childGridElements = [];
         for (let i = 0; i < tableDef.children.length; ++i) {
             const childTableDef = tableDef.children[i];
-            const childRows = row[childTableDef.name] || [];
-            childGridElements.push(<hr key={'hr' + i} />);
-            childGridElements.push(<GridView key={'g' + i} session={session} rows={childRows} datonDef={datonDef} tableDef={childTableDef} 
-                edit={edit} layer={layer} />);
+            let childRows = row[childTableDef.name];
+            if (!childRows) {
+                childRows = [];
+                row[childTableDef.name] = childRows;
+            }
+            if (edit || childRows.length)
+                childGridElements.push(<GridView key={'g' + i} session={session} rows={childRows} datonDef={datonDef} tableDef={childTableDef} 
+                    edit={edit} layer={layer} />);
         }
+        childGridElements.push(<hr key={'hr_end'} />);
     }
 
     return (

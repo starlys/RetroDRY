@@ -89,6 +89,33 @@ export function validateNumber(colDef: ColDefResponse, baseType: string, value: 
     return [msg, n];
 }
 
+//validate a number against the validation rules in colDef, and return null if ok or an error message;
+//value is the combined user entry (string in form lo~hi);
+//returns 2-element array with error message and corrected value for storage
+//(note current implementation never returns errors)
+export function validateNumberRange(colDef: ColDefResponse, baseType: string, value: string|null) {
+    const isFloat = baseType === 'double' || baseType === 'decimal'; 
+    let [lo, hi] = splitOnTilde(value || '');
+    if (lo) {
+        const loN = !isFloat ? parseInt(lo, 10) : parseFloat(lo);
+        if (isNaN(loN)) lo = null;
+        else lo = loN.toString();
+    } else 
+        lo = '';
+    if (hi) {
+        const hiN = !isFloat ? parseInt(hi, 10) : parseFloat(hi);
+        if (isNaN(hiN)) hi = null;
+        else hi = hiN.toString();
+    } else 
+        hi = '';
+    value = null;
+    if (lo || hi) {
+        if (lo === hi) value = lo;
+        else value = lo + '~' + hi;
+    }
+    return [null, value];
+}
+
 //set any leftjoin-defined columns in row from sourceRow (which is from the lookup viewon, or may be missing).
 //Note that for performance, the viewon is assumed to contain the needed description columns when one was used; but if
 //the user entered the key value manually, then it loads the persiston and assumes the single main row of that persiston
@@ -97,6 +124,10 @@ export function validateNumber(colDef: ColDefResponse, baseType: string, value: 
 //returns 0 if lookup failed, 1 if ok but nothing changed, or 2 if this caused cascaded changes to editingRow
 async function setLookupDescription(session: Session, editingTableDef: TableDefResponse, editingColDef: ColDefResponse, 
     editingRow: any, sourceRow: any): Promise<number> {
+    //collect description columns
+    const descrColDefs = editingTableDef.cols.filter(c => c.leftJoinForeignKeyColumnName === editingColDef.name);
+    if (descrColDefs.length === 0) return 1;
+    
     //if viewon row not given, get main row of persiston
     let sourceIsValid = !!sourceRow;
     if (!sourceIsValid && session) {
@@ -107,12 +138,10 @@ async function setLookupDescription(session: Session, editingTableDef: TableDefR
 
     //copy from source row to editing row; if sourceRow was undefined, this will have the effect of clearing the description columns
     let anyChanges = false;
-    for (let descrColDef of editingTableDef.cols) {
-        if (descrColDef.leftJoinForeignKeyColumnName === editingColDef.name) {
-            const descrValue = sourceRow[descrColDef.leftJoinRemoteDisplayColumnName];
-            editingRow[descrColDef.name] = descrValue || null;
-            anyChanges = true;
-        }
+    for (let descrColDef of descrColDefs) {
+        const descrValue = sourceRow[descrColDef.leftJoinRemoteDisplayColumnName];
+        editingRow[descrColDef.name] = descrValue || null;
+        anyChanges = true;
     }
     if (!sourceIsValid) return 0;
     return anyChanges ? 2 : 1;
@@ -134,7 +163,7 @@ export async function afterSetRowValue(session:Session, tableDef: TableDefRespon
 
     //cascade changes to description cols for a changed lookup value;
     //this might change ok and invalid message
-    if (ok && colDef.foreignKeyDatonTypeName) {
+    if (ok && !tableDef.isCriteria && colDef.foreignKeyDatonTypeName) {
         const lookupCascadeResult = await setLookupDescription(session, tableDef, colDef, row, lookupRow);
         anyCascades = lookupCascadeResult === 2;
         if (lookupCascadeResult === 0) {
@@ -173,16 +202,30 @@ export async function processNumberEntry(session: Session, tableDef: TableDefRes
     return [msg, anyCascades];
 }
 
+//if number range for criterion is ok, sets row value; if bad, sets row invalid message and returns message.
+//session is optinal.
+//Return is 2-element array with invalid message and bool flag indicating if any additional columns were updated
+export async function processNumberRangeEntry(session: Session, tableDef: TableDefResponse, colDef: ColDefResponse, 
+    baseType: string, row: any, invalidMemberName: string): Promise<[string|null, boolean]> {
+    const [msg, value] = validateNumberRange(colDef, baseType, row[colDef.name]);
+    row[colDef.name] = value; //this might round a non-integer entry in an int field, for example
+    const anyCascades = await afterSetRowValue(session, tableDef, colDef, row, invalidMemberName, msg, null);
+    return [msg, anyCascades];
+}
+
 //wrapper for validateXX functions; sets invalid message in row and returns message, but if there was already a message there, just use it
-function validateAnyType(colDef: ColDefResponse, row: any, baseType: string, value: any, invalidMemberName: string) {
+function validateAnyType(colDef: ColDefResponse, isCriteria: boolean, row: any, baseType: string, value: any, invalidMemberName: string) {
     let msg: string|null|undefined = row[invalidMemberName];
     if (msg) return msg;
 
     if (baseType === 'string') 
         msg = validateString(colDef, value);
-    else if (isNumericBaseType(baseType))
-        [msg, ] = validateNumber(colDef, baseType, value);
-    else
+    else if (isNumericBaseType(baseType)) {
+        if (isCriteria)
+            [msg, ] = validateNumberRange(colDef, baseType, value);
+        else
+            [msg, ] = validateNumber(colDef, baseType, value);
+    } else
         msg = null; //todo other types
     
     if (msg) row[invalidMemberName] = msg;
@@ -203,12 +246,24 @@ export function validateAll(datonDef: DatonDefResponse, daton: any): string[] {
     return errors;
 }
 
+//get all local validation errors on a criteria set; also sets validation messages in the rows (see getInvalidMemberName)
+export function validateCriteria(criteriaDef: TableDefResponse, criset: any): string[] {
+    const errors:string[] = []; 
+    for (let colDef of criteriaDef.cols) {
+        const value = criset[colDef.name];
+        const baseType = getBaseType(colDef.wireType);
+        const msg = validateAnyType(colDef, true, criset, baseType, value, getInvalidMemberName(colDef));
+        if (msg) errors.push(msg);
+    }
+    return errors;
+}
+
 //see validateAll
 function getLocalValidationErrors_row(rr: RowRecurPoint, errors: string[]) {
     for (let colDef of rr.tableDef.cols) {
         const value = rr.row[colDef.name];
         const baseType = getBaseType(colDef.wireType);
-        const msg = validateAnyType(colDef, rr.row, baseType, value, getInvalidMemberName(colDef));
+        const msg = validateAnyType(colDef, false, rr.row, baseType, value, getInvalidMemberName(colDef));
         if (msg) errors.push(msg);
     }
     for (let rt of rr.getChildren()) {
@@ -220,4 +275,16 @@ function getLocalValidationErrors_row(rr: RowRecurPoint, errors: string[]) {
 function getLocalValidationErrors_table(rt: TableRecurPoint, errors: string[]) {
     for (let rr of rt.getRows())
         getLocalValidationErrors_row(rr, errors);
+}
+
+//return a 2-element array with low and high string values for a criterion that supports tilde-delimited parts;
+//if there is no tilde, return the same value for lo and hi
+export function splitOnTilde(s: string) {
+    let h = s.indexOf('~');
+    if (h < 0) return[s, s];
+    let lo: string|null = s.substr(0, h);
+    let hi: string|null = s.substr(h + 1);
+    if (lo.length === 0) lo = null;
+    if (hi.length === 0) hi = null;
+    return [lo, hi];
 }

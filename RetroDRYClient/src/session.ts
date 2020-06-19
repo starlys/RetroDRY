@@ -8,6 +8,7 @@ import GetOptions from "./getOptions";
 import CloneTool from "./cloneTool";
 import { PanelLayout, GridLayout } from "./layout";
 import { RecurPoint } from "./recurPoint";
+import Mutex from "./mutex";
 
 export default class Session {
     //delay in millis between end of long polling response and sending next long poll request
@@ -53,6 +54,9 @@ export default class Session {
     //cardLayouts and gridLayouts are indexed by "datonName|tableName"
     private cardLayouts: {[name: string]: PanelLayout} = {};
     private gridLayouts: {[name: string]: GridLayout} = {};
+
+    //ensures only one server get call is in progress (this ensures that multiple calls for the same daton don't go to the server twice)
+    private getDatonMutex: Mutex = new Mutex();
 
     //start session; caller should check this.dataDictionary is truthy to see if it was successful
     async start(): Promise<void> {
@@ -116,7 +120,16 @@ export default class Session {
     async getMulti(datonKeys: string[], options?: GetOptions): Promise<any[]> {
         this.ensureInitialized();
         if (!options) options = new GetOptions();
+        await this.getDatonMutex.acquire();
+        try {
+            return await this.getMultiSingleThread(datonKeys, options);
+        } finally {
+            this.getDatonMutex.release();
+        }
+    }
 
+    //see getMulti
+    private async getMultiSingleThread(datonKeys: string[], options: GetOptions): Promise<any[]> {
         //convert datonKeys to parallel array of parsed keys
         const parsedDatonKeys = datonKeys.map(k => parseDatonKey(k));
 
@@ -164,7 +177,6 @@ export default class Session {
         }
 
         //eliminate empty slots in the return array (for datons that could not be loaded)
-        //if (datons.some(d => !d)) throw new Error('Daton missing'); 
         datons = datons.filter(d => !!d);
 
         //cache and clone if subscribing (unless is new)

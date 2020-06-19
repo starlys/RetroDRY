@@ -85,6 +85,7 @@ export interface TableDefResponse
     children?: TableDefResponse[]; 
     primaryKeyColName?: string;
     prompt?: string;
+    isCriteria: boolean;
 }
 
 export interface ColDefResponse
