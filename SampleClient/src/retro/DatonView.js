@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CardView from './CardView';
 import GridView from './GridView';
-import {TableRecurPointFromDaton, DatonKey, parseDatonKey, validateAll, validateCriteria} from 'retrodry';
+import {TableRecurPointFromDaton, DatonKey, parseDatonKey, validateAll, validateCriteria, generateDiffForDelete} from 'retrodry';
 import DatonBanner from './DatonBanner';
 import CardStack from './CardStack';
 
@@ -130,7 +130,7 @@ export default React.memo(props => {
             if (saveInfo.success) {
                 setIsEditing(false);
                 if (layer) layer.edit = false;
-                if (layer && layer.propogateSaveToViewon) layer.propogateSaveToViewon(daton);
+                if (layer && layer.propagateSaveToViewon) layer.propagateSaveToViewon(daton);
                 if (isNew) {
                     const newKey = saveInfo.details[0].newKey;
                     if (newKey) {
@@ -174,6 +174,18 @@ export default React.memo(props => {
     const removeClicked = () => {
         if (isEditing || !layer) return;
         layer.stackstate.removeByKey(daton.key, true);
+    };
+    const deleteClicked = () => {
+        setIsWorking(true);
+        session.deletePersiston(daton).then(saveInfo => {
+            setIsWorking(false);
+            if (saveInfo.success) {
+                if (layer) layer.stackstate.removeByKey(daton.key, true);
+            } else {
+                const result = saveInfo.details[0];
+                setErrorItems(result.errors || []);
+            }
+        });
     };
     const doSearch = () => {
         if (!layer) return;
@@ -234,7 +246,7 @@ export default React.memo(props => {
     return (
         <div className="daton" ref={domElement}>
             <DatonBanner datonDef={datonDef} editState={bannerState} parsedDatonKey={parsedDatonKey} editClicked={editClicked} saveClicked={saveClicked} 
-                cancelClicked={cancelClicked} removeClicked={removeClicked} />
+                cancelClicked={cancelClicked} removeClicked={removeClicked} deleteClicked={deleteClicked}/>
             {errorItems.length > 0 && <ul className="daton-errors">
                 {errorItems.map((s, idx3) => <li key={idx3}>{s}</li>)}
             </ul>}

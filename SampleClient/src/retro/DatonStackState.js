@@ -128,7 +128,7 @@ export default class DatonStackState {
         const editLayer = await this.add(targetDatonKey, false);
 
         //set up behavior for changes saved on edit layer to show up in the calling viewon
-        editLayer.propogateSaveToViewon = (persiston) => {
+        editLayer.propagateSaveToViewon = (persiston) => {
             //abort if viewon layer is no longer in the stack 
             const gridLayerIdx = this.layers.findIndex(x => x === gridLayer);
             if (gridLayerIdx === -1) return;

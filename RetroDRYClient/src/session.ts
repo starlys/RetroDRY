@@ -320,6 +320,45 @@ export default class Session {
         return ret;
     }
 
+    //delete a single-main-row daton, locking if needed
+    //returns savePersistonResponse for each daton, and an overall success flag
+    async deletePersiston(daton: any): Promise<SaveInfo> {
+        this.ensureInitialized();
+        const datonkey = parseDatonKey(daton.key);
+        const datondef = this.getDatonDef(datonkey.typeName);
+        const diff = DiffTool.generateDiffForDelete(datondef!, daton);
+        const subscribeLevel = this.subscribeLevel[daton.key];
+
+        //if lock needed, do before save
+        if (subscribeLevel !== 2) {
+            await this.changeSubscribeState(daton, 2);
+            if (this.subscribeLevel[daton.key] !== 2)  throw new Error('Could not get lock');
+        }
+
+        //save on server
+        const request = {
+            sessionKey: this.sessionKey,
+            saveDatons: [diff]
+        };
+        const saveResponse = await NetUtils.httpMain(this.baseServerUrl(), request);
+
+        //manage cache 
+        if (saveResponse?.savePersistonsSuccess) {
+            delete this.versionCache[daton.key];
+            delete this.persistonCache[daton.key];
+            delete this.subscribeLevel[daton.key];
+        }
+
+        //host app callback
+        if (this.onSave && saveResponse?.savePersistonsSuccess) {
+            this.onSave(daton);
+        }
+
+        //error reporting
+        const ret = { success: saveResponse?.savePersistonsSuccess || false, details: saveResponse?.savedPersistons || []};
+        return ret;
+    }
+
     //get the daton definition by type name (camelCase name)
     getDatonDef(name: string): DatonDefResponse|undefined {
         return this.dataDictionary?.datonDefs.find(d => d.name === name);

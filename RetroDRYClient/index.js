@@ -3,6 +3,7 @@ export {DataDictionaryResponse, DatonDefResponse, TableDefResponse, ColDefRespon
     DetailPermisionResponse, CondensedDatonResponse, ManageDatonResponse, SavePersistonResponse} from './src/wireTypes';
 export {PanelLayout, GridLayout, GridColumnLayout} from './src/layout';
 export {TableRecurPoint, TableRecurPointFromDaton, RowRecurPoint} from './src/recurPoint';
+export {DiffTool} from './src/diffTool';
 export * from './src/wireTypes';
 export {default as DatonKey, parseDatonKey} from './src/datonKey';
 export * from './src/utils';

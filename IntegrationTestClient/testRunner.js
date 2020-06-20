@@ -399,7 +399,7 @@ const integrationTestContainer = {
             this.mdata[sesNo].sales = null; //once changes are saved, we should forget on the client
         });
 
-        //wait for all subscriptions to propogate
+        //wait for all subscriptions to propagate
         await this.delay(20 * 1000); 
 
         //confirm all sales that are not locked received update with new shipped date

@@ -20,7 +20,7 @@ namespace RetroDRY
             }
 
             //delete this row
-            await DeleteSingleRow(db, tabledef.Name, tabledef.PrimaryKeyColName, p0.GetPrimaryKey());
+            await DeleteSingleRow(db, tabledef.SqlTableName, tabledef.PrimaryKeyColName, p0.GetPrimaryKey());
         }
 
         /// <summary>

@@ -95,19 +95,20 @@ namespace RetroDRY
                 var mainListField = diff.DatonDef.Type.GetField(tdata.TableDef.Name);
                 tdata.PristineList = mainListField.GetValue(pristineDaton) as IList;
                 tdata.ModifiedList = mainListField.GetValue(modifiedDaton) as IList;
-                await TraverseDiffList(tdata, null);
+                await TraverseDiffList(tdata, null, null);
             } 
             else
             {
-                await TraverseDiffList(tdata, modifiedDaton);
+                await TraverseDiffList(tdata, pristineDaton, modifiedDaton);
             }
         }
 
         /// <summary>
         /// Call ProcessRowF on all rows in the diff list, and recurse to all child tables. 
         /// </summary>
+        /// <param name="singleMainPristineRow">only set for top level call if there is a single main row</param>
         /// <param name="singleMainModifiedRow">only set for top level call if there is a single main row</param>
-        protected async Task TraverseDiffList(TraversalData tdata, Row singleMainModifiedRow)
+        protected async Task TraverseDiffList(TraversalData tdata, Row singleMainPristineRow, Row singleMainModifiedRow)
         {
             var pkField = tdata.TableDef.RowType.GetField(tdata.TableDef.PrimaryKeyColName);
 
@@ -117,7 +118,7 @@ namespace RetroDRY
                     throw new Exception($"Diff row is missing primary key {tdata.TableDef.PrimaryKeyColName}");
 
                 //find pristine row
-                Row pristineRow = null;
+                Row pristineRow = singleMainPristineRow;
                 if (tdata.PristineList != null && row.Kind != DiffKind.NewRow)
                 {
                     int rowIdx = Utils.IndexOfPrimaryKeyMatch(tdata.PristineList, pkField, rowKey);
@@ -176,7 +177,7 @@ namespace RetroDRY
                             ModifiedList = childModifiedList,
                             ProcessRowF = tdata.ProcessRowF
                         };
-                        await TraverseDiffList(childTdata, null);
+                        await TraverseDiffList(childTdata, null, null);
                     }
                 }
             }

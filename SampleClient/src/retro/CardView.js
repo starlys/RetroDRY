@@ -29,7 +29,7 @@ function widthByType(colDef, forcedWidth) {
 export default props => {
     const {session, nestCard, row, criset, datonDef, tableDef, edit, layer} = props;
     const [cardLayout, setCardLayout] = useState(null);
-    const [, incrementCardRenderCount] = useReducer(x => x + 1, 0); //todo in sale, this causes child grid to collapse - needed?
+    const [, incrementCardRenderCount] = useReducer(x => x + 1, 0); 
 
     //determine if top level or nested, and get top layout
     let card = nestCard;

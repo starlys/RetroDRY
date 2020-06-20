@@ -42,13 +42,16 @@ select {
 /* BEGIN IMPORTABLE RETRODRY STYLES - These will be needed in any app using a datonstack, but you can adjust to fit your theme */
 .daton {
   max-width: 90em; 
-  margin-bottom: 2em;
+  margin: 1em 0;
 }
 .daton .daton-banner {
   color: white;
   background-color: gray;
   font-size: 1.2em;
   padding: 1px 0.5em;
+}
+.daton .daton-banner .right {
+  float: right;
 }
 .daton .daton-banner button {
   margin: 0 1em;
@@ -106,6 +109,9 @@ select {
 .daton .grid {
   border-collapse: collapse;
 }
+.daton .grid th {
+  color: silver;
+}
 .daton .grid td {
   margin: 0;
   border: solid silver 1px;
@@ -117,7 +123,7 @@ select {
 }
 .daton td.card-in-grid {
   background-color: inherit;
-  border:none;
+  border-left: solid 2px gray;
   cursor: inherit;
 }
 .daton .inputwrap {
@@ -156,5 +162,8 @@ select {
 .daton .btn-lookup {
   position: absolute;
   right: -21px;
+}
+.daton .btn-delete-row {
+  color: red;
 }
 /* END IMPORTABLE RETRODRY STYLES */
