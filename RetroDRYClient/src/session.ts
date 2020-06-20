@@ -391,9 +391,6 @@ export default class Session {
         const response = await NetUtils.httpMain(this.baseServerUrl(), request);
         if (response?.dataDictionary)
             this.dataDictionary = response.dataDictionary;
-        if (response?.permissionSet) {
-            //todo store permissions
-        }
     }
     
     private baseServerUrl(): string {
@@ -415,9 +412,7 @@ export default class Session {
                 return; //ends long polling permanently
             }
             pollOk = true;
-            if (response?.permissionSet) {
-                //todo store permissions
-            }
+            if (response?.dataDictionary) this.dataDictionary = response.dataDictionary;
             if (response?.condensedDatons) {
                 for (let condensed of response.condensedDatons) {
                     const daton = Retrovert.expandCondensedDaton(this, condensed);

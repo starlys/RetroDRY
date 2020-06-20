@@ -1,4 +1,5 @@
 import React, {useState} from 'react';
+import {securityUtil} from 'retrodry';
 
 //displays banner in datonstack for a daton
 //props.datonDef is the metadata for the daton
@@ -12,7 +13,6 @@ import React, {useState} from 'react';
 export default (props) => {
     const {datonDef, editState, parsedDatonKey} = props;
     const [isDeleteConfirming, setDeleteConfirming] = useState(false);
-    //if (editState !== 2 || isDeleteConfirming) setDeleteConfirming(false);
 
     //event handlers
     const deleteStarted = () => {
@@ -36,10 +36,11 @@ export default (props) => {
     }
 
     //todo language
+    const allowDelete = !datonDef.multipleMainRows && securityUtil.canDeletePersiston(datonDef);
     return (
         <div className="daton-banner">
             <div className="right">
-                {(editState === 2 && !isDeleteConfirming && !datonDef.multipleMainRows) && 
+                {(editState === 2 && !isDeleteConfirming && allowDelete) && 
                     <button className="btn-delete-row" onClick={deleteStarted}>X</button>
                 }
                 {(editState === 2 && isDeleteConfirming) && <>

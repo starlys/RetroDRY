@@ -165,7 +165,6 @@ namespace RetroDRY
             //initialize
             if (req.Initialze != null)
             {
-                resp.PermissionSet = Retrovert.PermissionsToWire(user);
                 resp.DataDictionary = Retrovert.DataDictionaryToWire(DataDictionary, user);
             }
 
@@ -462,17 +461,16 @@ namespace RetroDRY
                         CondensedDatonJson = Retrovert.ToWire(DataDictionary, daton, false)
                     });
             }
-
-            PermissionResponse permissions = null;
-            if (pg.IncludePermissions)
-                permissions = Retrovert.PermissionsToWire(user);
-
-            return new LongResponse
+            var response = new LongResponse
             {
                 CondensedDatons = wireDatons.ToArray(),
-                PermissionSet = permissions
-
             };
+
+            //if permissions changed, resend the whole data dictionary
+            if (pg.IncludeDataDictionary)
+                response.DataDictionary = Retrovert.DataDictionaryToWire(DataDictionary, user);
+            
+            return response;
         }
 
         /// <summary>

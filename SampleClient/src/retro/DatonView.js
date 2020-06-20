@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CardView from './CardView';
 import GridView from './GridView';
-import {TableRecurPointFromDaton, DatonKey, parseDatonKey, validateAll, validateCriteria, generateDiffForDelete} from 'retrodry';
+import {TableRecurPointFromDaton, DatonKey, parseDatonKey, validateAll, validateCriteria, securityUtil} from 'retrodry';
 import DatonBanner from './DatonBanner';
 import CardStack from './CardStack';
 
@@ -239,9 +239,9 @@ export default React.memo(props => {
 
     //set up banner props
     let bannerState = 0;
-    if (datonDef.isPersiston) bannerState = 1;
-    if (isEditing) bannerState = 2;
     if (isWorking) bannerState = -1;
+    else if (isEditing) bannerState = 2;
+    else if (datonDef.isPersiston && securityUtil.canEditPersiston(datonDef)) bannerState = 1;
 
     return (
         <div className="daton" ref={domElement}>

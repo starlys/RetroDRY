@@ -56,6 +56,10 @@ namespace RetroDRY
                         }
                     }
                 }
+
+                //force modify for columns that inhert create permission from table level
+                if (colname !=  null && lev == PermissionLevel.Create) lev = PermissionLevel.Create | PermissionLevel.Modify;
+
                 max |= lev;
             }
             return max;

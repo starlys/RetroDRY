@@ -382,51 +382,11 @@ namespace RetroDRY
         }
 
         /// <summary>
-        /// Convert the serializable portions of a user's permission set to a wire-ready structure. Injected functions are ignored here.
-        /// </summary>
-        /// <returns>null if none defined</returns>
-        public static PermissionResponse PermissionsToWire(IUser user)
-        {
-            if (user.Roles == null) return null;
-
-            var wholeW = new PermissionResponse();
-            var tableWDict = new Dictionary<string, DetailPermisionResponse>(); //table level permissions indexed by table name
-            foreach (var role in user.Roles)
-            {
-                wholeW.Level |= (int)role.BaseLevel;
-                if (role.TableOverrides != null) {
-                    foreach (var table in role.TableOverrides)
-                    {
-                        if (!tableWDict.TryGetValue(table.TableName, out var tableW))
-                        {
-                            tableW = new DetailPermisionResponse() { Name = table.TableName };
-                            tableWDict[table.TableName] = tableW;
-                        }
-                        tableW.Level |= (int)table.BaseLevel;
-                        if (table.ColumnOverrides != null)
-                        {
-                            if (tableW.Overrides == null) tableW.Overrides = new List<DetailPermisionResponse>();
-                            foreach (var col in table.ColumnOverrides)
-                            {
-                                var existing = tableW.Overrides.FirstOrDefault(x => x.Name == col.ColumnName);
-                                if (existing == null)
-                                    tableW.Overrides.Add(new DetailPermisionResponse { Name = col.ColumnName, Level = (int)col.BaseLevel });
-                                else
-                                    existing.Level |= (int)col.BaseLevel;
-                            }
-                        }
-                    }
-                }
-            }
-            wholeW.Overrides = tableWDict.Values.ToList();
-            return wholeW;
-        }
-
-        /// <summary>
         /// Convert the serializable portions of a data dictionary to a wire-ready structure.
         /// </summary>
         public static DataDictionaryResponse DataDictionaryToWire(DataDictionary ddict, IUser user)
         {
+            var guard = new SecurityGuard(ddict, user);
             var datonWires = new List<DatonDefResponse>();
             foreach (var name in ddict.DatonDefs.Keys)
             {
@@ -435,8 +395,8 @@ namespace RetroDRY
                 {
                     Name = name,
                     IsPersiston = typeof(Persiston).IsAssignableFrom(datondef.Type),
-                    CriteriaDef = ToWire(datondef.CriteriaDef, user, true),
-                    MainTableDef = ToWire(datondef.MainTableDef, user, false),
+                    CriteriaDef = ToWire(guard, datondef.CriteriaDef, user, true),
+                    MainTableDef = ToWire(guard, datondef.MainTableDef, user, false),
                     MultipleMainRows = datondef.MultipleMainRows
                 });
             }
@@ -447,26 +407,28 @@ namespace RetroDRY
         }
 
         //see DataDictionaryToWire
-        private static TableDefResponse ToWire(TableDef source, IUser user, bool isCriteria)
+        private static TableDefResponse ToWire(SecurityGuard guard, TableDef source, IUser user, bool isCriteria)
         {
             if (source == null) return null;
             var wire = new TableDefResponse()
             {
                 Name = CamelCasify(source.Name),
-                Cols = source.Cols.Select(c => ToWire(c, user)).ToList(),
+                PermissionLevel = (int)guard.FinalLevel(null, source.Name, null),
+                Cols = source.Cols.Select(c => ToWire(guard, source, c, user)).ToList(),
                 PrimaryKeyColName = CamelCasify(source.PrimaryKeyColName),
                 Prompt = DataDictionary.ResolvePrompt(source.Prompt, user, source.Name),
                 IsCriteria = isCriteria,
-                Children = source.Children?.Select(t => ToWire(t, user, false)).ToList()
+                Children = source.Children?.Select(t => ToWire(guard, t, user, false)).ToList()
             };
             return wire;
         }
 
         //see DataDictionaryToWire
-        private static ColDefResponse ToWire(ColDef c, IUser user)
+        private static ColDefResponse ToWire(SecurityGuard guard, TableDef source, ColDef c, IUser user)
         {
             return new ColDefResponse
             {
+                PermissionLevel = (int)guard.FinalLevel(null, source.Name, c.Name),
                 AllowSort = c.AllowSort,
                 ForeignKeyDatonTypeName = c.ForeignKeyDatonTypeName,
                 LookupViewonTypeName = c.LookupViewonTypeName,

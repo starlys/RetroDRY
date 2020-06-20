@@ -1,6 +1,7 @@
 import React, {useState, useReducer} from 'react';
 import DisplayValue from './DisplayValue';
 import CardView from './CardView';
+import {securityUtil} from 'retrodry';
 
 //Displays all rows of a daton table in grid format
 //props.session is the session for obtaining layouts
@@ -44,13 +45,14 @@ export default props => {
     }
 
     const children = [];
-    const colSpan = colInfos.length + (edit ? 2 : 1);
+    const allowDelete = edit && securityUtil.canDeleteRow(tableDef);
+    const colSpan = colInfos.length + (allowDelete ? 2 : 1);
     for (let idx = 0; idx < rows.length; ++idx) {
         const row = rows[idx];
         if (expandRowIdx === idx) {
             children.push(
                 <tr key={idx} style={{height: '12px'}} onClick={() => clickRow(idx)}>
-                    {edit && <td style={{width: '1em'}} key="del"><button className="btn-delete-row" onClick={(ev) => deleteRow(ev, idx)}>X</button></td>}
+                    {allowDelete && <td style={{width: '1em'}} key="del"><button className="btn-delete-row" onClick={(ev) => deleteRow(ev, idx)}>X</button></td>}
                     <td colSpan={colSpan - 1}></td>
                 </tr>
             );
@@ -63,7 +65,7 @@ export default props => {
         } else
             children.push(
                 <tr key={idx} onClick={() => clickRow(idx)}>
-                    {edit && <td style={{width: '1em'}} key="del"><button className="btn-delete-row" onClick={(ev) => deleteRow(ev, idx)}>X</button></td>}
+                    {allowDelete && <td style={{width: '1em'}} key="del"><button className="btn-delete-row" onClick={(ev) => deleteRow(ev, idx)}>X</button></td>}
                     {colInfos.map((ci, idx2) => {
                         const outValue = <DisplayValue session={session} colDef={ci.colDef} row={row} />;
                         let cellContent = outValue;
@@ -96,7 +98,7 @@ export default props => {
                     </table>
                 </>
             }
-            {edit && 
+            {(edit && securityUtil.canCreateRow(tableDef)) &&
                 <div>
                     <button onClick={addRow}> + {tableDef.prompt} </button>
                 </div>

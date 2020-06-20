@@ -56,7 +56,6 @@ namespace RetroDRY
     public class MainResponse : RetroResponse
     {
         public DataDictionaryResponse DataDictionary { get; set; }
-        public PermissionResponse PermissionSet { get; set; }
         public CondensedDatonResponse[] CondensedDatons { get; set; }
         public ManageDatonResponse[] ManageDatons { get; set; }
 
@@ -70,7 +69,7 @@ namespace RetroDRY
 
     public class LongResponse : RetroResponse
     {
-        public PermissionResponse PermissionSet { get; set; }
+        public DataDictionaryResponse DataDictionary { get; set; }
         public CondensedDatonResponse[] CondensedDatons { get; set; }
     }
 
@@ -104,6 +103,11 @@ namespace RetroDRY
         public string Name { get; set; }
 
         /// <summary>
+        /// Level for this user; values based on PermissionLevel enum
+        /// </summary>
+        public int PermissionLevel { get; set; }
+
+        /// <summary>
         /// Columns in table that map to fields in a Row object
         /// </summary>
         public List<ColDefResponse> Cols { get; set; }
@@ -132,6 +136,11 @@ namespace RetroDRY
         /// column name
         /// </summary>
         public string Name { get; set; }
+
+        /// <summary>
+        /// Level for this user; values based on PermissionLevel enum
+        /// </summary>
+        public int PermissionLevel { get; set; }
 
         /// <summary>
         /// type name (such as bool, string, int32, byte[], datetime, etc
@@ -224,40 +233,6 @@ namespace RetroDRY
         /// The column name in the same row whose value will be set to the URL of the image
         /// </summary>
         public string ImageUrlColumName { get; set; }
-    }
-
-    public class PermissionResponse
-    {
-        /// <summary>
-        /// also see DetailPermissionResponse; this is the base level for all datons/tables
-        /// </summary>
-        public int Level { get; set; }
-
-        /// <summary>
-        /// table overrides
-        /// </summary>
-        public List<DetailPermisionResponse> Overrides;
-    }
-
-    /// <summary>
-    /// Class serves as table and column level in the response
-    /// </summary>
-    public class DetailPermisionResponse
-    {
-        /// <summary>
-        /// The name of the table or column
-        /// </summary>
-        public string Name { get; set; }
-
-        /// <summary>
-        /// defined by the enum PermissionLevel, which can be ORd together
-        /// </summary>
-        public int Level { get; set; }
-
-        /// <summary>
-        /// For tables, this lists the column overrides (not used for columns)
-        /// </summary>
-        public List<DetailPermisionResponse> Overrides;
     }
 
     [JsonConverter(typeof(Retrovert.CondensedDatonResponseConverter))]

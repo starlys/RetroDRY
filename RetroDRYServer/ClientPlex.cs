@@ -46,7 +46,7 @@ namespace RetroDRY
         public class PushGroup
         {
             public Daton[] Datons;
-            public bool IncludePermissions;
+            public bool IncludeDataDictionary;
         }
 
         /// <summary>
@@ -159,7 +159,7 @@ namespace RetroDRY
                 return new PushGroup
                 {
                     Datons = datons,
-                    IncludePermissions = includePermissions
+                    IncludeDataDictionary = includePermissions
                 };
             }
             return null;

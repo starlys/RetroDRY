@@ -3,6 +3,7 @@ import DisplayValue from './DisplayValue';
 import CardView from './CardView';
 import GridView from './GridView';
 import EditValue from './EditValue';
+import {securityUtil} from 'retrodry';
 
 //get width in em units for a colDef
 //forcedWidth is optional string width specified in layout; if missing it uses the colun type and length
@@ -55,28 +56,31 @@ export default props => {
         //if item is one or more colum names, set child to the prompt and display value(s)
         if (typeof item === 'string') {
             const colNamesAndWidths = item.split(' ');
-            const colDefs = []; //members are {colDef, emw, width} where emw is numeric width is in em units, and width is css string
+            const colInfos = []; //members are {colDef, emw, width} where emw is numeric width is in em units, and width is css string
             for (let colNameAndWidth of colNamesAndWidths) {
                 let [colName, width] = colNameAndWidth.split(':'); //width can be missing
                 const colDef = tableDef.cols.find(c => c.name === colName);
                 if (colDef) {
                     width = widthByType(colDef, width);
                     totalWidth += width;
-                    colDefs.push({colDef: colDef, emw: width});
+                    colInfos.push({colDef: colDef, emw: width});
                 }
             }
-            for (let c of colDefs) c.width = ((c.emw / totalWidth) * 100) + '%';
-            if (colDefs.length) {
-                let cells;
-                if (isCriteria || edit)
-                    cells = colDefs.map((c, idx2) => <EditValue key={idx2} tableDef={tableDef} colDef={c.colDef} isCriterion={isCriteria}
-                        row={row || criset} width={c.width} session={session} layer={layer} onChanged={incrementCardRenderCount}/>);
-                else //display row
-                    cells = colDefs.map((c, idx2) => <DisplayValue key={idx2} session={session} colDef={c.colDef} row={row} width={c.width} />);
+            for (let c of colInfos) c.width = ((c.emw / totalWidth) * 100) + '%';
+            if (colInfos.length) {
+                let cells = [];
+                for (let idx2 = 0; idx2 < colInfos.length; ++idx2) {
+                    const c = colInfos[idx2];
+                    if (isCriteria || (edit && securityUtil.canEditColDef(c.colDef)))
+                        cells.push(<EditValue key={idx2} tableDef={tableDef} colDef={c.colDef} isCriterion={isCriteria}
+                            row={row || criset} width={c.width} session={session} layer={layer} onChanged={incrementCardRenderCount}/>);
+                    else
+                        cells.push(<DisplayValue key={idx2} session={session} colDef={c.colDef} row={row || criset} width={c.width} />);
+                }
                 child = <>
-                        <span className="card-label">{colDefs[0].colDef.prompt}</span>
-                        {cells}
-                    </>;
+                    <span className="card-label">{colInfos[0].colDef.prompt}</span>
+                    {cells}
+                </>;
             }
         } 
         
