@@ -194,9 +194,9 @@ namespace UnitTest
             Assert.AreEqual("987654321.9", Retrovert.FormatRawJsonValue(c, (decimal)987654321.9));
             Assert.AreEqual("\"Jasmine\"", Retrovert.FormatRawJsonValue(c, "Jasmine"));
             Assert.AreEqual("\"The \\\"IT\\\" Crowd\"", Retrovert.FormatRawJsonValue(c, "The \"IT\" Crowd"));
-            Assert.AreEqual("\"1999-12-31\"", Retrovert.FormatRawJsonValue(c, new DateTime(1999, 12, 31)));
+            Assert.AreEqual("\"19991231\"", Retrovert.FormatRawJsonValue(c, new DateTime(1999, 12, 31)));
             c.WireType = Constants.TYPE_DATETIME;
-            Assert.IsTrue(Retrovert.FormatRawJsonValue(c, new DateTime(1999, 12, 31, 23, 59, 59, DateTimeKind.Utc)).StartsWith("\"1999-12-31T23:59:59"));
+            Assert.AreEqual("\"199912312359\"", Retrovert.FormatRawJsonValue(c, new DateTime(1999, 12, 31, 23, 59, 59, DateTimeKind.Utc)));
         }
 
         [TestMethod]

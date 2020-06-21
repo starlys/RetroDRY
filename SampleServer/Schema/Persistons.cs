@@ -18,7 +18,7 @@ namespace SampleServer.Schema
         {
             [Key]
             [Prompt("ID")]
-            public short PhoneTypeId;
+            public short? PhoneTypeId;
 
             [StringLength(20), MainColumn, SortColumn]
             [Prompt("Phone type")]
@@ -39,7 +39,7 @@ namespace SampleServer.Schema
         {
             [Key]
             [Prompt("ID")]
-            public short StatusId;
+            public short? StatusId;
 
             [StringLength(20, MinimumLength = 1), MainColumn, SortColumn]
             [Prompt("Sale status")]

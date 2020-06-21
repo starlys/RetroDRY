@@ -83,19 +83,21 @@ export default props => {
             {rows.length > 0 && 
                 <>
                     <div className="grid-banner">{tableDef.prompt}</div>
-                    <table className="grid">
-                        <thead>
-                            <tr>
-                                {edit && <th></th>}
-                                {colInfos.map((ci, idx) => 
-                                    <th key={idx} style={{width: ci.width + 'em'}}>{ci.colDef.prompt}</th>
-                                )}
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {children}
-                        </tbody>
-                    </table>
+                    <div className="grid-wrap">
+                        <table className="grid">
+                            <thead>
+                                <tr>
+                                    {edit && <th></th>}
+                                    {colInfos.map((ci, idx) => 
+                                        <th key={idx} style={{width: ci.width + 'em'}}>{ci.colDef.prompt}</th>
+                                    )}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {children}
+                            </tbody>
+                        </table>
+                    </div>
                 </>
             }
             {(edit && securityUtil.canCreateRow(tableDef)) &&

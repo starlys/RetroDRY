@@ -106,6 +106,10 @@ select {
   box-sizing: border-box;
   text-decoration: inherit;
 }
+.daton .grid-wrap {
+  max-height: 40em;
+  overflow-y: auto;
+}
 .daton .grid {
   border-collapse: collapse;
 }
@@ -156,8 +160,11 @@ select {
 .daton .criterion {
   width: 5em;
 }
-.daton .criterion.number {
+.daton input.criterion.number {
   width: 3em;
+}
+.daton input.date {
+  width: 10em;
 }
 .daton .btn-lookup {
   position: absolute;

@@ -123,7 +123,7 @@ namespace SampleServer.Schema
             [ForeignKey(typeof(Customer))]
             public int CustomerId;
 
-            [SortColumn]
+            [SortColumn, WireType(Constants.TYPE_DATETIME)]
             public DateTime SaleDate;
 
             [ForeignKey(typeof(SaleStatusLookup))]

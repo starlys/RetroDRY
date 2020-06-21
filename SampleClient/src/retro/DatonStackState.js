@@ -126,6 +126,7 @@ export default class DatonStackState {
         //fall through to here, so open the persiston referred to by the clicked key value
         const targetDatonKey = gridColDef.foreignKeyDatonTypeName + '|=' + gridRow[gridColDef.name];
         const editLayer = await this.add(targetDatonKey, false);
+        if (!editLayer) return;
 
         //set up behavior for changes saved on edit layer to show up in the calling viewon
         editLayer.propagateSaveToViewon = (persiston) => {

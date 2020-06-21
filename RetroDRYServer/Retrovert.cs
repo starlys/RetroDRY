@@ -146,9 +146,42 @@ namespace RetroDRY
 
             //exception types
             if (toType == typeof(byte[])) return Convert.FromBase64String(node.ToObject<string>());
+            if (toType == typeof(DateTime))
+            {
+                string s = node.ToObject<string>();
+                return ParseRetroDateTime(s, false);
+            }
+            if (toType == typeof(DateTime?))
+            {
+                string s = node.ToObject<string>();
+                if (string.IsNullOrEmpty(s)) return null;
+                return ParseRetroDateTime(s, false);
+            }
 
             //all other types supported by json library
             return node.ToObject(toType);
+        }
+
+        /// <summary>
+        /// Given a packed date (8 chars) or datetime (12 chars), convert to a UTC DateTime instance or throw exception
+        /// </summary>
+        /// <param name="isDateOnly">if false, it will interpret 8- or 12-char inputs; if true it will ignore any time portion</param>
+        public static DateTime ParseRetroDateTime(string s, bool isDateOnly)
+        {
+            try
+            {
+                int yr = int.Parse(s.Substring(0, 4));
+                int mo = int.Parse(s.Substring(4, 2));
+                int da = int.Parse(s.Substring(6, 2));
+                if (isDateOnly || s.Length == 8) return new DateTime(yr, mo, da, 0, 0, 0, DateTimeKind.Utc);
+                int hr = int.Parse(s.Substring(8, 2));
+                int mi = int.Parse(s.Substring(10, 2));
+                return new DateTime(yr, mo, da, hr, mi, 0, DateTimeKind.Utc);
+            }
+            catch
+            {
+                throw new Exception($"Datetime criterion {s} is misformatted; expected YYYYMMDD or YYYYMMDDHHMM");
+            }
         }
 
         /// <summary>
@@ -157,7 +190,6 @@ namespace RetroDRY
         /// <param name="value">any supported value or null</param>
         public static string FormatRawJsonValue(ColDef coldef, object value) 
         {
-            //string jsonQuote(string s) => QUOTE + s.ToString().Replace(@"""", @"""""") + QUOTE;
             string jsonQuote(string s) => JsonConvert.ToString(s);
 
             //null
@@ -181,8 +213,8 @@ namespace RetroDRY
             if(value is DateTime vdate)
             {
                 if (coldef.WireType == Constants.TYPE_DATE || coldef.WireType == Constants.TYPE_NDATE) 
-                    return jsonQuote(vdate.Date.ToString("yyyy-MM-dd"));
-                else return jsonQuote(vdate.ToString("O"));
+                    return jsonQuote(vdate.Date.ToString("yyyyMMdd"));
+                else return jsonQuote(vdate.ToString("yyyyMMddHHmm"));
             }
 
             //byte[]

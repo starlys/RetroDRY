@@ -1,6 +1,8 @@
 import React, {useState} from 'react';
 import EditorPopupError from './EditorPopupError';
-import {splitOnTilde, getInvalidMemberName, processNumberEntry, processNumberRangeEntry, processStringEntry, getBaseType, isNumericBaseType} from 'retrodry';
+import {splitOnTilde, getInvalidMemberName, processNumberEntry, processNumberRangeEntry, processStringEntry, 
+    processDateTimeEntry, inputDateToWire, inputDateTimeToWire, wireDateToInput, wireDateTimeToDateTimeInputs,
+    getBaseType, isNumericBaseType} from 'retrodry';
 
 //Get the columns to be shown in a dropdown 
 function getDropdownColumns(tableDef) {
@@ -12,12 +14,12 @@ function getDropdownColumns(tableDef) {
     return ret;
 }
 
-//modify row so the hi range is the same as the lo, if hi wasn't set
+//modify row so the hi range is the same as the lo, if hi wasn't set; example: changes '6~' to '6'
 function autoPopulateHiFromLo(row, colDef) {
     const value = row[colDef.name];
     if (!value) return;
     const i = value.indexOf('~');
-    if (i === value.length - 1) row[colDef.name] = value + value.substr(0, value.length - 1);
+    if (i === value.length - 1) row[colDef.name] = value.substr(0, value.length - 1);
 }
 
 //Show an editor for a single value of any type and maintains its value in row[colDef.name]; it also maintains
@@ -54,7 +56,7 @@ export default (props) => {
         row[colDef.name] = parseFloat(ev.target.value);
         props.onChanged();
     };
-    const numberRangeChanged = (lo, hi) => { //accepts string entries
+    const rangeChanged = (lo, hi) => { //accepts string entries; use for any range types
         let value = null;
         if (lo && hi) {
             if (lo === hi) value = lo;
@@ -73,7 +75,7 @@ export default (props) => {
         if (baseType === 'string') 
             stringChanged(ev);
         else if (isCriterion)
-            numberRangeChanged(ev.target.value, ev.target.value);
+            rangeChanged(ev.target.value, ev.target.value);
         else 
             numberChanged(ev);
     };
@@ -89,14 +91,18 @@ export default (props) => {
 
         //validate on tab-out if any change
         if (valueAtFocus !== row[colDef.name]) {
+            let processResult = null;
             if (isNumericBaseType(baseType)) {
                 if (isCriterion )
-                    await processNumberRangeEntry(session, props.tableDef, colDef, baseType, row, invalidMemberName).then(afterEntryProcessed);
+                    processResult = await processNumberRangeEntry(session, props.tableDef, colDef, baseType, row, invalidMemberName);
                 else 
-                    await processNumberEntry(session, props.tableDef, colDef, baseType, row, invalidMemberName).then(afterEntryProcessed);
+                    processResult = await processNumberEntry(session, props.tableDef, colDef, baseType, row, invalidMemberName);
             } else if (baseType === 'string') {
-                await processStringEntry(session, props.tableDef, colDef, row, invalidMemberName).then(afterEntryProcessed);
+                processResult = await processStringEntry(session, props.tableDef, colDef, row, invalidMemberName);
+            } else if (baseType === 'date' || baseType === 'datetime') {
+                processResult = await processDateTimeEntry(session, props.tableDef, colDef, row, invalidMemberName);
             }
+            if (processResult) afterEntryProcessed(processResult);
         }
     };
     const startLookup = () => {
@@ -147,10 +153,10 @@ export default (props) => {
         if (isCriterion) {
             const loHi = splitOnTilde(row[colDef.name] || '');
             const loNumberChanged = (ev) => {
-                numberRangeChanged(ev.target.value, loHi[1]);
+                rangeChanged(ev.target.value, loHi[1]);
             };
             const hiNumberChanged = (ev) => {
-                numberRangeChanged(loHi[0], ev.target.value);
+                rangeChanged(loHi[0], ev.target.value);
             };
             inputCtrl = <>
                 <input className="criterion number" type="number" value={loHi[0] || ''} onChange={loNumberChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(true)}/> - &nbsp;
@@ -170,11 +176,67 @@ export default (props) => {
             inputCtrl = <input value={row[colDef.name] || ''} onChange={stringChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)} />;
         }
     }
-    else if (baseType === 'date') { //todo
-        inputCtrl = <input value={row[colDef.name] || ''} onChange={stringChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>;
+    else if (baseType === 'date') { 
+        if (isCriterion) {
+            const loHi = splitOnTilde(row[colDef.name] || '');
+            const loDateChanged = (ev) => {
+                rangeChanged(inputDateToWire(ev.target.value), loHi[1]);
+            };
+            const hiDateChanged = (ev) => {
+                rangeChanged(loHi[0], inputDateToWire(ev.target.value));
+            };
+            inputCtrl = <>
+                <input className="criterion date" type="date" value={wireDateToInput(loHi[0])} onChange={loDateChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(true)}/> - &nbsp;
+                <input className="criterion date" type="date" value={wireDateToInput(loHi[1])} onChange={hiDateChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>
+            </>;
+        }
+        else {
+            const dateChanged = (ev) => {
+                row[colDef.name] = inputDateToWire(ev.target.value);
+                props.onChanged();
+            };
+            inputCtrl = <input type="date" value={wireDateToInput(row[colDef.name])} onChange={dateChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>;
+        }
     }
-    else if (baseType === 'datetime') { //todo
-        inputCtrl = <input value={row[colDef.name] || ''} onChange={stringChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>;
+    else if (baseType === 'datetime') { 
+        if (isCriterion) {
+            const loHi = splitOnTilde(row[colDef.name] || '');
+            const [valLoDate, valLoTime] = wireDateTimeToDateTimeInputs(session, loHi[0]);
+            const [valHiDate, valHiTime] = wireDateTimeToDateTimeInputs(session, loHi[1]);
+            const loDateChanged = (ev) => {
+                rangeChanged(inputDateTimeToWire(session, ev.target.value, valLoTime), loHi[1]);
+            };
+            const loTimeChanged = (ev) => {
+                rangeChanged(inputDateTimeToWire(session, valLoDate, ev.target.value), loHi[1]);
+            };
+            const hiDateChanged = (ev) => {
+                rangeChanged(loHi[0], inputDateTimeToWire(session, ev.target.value, valHiTime));
+            };
+            const hiTimeChanged = (ev) => {
+                rangeChanged(loHi[0], inputDateTimeToWire(session, valHiDate, ev.target.value));
+            };
+            inputCtrl = <>
+                <input className="criterion date" type="date" value={valLoDate} onChange={loDateChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>
+                <input className="criterion date" type="time" value={valLoTime} onChange={loTimeChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(true)}/> - &nbsp;
+                <input className="criterion date" type="date" value={valHiDate} onChange={hiDateChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>
+                <input className="criterion date" type="time" value={valHiTime} onChange={hiTimeChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>
+            </>;
+        }
+        else {
+            const [valDate, valTime] = wireDateTimeToDateTimeInputs(session, row[colDef.name]);
+            const dateChanged = (ev) => {
+                row[colDef.name] = inputDateTimeToWire(session, ev.target.value, valTime);
+                props.onChanged();
+            };
+            const timeChanged = (ev) => {
+                row[colDef.name] = inputDateTimeToWire(session, valDate, ev.target.value);
+                props.onChanged();
+            };
+            inputCtrl = <>
+                <input className="date" type="date" value={valDate} onChange={dateChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>
+                <input className="date" type="time" value={valTime} onChange={timeChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>
+            </>;
+        }
     }
 
     return (

@@ -54,12 +54,12 @@ namespace RetroDRY
                 (string lo, string hi) = SplitOnTilde(PackedValue);
                 if (lo != null)
                 {
-                    var dlo = ParseDateTimeCriterion(lo, isDateOnly); 
+                    var dlo = Retrovert.ParseRetroDateTime(lo, isDateOnly); 
                     w.AddWhere($"{ColDef.Name}>={w.NextParameterName()}", dlo);
                 }
                 if (hi != null)
                 {
-                    var dhi = ParseDateTimeCriterion(hi, isDateOnly);
+                    var dhi = Retrovert.ParseRetroDateTime(hi, isDateOnly);
                     w.AddWhere($"{ColDef.Name}<={w.NextParameterName()}", dhi);
                 }
             }
@@ -94,27 +94,6 @@ namespace RetroDRY
             if (lo.Length == 0) lo = null;
             if (hi.Length == 0) hi = null;
             return (lo, hi);
-        }
-
-        /// <summary>
-        /// Given a packed criterion date or datetime, convert to a DateTIme instance or throw exception
-        /// </summary>
-        public static DateTime ParseDateTimeCriterion(string s, bool isDateOnly)
-        {
-            try
-            {
-                int yr = int.Parse(s.Substring(0, 4));
-                int mo = int.Parse(s.Substring(4, 2));
-                int da = int.Parse(s.Substring(6, 2));
-                if (isDateOnly || s.Length == 8) return new DateTime(yr, mo, da, 0, 0, 0, DateTimeKind.Utc);
-                int hr = int.Parse(s.Substring(8, 2));
-                int mi = int.Parse(s.Substring(10, 2));
-                return new DateTime(yr, mo, da, hr, mi, 0, DateTimeKind.Utc);
-            }
-            catch
-            {
-                throw new Exception($"Datetime criterion {s} is misformatted; expected YYYYMMDD or YYYYMMDDHHMM");
-            }
         }
     }
 }

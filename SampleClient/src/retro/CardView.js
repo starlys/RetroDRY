@@ -14,6 +14,7 @@ function widthByType(colDef, forcedWidth) {
     } 
     if (colDef.wireType === 'string' || colDef.wireType === 'nstring') return Math.max(8, Math.min(50, 0.8 * (colDef.maxLength || 50)))
     if (colDef.wireType === 'bool' || colDef.wireType === 'nbool') return 3;
+    if (colDef.wireType.indexOf('datetime') >= 0) return 20;
     if (colDef.wireType.indexOf('date') >= 0) return 12;
     return 6;
 }
