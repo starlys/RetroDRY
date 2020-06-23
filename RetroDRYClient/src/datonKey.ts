@@ -24,6 +24,10 @@ function parseSegments(s: string) {
     return segments;
 }
 
+function caseInsensitiveComparer(a:any, b:any) {
+    return a.localeCompare(b, undefined, {sensitivity: 'base'});
+}
+
 //A parsed daton key string
 export default class DatonKey {
     //type name (the first pipe-delimited segment)
@@ -41,7 +45,7 @@ export default class DatonKey {
     toKeyString(): string {
         let ret = this.typeName;
         if (this.otherSegments && this.otherSegments.length) {
-            this.otherSegments.sort();
+            this.otherSegments.sort(caseInsensitiveComparer);
             ret += '|' + this.otherSegments.map(this.escapeSegment).join('|');
         }
         return ret;

@@ -131,6 +131,14 @@ select {
 .daton .grid-fk:hover {
   text-decoration: underline;
 }
+.daton .page-select-panel {
+  text-align: center;
+  padding: 2px 0;
+  background-color: #eee;
+}
+.daton .page-select-panel button.current {
+  background-color: lightyellow;
+}
 .daton td.card-in-grid {
   background-color: inherit;
   border-left: solid 2px gray;

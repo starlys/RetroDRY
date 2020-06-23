@@ -125,11 +125,22 @@ export default class DatonStackState {
         //incompletely loaded viewons must sort on server
         else {
             const keyWithSort = parseDatonKey(layer.datonKey);
-            const sortSegIdx = keyWithSort.otherSegments.findIndex(s => s.indexOf('_sort=') === 0);
+            const pageSegIdx = keyWithSort.otherSegments.findIndex(s => s.indexOf('_page=') === 0);
+            if (pageSegIdx >= 0) keyWithSort.otherSegments.splice(pageSegIdx, 1);
+                const sortSegIdx = keyWithSort.otherSegments.findIndex(s => s.indexOf('_sort=') === 0);
             if (sortSegIdx >= 0) keyWithSort.otherSegments.splice(sortSegIdx, 1);
             keyWithSort.otherSegments.push('_sort=' + colName);
             await this.replaceKey(layer.datonKey, keyWithSort.toKeyString(), false);
         }
+    }
+
+    //called when a page button clicked on main viewon table
+    async goToPage(layer, pageNo) {
+        const keyWithPage = parseDatonKey(layer.datonKey);
+        const pageSegIdx = keyWithPage.otherSegments.findIndex(s => s.indexOf('_page=') === 0);
+        if (pageSegIdx >= 0) keyWithPage.otherSegments.splice(pageSegIdx, 1);
+        if (pageNo) keyWithPage.otherSegments.push('_page=' + pageNo);
+        await this.replaceKey(layer.datonKey, keyWithPage.toKeyString(), false);
     }
 
     //called from click event on a foreign key in a grid

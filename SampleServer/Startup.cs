@@ -91,6 +91,7 @@ namespace SampleServer
             ddict.FinalizeInheritance();
             Globals.Retroverse?.Dispose();
             Globals.Retroverse = new Retroverse(SqlFlavorizer.VendorKind.PostgreSQL, ddict, dbResolver, integrationTestMode: integrationTestMode);
+            Globals.Retroverse.ViewonPageSize = 50; 
 
             //error reporting; In a real app you would send this to your logging destinations
             Globals.Retroverse.Diagnostics.ReportClientCallError = msg => Console.WriteLine(msg);

@@ -111,7 +111,8 @@ export default class Session {
     //create a valid empty viewon locally (use this for seeding a searchable viewon for display without loading all rows)
     createEmptyViewon(datonType: string): any {
         return {
-            key: datonType
+            key: datonType,
+            isComplete: true
         };
     }
 
