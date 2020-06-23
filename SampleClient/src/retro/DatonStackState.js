@@ -112,6 +112,26 @@ export default class DatonStackState {
         this.callOnChanged();
     }
 
+    //called when column header clicked on main viewon table
+    async doSort(layer, colName) {
+        //if we can sort in memory, do that
+        if (layer.daton.isComplete) {
+            const rows = layer.daton[layer.datonDef.mainTableDef.name];
+            rows.sort((a, b) => a[colName] === b[colName] ? 0 : (a[colName] < b[colName] ? -1 : +1));
+            ++layer.renderCount;
+            this.callOnChanged();
+        }
+
+        //incompletely loaded viewons must sort on server
+        else {
+            const keyWithSort = parseDatonKey(layer.datonKey);
+            const sortSegIdx = keyWithSort.otherSegments.findIndex(s => s.indexOf('_sort=') === 0);
+            if (sortSegIdx >= 0) keyWithSort.otherSegments.splice(sortSegIdx, 1);
+            keyWithSort.otherSegments.push('_sort=' + colName);
+            await this.replaceKey(layer.datonKey, keyWithSort.toKeyString(), false);
+        }
+    }
+
     //called from click event on a foreign key in a grid
     async gridKeyClicked(ev, gridLayer, gridTableDef, gridRow, gridColDef) {
         ev.stopPropagation();

@@ -116,6 +116,12 @@ select {
 .daton .grid th {
   color: silver;
 }
+.daton .grid-sortable {
+  cursor: pointer;
+}
+.daton .grid-sortable:hover {
+  text-decoration: underline;
+}
 .daton .grid td {
   margin: 0;
   border: solid silver 1px;

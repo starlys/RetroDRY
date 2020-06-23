@@ -46,7 +46,7 @@ export default (props) => {
                 {(editState === 2 && isDeleteConfirming) && <>
                     <span>Really delete {title}?</span>
                     <button className="btn-delete-row" onClick={props.deleteClicked}>Delete</button>
-                    <button onClick={deleteCanceled}>Cancel</button>
+                    <button onClick={deleteCanceled}>Keep</button>
                 </>}
             </div>
             {editState !== 2 && <button onClick={props.removeClicked}> X </button>}
@@ -54,7 +54,7 @@ export default (props) => {
             {editState === -1 && <button>Working...</button>}
             {editState === 1 && <button onClick={props.editClicked}>Edit</button>}
             {editState === 2 && <button onClick={props.saveClicked}>Save</button>}
-            {editState === 2 && <button onClick={props.cancelClicked}>Cancel</button>}
+            {editState === 2 && <button onClick={props.cancelClicked}>Cancel Edits</button>}
         </div>
     );
 

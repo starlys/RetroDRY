@@ -21,7 +21,7 @@ namespace RetroDRY
         /// <summary>
         /// Clone all fields and child tables declared in datondef
         /// </summary>
-        public Daton Clone(DatonDef datondef)
+        public virtual Daton Clone(DatonDef datondef)
         {
             if (datondef.MultipleMainRows)
             {

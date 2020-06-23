@@ -15,7 +15,7 @@ namespace SampleServer.Schema
         [InheritFrom("Employee")]
         public class TopRow : Row
         {
-            [Key, ForeignKey(typeof(Employee))]
+            [Key, ForeignKey(typeof(Employee)), SortColumn(false)]
             public int EmployeeId;
 
             [SortColumn(false)]
@@ -50,10 +50,10 @@ namespace SampleServer.Schema
         [InheritFrom("Customer")]
         public class TopRow : Row
         {
-            [Key, ForeignKey(typeof(Customer))]
+            [Key, ForeignKey(typeof(Customer)), SortColumn(false)]
             public int CustomerId;
 
-            [SortColumn]
+            [SortColumn(true)]
             public string Company;
 
             [ForeignKey(typeof(Employee))]
@@ -90,9 +90,10 @@ namespace SampleServer.Schema
             [Key, ForeignKey(typeof(Item))]
             public int ItemId;
 
-            [SortColumn]
+            [SortColumn(true)]
             public string ItemCode;
 
+            [SortColumn(false)]
             public string Description;
         }
 
@@ -126,7 +127,7 @@ namespace SampleServer.Schema
             [SortColumn, WireType(Constants.TYPE_DATETIME)]
             public DateTime SaleDate;
 
-            [ForeignKey(typeof(SaleStatusLookup))]
+            [ForeignKey(typeof(SaleStatusLookup)), SortColumn(false)]
             public short Status;
         }
 

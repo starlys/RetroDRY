@@ -6,10 +6,11 @@ import {securityUtil} from 'retrodry';
 //Displays all rows of a daton table in grid format
 //props.session is the session for obtaining layouts
 //props.rows is an array of daton table rows
-//props.datonDef is the DatonDefResponse (metadat for whole daton)
+//props.datonDef is the DatonDefResponse (metadata for whole daton)
 //props.tableDef is the TableDefResponse which is the metadata for props.rows
 //props.edit is true to allow editing of child cards and deleting rows
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
+//props.sortClicked is falsy if sorting is not allowed here, or a function taking the column name
 export default props => {
     const {rows, datonDef, tableDef, edit, session, layer} = props;
     const [expandRowIdx, setExpandRowIdx] = useState(-1);
@@ -23,12 +24,13 @@ export default props => {
         setGridLayout(localGridLayout);
     }
 
+    //build colInfos array from layout with properties: width, colDef
     const getColDef = (name) => tableDef.cols.find(c => c.name === name);
     const colInfos = localGridLayout.columns.map(gc => {
         return { width: gc.width, colDef: getColDef(gc.name) };
     });
 
-    //events
+    //event handlers
     const clickRow = (idx) => {
         if (idx === expandRowIdx) idx = -1;
         setExpandRowIdx(idx);
@@ -44,6 +46,7 @@ export default props => {
         incrementRenderCount();
     }
 
+    //build data rows
     const children = [];
     const allowDelete = edit && securityUtil.canDeleteRow(tableDef);
     const colSpan = colInfos.length + (allowDelete ? 2 : 1);
@@ -69,14 +72,24 @@ export default props => {
                     {colInfos.map((ci, idx2) => {
                         const outValue = <DisplayValue session={session} colDef={ci.colDef} row={row} />;
                         let cellContent = outValue;
-                        const isClickable = layer && ci.colDef.foreignKeyDatonTypeName; 
+                        const isClickable = layer && tableDef.primaryKeyColName === ci.colDef.name && ci.colDef.foreignKeyDatonTypeName; 
                         if (isClickable)
-                            cellContent = <span className="grid-fk" onClick={e => {layer.stackstate.gridKeyClicked(e, layer, tableDef, row, ci.colDef); setExpandRowIdx(-1);}}>{cellContent}</span>;
+                            cellContent = <span className="grid-fk" onClick={e => {layer.stackstate.gridKeyClicked(e, layer, tableDef, row, ci.colDef); setExpandRowIdx(-1);}}>
+                                ( {cellContent} )
+                            </span>;
                         return <td key={idx2}>{cellContent}</td>;
                     })}
                 </tr>
             );
     }
+
+    //build header cells
+    const colHeaders = colInfos.map((ci, idx) => {
+        let cellContent = ci.colDef.prompt;
+        const clickable = props.sortClicked && ci.colDef.allowSort;
+        if (clickable) cellContent = <span className="grid-sortable" onClick={() => props.sortClicked(ci.colDef.name)}>{cellContent}</span>;
+        return <th key={idx} style={{width: ci.width + 'em'}}>{cellContent}</th>;
+    });
 
     return (
         <>
@@ -88,9 +101,7 @@ export default props => {
                             <thead>
                                 <tr>
                                     {edit && <th></th>}
-                                    {colInfos.map((ci, idx) => 
-                                        <th key={idx} style={{width: ci.width + 'em'}}>{ci.colDef.prompt}</th>
-                                    )}
+                                    {colHeaders}
                                 </tr>
                             </thead>
                             <tbody>

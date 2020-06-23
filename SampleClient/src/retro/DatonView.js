@@ -217,7 +217,9 @@ export default React.memo(props => {
     } else { //grid
         if (datonDef.multipleMainRows) {
             const rt = TableRecurPointFromDaton(datonDef, daton); 
-            topContent = <GridView session={session} rows={rt.table} datonDef={datonDef} tableDef={datonDef.mainTableDef} edit={isEditing} layer={layer} />;
+            let sortHandler = null;
+            if (!datonDef.isPersiston && layer) sortHandler = colName => layer.stackstate.doSort(layer, colName);
+            topContent = <GridView session={session} rows={rt.table} datonDef={datonDef} tableDef={datonDef.mainTableDef} edit={isEditing} layer={layer} sortClicked={sortHandler} />;
         } else {
             topContent = null; //should not use grids with single main row
         }
