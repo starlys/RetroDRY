@@ -32,7 +32,7 @@ Touched | datetime | the UTC datetime when the row was last modified (which incl
 LockedBy | varchar(100), null | null if not locked; a server assigned session ID if locked
 UpdatedByServer | int, null | when locked for update and an update to the daton actually occurred, then this is set to a random number that identifies the server lifetime. If two servers happen to use the same number it isn't critical, but it allows servers to check the recent updates to datons made by other servers
 
---SQL statement for SQL Server:
+SQL create statement for SQL Server:
 
 ```sql
 create table RetroLock (
@@ -148,32 +148,32 @@ Defining the data model using annotated classes
 -   Example
 
 ```c#
-\[SqlTableName("Cust"), MainTable\]
+[SqlTableName("Cust"), MainTable]
 public class Customer : Persiston {
 
-    \[Key\]
+    [Key]
     public int? CompanyId
 
-    \[StringLength(200), Required, Prompt("Co. name")\]
+    [StringLength(200), Required, Prompt("Co. name")]
     public string Company;
 
-    \[ForeignKey("SalesRep")\]
+    [ForeignKey("SalesRep")]
     public int SalesRepId;
 
     public class ContactRow : Row{
-        \[Key\]
+        [Key]
         public int? ContactId;
 
-        \[ParentKey\]
+        [ParentKey]
         public int CompanyId;
 
-        \[StringLength(100), Required\]
+        [StringLength(100), Required]
         public string Name;
 
         public bool Primary;
     }
 
-    public List&lt;ContactRow&gt; Contact;
+    public List<ContactRow> Contact;
 }
 ```
 
@@ -187,7 +187,7 @@ Viewon declarations
     -   To do this, use InheritFrom annotation on the column, giving it the persiston class name, table names and column name. For columns in the main table, omit the table name.
     -   Examples:
 
-        -   \[InheritFrom("Customer.Company")\] //inherit from Company column in main table of Customer daton`
+        -   \[InheritFrom("Customer.Company")\] //inherit from Company column in main table of Customer daton
         -   \[InheritFrom("Customer.Contact.Name")\] //inherit from Name column in Contact table of Customer daton
         -   \[InheritFrom("Customer.Contact.Phone.PhoneNo")\] //inherit from PhoneNo column in Phone table (which is a child of Contact table) of Customer daton
     -   As a shortcut, use InheritFrom on the class that declares the row type, using just the name of the persiston as the argument; then if the member names match the persiston's main table's member names, they automatically inherit. Or for child tables, specify the persiston name and table name.
@@ -219,26 +219,26 @@ Viewon declarations
 ```c#
 public class CustomerList : Viewon {
 
-    \[InheritFrom("Customer"), MainTable\]
+    [InheritFrom("Customer"), MainTable]
     public class CustomerRow {
 
         public int CompanyId;
 
         public string Company;
 
-        \[InheritFrom("Customer.Contact.Name")\] //we will use some ticky SQL to load only the first primary contact name in the list of customers
+        [InheritFrom("Customer.Contact.Name")] //we will use some tricky SQL to load only the first primary contact name in the list of customers
         public string MainContactName;
     }
 
-    public List&lt;CustomerRow&gt; Customer; //field name matches database table name
+    public List<CustomerRow> Customer; //field name matches database table name
 
-    \[Criteria\]
+    [Criteria]
     public abstract class Cri {
 
-        \[InheritFrom("Customer.Company")\] //this ensures the prompt for searching by customer name matches the prompt defined in the persiston
+        [InheritFrom("Customer.Company")] //this ensures the prompt for searching by customer name matches the prompt defined in the persiston
         public string Company;
 
-        \[InheritFrom("Customer.SalesRepId")\]
+        [InheritFrom("Customer.SalesRepId")]
         public int? SalesRepId;
     }
 }
@@ -281,14 +281,14 @@ Foreign key details
 ```c#
 public class Customer : Persiston {
 
-    \[Key\]
+    [Key]
     public int CompanyId;
 
-    \[ForeignKey(typeof(Employee))\]
-    \[LookupBehavior(typeof(EmployeeList), KeyColumnName: "EmployeeId")\] //normally KeyColumnName can be omitted
+    [ForeignKey(typeof(Employee))]
+    [LookupBehavior(typeof(EmployeeList), KeyColumnName: "EmployeeId")] //normally KeyColumnName can be omitted
     public int SalesRepId;
 
-    \[LeftJoin("SalesRepId", "Name"), InheritFrom("'Employee.Name")\] //"SalesRepId" must be the name of some other field in this class
+    [LeftJoin("SalesRepId", "Name"), InheritFrom("'Employee.Name")] //"SalesRepId" must be the name of some other field in this class
     public string SalesRepName;
 }
 ```
@@ -298,24 +298,25 @@ public class Customer : Persiston {
 ```c#
 public class CustomerList : Viewon {
 
-    \[InheritFrom("Customer")\]
+    [InheritFrom("Customer")]
     public class CustomerRow {
 
-        \[Key\] //viewon main table keys should be defined as Key and ForeignKey
-        \[ForeignKey(typeof(Customer))\] //this links the viewon with its associated persiston
+        [Key] //viewon main table keys should be defined as Key and ForeignKey
+        [ForeignKey(typeof(Customer))] //this links the viewon with its associated persiston
         public int CompanyId;
 
         public string Company;
 
-        \[ForeignKey(typeof(SalesRep))\] //this can be omitted because CustomerRow inherits metadata from Customer persison
+        [ForeignKey(typeof(SalesRep))] //this can be omitted because CustomerRow inherits metadata from Customer persison
         public int SalesRepId;
 
-        \[LeftJoin("SalesRepId", "Name"), InheritFrom("'Employee.Name")\]
+        [LeftJoin("SalesRepId", "Name"), InheritFrom("'Employee.Name")]
         public string SalesRepName;
     }
 
-    public List&lt;CustomerRow&gt; Customer;
+    public List<CustomerRow> Customer;
 }
+```
 
 Computed column details
 -----------------------
@@ -415,11 +416,11 @@ tickerDate.SetPrompt("Tickler Date"); //set up other data dictionary info here
     -   Validators are async so you could potentially check with an outside system during validation.
     -   Example to set a persiston validator:
 
-        -   `dataDictionary.DatonDefs\["Customer"\].Validator = (cust) =&gt; { /\* customer validation here \*/ };`
+        -   `dataDictionary.DatonDefs\["Customer"\].Validator = (cust) => { /\* customer validation here \*/ };`
 
     -   Example to set up a viewon criteria validator (which is run before viewon loads):
 
-        -   `dataDictionary.DatonDefs\["CustomerList"\].Validator = (cri) =&gt; { /\* customer list criteria validation here \*/ };`
+        -   `dataDictionary.DatonDefs\["CustomerList"\].Validator = (cri) => { /\* customer list criteria validation here \*/ };`
 
 ### Default values
 

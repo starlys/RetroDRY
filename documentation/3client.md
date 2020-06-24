@@ -42,7 +42,7 @@ Initialization
 -   Example code
 
 ```javascript
-const serverList = \['app1.example.com', 'app2.example.com'\]; //hard coded or obtained from a json file
+const serverList = ['app1.example.com', 'app2.example.com']; //hard coded or obtained from a json file
 const sessionKey = await myAuthentication.attemptLogin(....); //replace this with your authentication scheme
 const ses = new Session();
 ses.sessionKey = sessionKey;
@@ -103,7 +103,7 @@ Managing the cache
 -   For larger apps, some management could be helpful for cutting down on memory usage.
 
     -   Suppose your app has some main areas: customer ordering, employees, and so on. If the user spends some time in the employee area, then goes to the customer area for the rest of the day, you might want to time out the employee-related cache after a while.
-    -   Use retrodry.ClearCache for this purpose, passing a function to determine whether to retain an item in cache. Any removed item will cause a removed subscription.
+    -   Use retrodry.ClearCache for this purpose, passing a function to determine whether to retain an item in cache. Any removed item will cause a removed subscription. (todo - this might not be coded)
 
 Using the daton stack
 ---------------------

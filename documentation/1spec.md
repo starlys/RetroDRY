@@ -276,23 +276,23 @@ Condensed daton wire format
             -   Name (string)
             -   Primary (bool)
 
--   JSON example with italic annotations
+-   JSON example with explanatory comments 
 
 ```javascript
 {
     "Key": "Customer-123",
     "Version": "hkj34jh2k3j42k4",
-    "Content": \[ *begin array of main rows*
-        \[ *begin row 0 (the single main customer row)*
-            "123 Enterprises", *values defined in the customer*
-            \[ *begin array of child contact rows*
-                \[ *begin contact row 0*
+    "Content": [ //begin array of main rows
+        [ //begin row 0 (the single main customer row)
+            "123 Enterprises", //values defined in the customer
+            [ //begin array of child contact rows
+                [ //begin contact row 0
                     "Alice",
                     true
-                \] *end contact row 0*
-            \]
-        \] *end customer row 0*
-    \] *end array of main rows*
+                ] //end contact row 0
+            ]
+        ] //end customer row 0
+    ] //end array of main rows
 }
 ```
 
@@ -318,17 +318,17 @@ Compatible daton wire format
 {
     "Key": "Customer-123",
     "Version": "hkj34jh2k3j42k4",
-    "Customer": \[
+    "Customer": [
         {
             "Company": "123 Enterprises",
-            "Contact": \[
+            "Contact": [
                 {
                     "Name": "Alice",
                     "Primary": true
                 }
-            \]
+            ]
         }
-    \]
+    ]
 }
 ```
 
