@@ -23,3 +23,8 @@ Multi-tier framework in C#/React for handling load/save data, replication across
   * Setup
   * Client application plumbing (layouts, daton stack)
   * Reference
+
+* [Documentation for Maintainting RetroDRY Packages](documentation/4retrodoc.md)
+  * Preparing workspace
+  * Change/rebuild/test cycle (running unit tests, integration tests)
+  * Distribution

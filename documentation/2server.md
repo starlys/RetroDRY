@@ -392,19 +392,20 @@ MyGlobals.DataDictionary = dataDictionary;
 
     -   Example to set prompts in a secondary language:
 
-        -   `dataDictionary.Daton\["Customer"\].Table\["Customer"\].Column\["SalesRepId"\].SetPrompt("de", "Vertriebsmitarbeiter");`
+        -   `dataDictionary.Daton["Customer"].Table["Customer"].Column["SalesRepId"].SetPrompt("de", "Vertriebsmitarbeiter");`
         -   (In practice you would design storage for all your language strings and loop through them to push them into the data dictionary, instead of line by line as in this example.)
     -   Example to set up a custom colum:
 
 ```c#
-var ticklerDate = dataDictionary.Daton\["Customer"\].Table\["Customer"\].AddCustomColumn("TicklerDate", typeof(DateTime));
+var ticklerDate = dataDictionary.Daton["Customer"].Table["Customer"].AddCustomColumn("TicklerDate", typeof(DateTime));
 tickerDate.SetPrompt("Tickler Date"); //set up other data dictionary info here
 ```
 
-        -   (In practice you would design storage for all your custom columns and loop through them to push them into the data dictionary, instead of line by line as in this example. Also see the data model section for how to make room in your database to store custom values.)
-    -   Example to override load and save:
+    -   (In practice you would design storage for all your custom columns and loop through them to push them into the data dictionary, instead of line by line as in this example. Also see the data model section for how to make room in your database to store custom values.) Example to override load and save:
 
-        -   `dataDictionary.Daton\["Customer"\].SqlOverride = new CustomerSql(); //CustomerSql is a class that overrides some or all SQL behavior`
+```c#
+dataDictionary.Daton["Customer"].SqlOverride = new CustomerSql(); //CustomerSql is a class that overrides some or all SQL behavior
+```
 
 -   When you are done setting up all the data dictionary details, call DataDictionary.FinalizeInheritance; this copies inherited metadata based on the InheritFrom annotation.
 
@@ -416,11 +417,11 @@ tickerDate.SetPrompt("Tickler Date"); //set up other data dictionary info here
     -   Validators are async so you could potentially check with an outside system during validation.
     -   Example to set a persiston validator:
 
-        -   `dataDictionary.DatonDefs\["Customer"\].Validator = (cust) => { /\* customer validation here \*/ };`
+        -   `dataDictionary.DatonDefs["Customer"].Validator = (cust) => { /* customer validation here */ };`
 
     -   Example to set up a viewon criteria validator (which is run before viewon loads):
 
-        -   `dataDictionary.DatonDefs\["CustomerList"\].Validator = (cri) => { /\* customer list criteria validation here \*/ };`
+        -   `dataDictionary.DatonDefs["CustomerList"].Validator = (cri) => { /* customer list criteria validation here */ };`
 
 ### Default values
 
