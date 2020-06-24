@@ -3,6 +3,22 @@ import { RowRecurPoint, TableRecurPoint, TableRecurPointFromDaton } from "./recu
 
 //utility for creating diffs 
 export default class DiffTool {
+    
+    //generate a diff for deletion of an entire single-main-row persiston
+    static generateDiffForDelete(datonDef: DatonDefResponse, daton: any) {
+        if (datonDef.multipleMainRows) throw new Error('Can only delete single-main-row persistons');
+        const diff: any = {
+            key: daton.key,
+            version: daton.version
+        };
+        const pkName = datonDef.mainTableDef.primaryKeyColName;
+        if (!pkName) throw new Error('Missing primary key');
+        const delDiff: any = {};
+        delDiff[pkName] = daton[pkName];
+        diff[datonDef.mainTableDef.name + '-deleted'] = [delDiff];
+        return diff;
+    }
+
     //generate a diff in the wire format required by the server by comparing the pristine and modified versions
     //of a daton; or return null if there are no changes;
     //if pristine is missing, creates diff of all values in modified (used for creating new persistons)

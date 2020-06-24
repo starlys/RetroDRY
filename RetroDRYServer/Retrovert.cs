@@ -17,8 +17,6 @@ namespace RetroDRY
     /// </summary>
     public static class Retrovert
     {
-        const char QUOTE = '"';
-
         /// <summary>
         /// JSON serializing conversion for preserving raw JSON
         /// </summary>
@@ -130,7 +128,7 @@ namespace RetroDRY
                 if (!mainDiffRow.Columns.ContainsKey(datondef.MainTableDef.PrimaryKeyColName))
                 {
                     var pkColdef = datondef.MainTableDef.FindCol(datondef.MainTableDef.PrimaryKeyColName);
-                    var pk = Convert.ChangeType(((PersistonKey)datonKey).PrimaryKey, pkColdef.CSType);
+                    var pk = Utils.ChangeType(((PersistonKey)datonKey).PrimaryKey, pkColdef.CSType);
                     mainDiffRow.Columns[datondef.MainTableDef.PrimaryKeyColName] = pk;
                 }
             }
@@ -148,9 +146,42 @@ namespace RetroDRY
 
             //exception types
             if (toType == typeof(byte[])) return Convert.FromBase64String(node.ToObject<string>());
+            if (toType == typeof(DateTime))
+            {
+                string s = node.ToObject<string>();
+                return ParseRetroDateTime(s, false);
+            }
+            if (toType == typeof(DateTime?))
+            {
+                string s = node.ToObject<string>();
+                if (string.IsNullOrEmpty(s)) return null;
+                return ParseRetroDateTime(s, false);
+            }
 
             //all other types supported by json library
             return node.ToObject(toType);
+        }
+
+        /// <summary>
+        /// Given a packed date (8 chars) or datetime (12 chars), convert to a UTC DateTime instance or throw exception
+        /// </summary>
+        /// <param name="isDateOnly">if false, it will interpret 8- or 12-char inputs; if true it will ignore any time portion</param>
+        public static DateTime ParseRetroDateTime(string s, bool isDateOnly)
+        {
+            try
+            {
+                int yr = int.Parse(s.Substring(0, 4));
+                int mo = int.Parse(s.Substring(4, 2));
+                int da = int.Parse(s.Substring(6, 2));
+                if (isDateOnly || s.Length == 8) return new DateTime(yr, mo, da, 0, 0, 0, DateTimeKind.Utc);
+                int hr = int.Parse(s.Substring(8, 2));
+                int mi = int.Parse(s.Substring(10, 2));
+                return new DateTime(yr, mo, da, hr, mi, 0, DateTimeKind.Utc);
+            }
+            catch
+            {
+                throw new Exception($"Datetime criterion {s} is misformatted; expected YYYYMMDD or YYYYMMDDHHMM");
+            }
         }
 
         /// <summary>
@@ -159,7 +190,6 @@ namespace RetroDRY
         /// <param name="value">any supported value or null</param>
         public static string FormatRawJsonValue(ColDef coldef, object value) 
         {
-            //string jsonQuote(string s) => QUOTE + s.ToString().Replace(@"""", @"""""") + QUOTE;
             string jsonQuote(string s) => JsonConvert.ToString(s);
 
             //null
@@ -183,8 +213,8 @@ namespace RetroDRY
             if(value is DateTime vdate)
             {
                 if (coldef.WireType == Constants.TYPE_DATE || coldef.WireType == Constants.TYPE_NDATE) 
-                    return jsonQuote(vdate.Date.ToString("yyyy-MM-dd"));
-                else return jsonQuote(vdate.ToString("O"));
+                    return jsonQuote(vdate.Date.ToString("yyyyMMdd"));
+                else return jsonQuote(vdate.ToString("yyyyMMddHHmm"));
             }
 
             //byte[]
@@ -215,7 +245,7 @@ namespace RetroDRY
                     //if the client omits -1 primary key value on new rows, add it here; the save logic needs it but it is redundant from the client perspective
                     if (fillInMissingNegativeKey && !target.Columns.ContainsKey(tableDef.PrimaryKeyColName))
                     {
-                        var newRowPK = Convert.ChangeType(-1, tableDef.FindCol(tableDef.PrimaryKeyColName).CSType);
+                        var newRowPK = Utils.ChangeType(-1, tableDef.FindCol(tableDef.PrimaryKeyColName).CSType);
                         target.Columns[tableDef.PrimaryKeyColName] = newRowPK;
                     }
                 }
@@ -384,51 +414,11 @@ namespace RetroDRY
         }
 
         /// <summary>
-        /// Convert the serializable portions of a user's permission set to a wire-ready structure. Injected functions are ignored here.
-        /// </summary>
-        /// <returns>null if none defined</returns>
-        public static PermissionResponse PermissionsToWire(IUser user)
-        {
-            if (user.Roles == null) return null;
-
-            var wholeW = new PermissionResponse();
-            var tableWDict = new Dictionary<string, DetailPermisionResponse>(); //table level permissions indexed by table name
-            foreach (var role in user.Roles)
-            {
-                wholeW.Level |= (int)role.BaseLevel;
-                if (role.TableOverrides != null) {
-                    foreach (var table in role.TableOverrides)
-                    {
-                        if (!tableWDict.TryGetValue(table.TableName, out var tableW))
-                        {
-                            tableW = new DetailPermisionResponse() { Name = table.TableName };
-                            tableWDict[table.TableName] = tableW;
-                        }
-                        tableW.Level |= (int)table.BaseLevel;
-                        if (table.ColumnOverrides != null)
-                        {
-                            if (tableW.Overrides == null) tableW.Overrides = new List<DetailPermisionResponse>();
-                            foreach (var col in table.ColumnOverrides)
-                            {
-                                var existing = tableW.Overrides.FirstOrDefault(x => x.Name == col.ColumnName);
-                                if (existing == null)
-                                    tableW.Overrides.Add(new DetailPermisionResponse { Name = col.ColumnName, Level = (int)col.BaseLevel });
-                                else
-                                    existing.Level |= (int)col.BaseLevel;
-                            }
-                        }
-                    }
-                }
-            }
-            wholeW.Overrides = tableWDict.Values.ToList();
-            return wholeW;
-        }
-
-        /// <summary>
         /// Convert the serializable portions of a data dictionary to a wire-ready structure.
         /// </summary>
         public static DataDictionaryResponse DataDictionaryToWire(DataDictionary ddict, IUser user)
         {
+            var guard = new SecurityGuard(ddict, user);
             var datonWires = new List<DatonDefResponse>();
             foreach (var name in ddict.DatonDefs.Keys)
             {
@@ -437,8 +427,8 @@ namespace RetroDRY
                 {
                     Name = name,
                     IsPersiston = typeof(Persiston).IsAssignableFrom(datondef.Type),
-                    CriteriaDef = ToWire(datondef.CriteriaDef, user),
-                    MainTableDef = ToWire(datondef.MainTableDef, user),
+                    CriteriaDef = ToWire(guard, datondef.CriteriaDef, user, true),
+                    MainTableDef = ToWire(guard, datondef.MainTableDef, user, false),
                     MultipleMainRows = datondef.MultipleMainRows
                 });
             }
@@ -449,25 +439,28 @@ namespace RetroDRY
         }
 
         //see DataDictionaryToWire
-        private static TableDefResponse ToWire(TableDef source, IUser user)
+        private static TableDefResponse ToWire(SecurityGuard guard, TableDef source, IUser user, bool isCriteria)
         {
             if (source == null) return null;
             var wire = new TableDefResponse()
             {
                 Name = CamelCasify(source.Name),
-                Cols = source.Cols.Select(c => ToWire(c, user)).ToList(),
+                PermissionLevel = (int)guard.FinalLevel(null, source.Name, null),
+                Cols = source.Cols.Select(c => ToWire(guard, source, c, user)).ToList(),
                 PrimaryKeyColName = CamelCasify(source.PrimaryKeyColName),
                 Prompt = DataDictionary.ResolvePrompt(source.Prompt, user, source.Name),
-                Children = source.Children?.Select(t => ToWire(t, user)).ToList()
+                IsCriteria = isCriteria,
+                Children = source.Children?.Select(t => ToWire(guard, t, user, false)).ToList()
             };
             return wire;
         }
 
         //see DataDictionaryToWire
-        private static ColDefResponse ToWire(ColDef c, IUser user)
+        private static ColDefResponse ToWire(SecurityGuard guard, TableDef source, ColDef c, IUser user)
         {
             return new ColDefResponse
             {
+                PermissionLevel = (int)guard.FinalLevel(null, source.Name, c.Name),
                 AllowSort = c.AllowSort,
                 ForeignKeyDatonTypeName = c.ForeignKeyDatonTypeName,
                 LookupViewonTypeName = c.LookupViewonTypeName,

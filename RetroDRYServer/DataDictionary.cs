@@ -162,7 +162,6 @@ namespace RetroDRY
         private static void CopyColumnInheritance(ColDef sourceColdef, ColDef targetColdef)
         {
             //inherit storage, entry and display related properties
-            targetColdef.WireType = sourceColdef.WireType; 
             targetColdef.IsCustom = sourceColdef.IsCustom;
             targetColdef.Image = sourceColdef.Image;
             targetColdef.IsComputed = sourceColdef.IsComputed;

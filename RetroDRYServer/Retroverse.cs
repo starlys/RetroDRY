@@ -48,6 +48,11 @@ namespace RetroDRY
         /// </summary>
         public Func<int, DbConnection> GetDbConnection { get; private set; }
 
+        /// <summary>
+        /// Injected function to allow host app to fix database exception messages, making them appropriate for use
+        /// </summary>
+        public Func<IUser, Exception, string> CleanUpSaveException;
+
         internal readonly LockManager LockManager;
 
         /// <summary>
@@ -165,7 +170,6 @@ namespace RetroDRY
             //initialize
             if (req.Initialze != null)
             {
-                resp.PermissionSet = Retrovert.PermissionsToWire(user);
                 resp.DataDictionary = Retrovert.DataDictionaryToWire(DataDictionary, user);
             }
 
@@ -317,6 +321,7 @@ namespace RetroDRY
             {
                 var datondef2 = DataDictionary.FindDef(key);
                 Daton newDaton = Utils.Construct(datondef2.Type) as Daton;
+                Utils.FixTopLevelDefaultsInNewPersiston(datondef2, newDaton);
                 newDaton.Key = key;
                 if (datondef2.Initializer != null) await datondef2.Initializer(newDaton);
                 return newDaton;
@@ -339,6 +344,8 @@ namespace RetroDRY
 
             //get from database if needed (and cache it), or abort
             var datondef = DataDictionary.FindDef(key);
+            if (typeof(Persiston).IsAssignableFrom(datondef.Type) && (key is ViewonKey)) throw new Exception("Persiston requested but key format is for viewon");
+            if (typeof(Viewon).IsAssignableFrom(datondef.Type) && (key is PersistonKey)) throw new Exception("Viewon requested but key format is for persiston");
             if (daton == null)
             {
                 var sql = GetSqlInstance(key);
@@ -460,17 +467,16 @@ namespace RetroDRY
                         CondensedDatonJson = Retrovert.ToWire(DataDictionary, daton, false)
                     });
             }
-
-            PermissionResponse permissions = null;
-            if (pg.IncludePermissions)
-                permissions = Retrovert.PermissionsToWire(user);
-
-            return new LongResponse
+            var response = new LongResponse
             {
                 CondensedDatons = wireDatons.ToArray(),
-                PermissionSet = permissions
-
             };
+
+            //if permissions changed, resend the whole data dictionary
+            if (pg.IncludeDataDictionary)
+                response.DataDictionary = Retrovert.DataDictionaryToWire(DataDictionary, user);
+            
+            return response;
         }
 
         /// <summary>

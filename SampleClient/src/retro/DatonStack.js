@@ -6,23 +6,24 @@ import DatonView from './DatonView';
 //props.stackstate is an instance of DatonStackState which will track state for the mounted lifetime of this stack
 export default (props) => {
     const {session, stackstate} = props;
-    const [renderCount, incrementRenderCount] = useReducer(x => x + 1, 0); 
+    const [stackRenderCount, incrementStackRenderCount] = useReducer(x => x + 1, 0); 
 
-    //statechanged callback from DatonStackState used to just rerender this stack
+    //statechanged callback from DatonStackState used to just rerender this stack;
+    //but note the datons are memoized so rerendering them or remounting them uses a different technique
     const forceRerender = () => {
-        stackstate.rerenderCount++;
-        incrementRenderCount();
+        incrementStackRenderCount();
     };
 
     //initialize
-    if (renderCount === 0) {
-        incrementRenderCount();
+    if (stackRenderCount === 0) {
+        incrementStackRenderCount();
         props.stackstate.initialize(session, forceRerender);
         return null;
     }
 
     //note that DatonView is memoized so it's probably performant to rerender the stack often
     return stackstate.layers.map(layer => {
-        return <DatonView key={layer.datonKey} session={session} layer={layer} datonDef={layer.datonDef} daton={layer.daton} edit={layer.edit} renderCount={renderCount} />;
+        return <DatonView key={layer.datonKey + ':' + layer.mountCount} session={session} layer={layer} datonDef={layer.datonDef} daton={layer.daton} 
+            edit={layer.edit} renderCount={layer.renderCount} />;
     });
 };

@@ -1,18 +1,21 @@
-import React, {useState} from 'react';
+import React, {useState, useReducer} from 'react';
 import DisplayValue from './DisplayValue';
 import CardView from './CardView';
+import {securityUtil} from 'retrodry';
 
 //Displays all rows of a daton table in grid format
 //props.session is the session for obtaining layouts
 //props.rows is an array of daton table rows
-//props.datonDef is the DatonDefResponse (metadat for whole daton)
+//props.datonDef is the DatonDefResponse (metadata for whole daton)
 //props.tableDef is the TableDefResponse which is the metadata for props.rows
-//props.edit is true to allow editing of child cards
+//props.edit is true to allow editing of child cards and deleting rows
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
+//props.sortClicked is falsy if sorting is not allowed here, or a function taking the column name
 export default props => {
-    const {rows, datonDef, tableDef, edit, session} = props;
+    const {rows, datonDef, tableDef, edit, session, layer} = props;
     const [expandRowIdx, setExpandRowIdx] = useState(-1);
     const [gridLayout, setGridLayout] = useState(null);
+    const [, incrementRenderCount] = useReducer(x => x + 1, 0); //for certain cases to force rerender of grid
 
     //get layout
     let localGridLayout = gridLayout;
@@ -21,12 +24,13 @@ export default props => {
         setGridLayout(localGridLayout);
     }
 
+    //build colInfos array from layout with properties: width, colDef
     const getColDef = (name) => tableDef.cols.find(c => c.name === name);
     const colInfos = localGridLayout.columns.map(gc => {
         return { width: gc.width, colDef: getColDef(gc.name) };
     });
 
-    //events
+    //event handlers
     const clickRow = (idx) => {
         if (idx === expandRowIdx) idx = -1;
         setExpandRowIdx(idx);
@@ -35,43 +39,81 @@ export default props => {
         rows.push({});
         setExpandRowIdx(rows.length - 1);
     };
+    const deleteRow = (ev, idx) => {
+        ev.stopPropagation();
+        rows.splice(idx, 1);
+        setExpandRowIdx(-1);
+        incrementRenderCount();
+    }
 
+    //build data rows
     const children = [];
+    const allowDelete = edit && securityUtil.canDeleteRow(tableDef);
+    const colSpan = colInfos.length + (allowDelete ? 2 : 1);
     for (let idx = 0; idx < rows.length; ++idx) {
         const row = rows[idx];
-        children.push(
-            <tr key={idx} onClick={() => clickRow(idx)}>
-                {colInfos.map((ci, idx2) => {
-                    const outValue = <DisplayValue colDef={ci.colDef} row={row} />;
-                    let cellContent = outValue;
-                    const isClickable = props.layer && (ci.colDef.foreignKeyDatonTypeName); //todo need this?: || ci.colDef.name === tableDef.primaryKeyColName);
-                    if (isClickable)
-                        cellContent = <span className="grid-fk" onClick={e => props.layer.stackstate.gridKeyClicked(e, props.layer, tableDef, row, ci.colDef)}>{cellContent}</span>;
-                    return <td key={idx2}>{cellContent}</td>;
-                })}
-            </tr>
-        );
-        if (expandRowIdx === idx)
-            children.push(<tr key={'expand' + idx}><td className="card-in-grid" colSpan={colInfos.length + 1}><CardView session={session} edit={edit} row={row} datonDef={datonDef} tableDef={tableDef} /></td></tr>);
+        if (expandRowIdx === idx) {
+            children.push(
+                <tr key={idx} style={{height: '12px'}} onClick={() => clickRow(idx)}>
+                    {allowDelete && <td style={{width: '1em'}} key="del"><button className="btn-delete-row" onClick={(ev) => deleteRow(ev, idx)}>X</button></td>}
+                    <td colSpan={colSpan - 1}></td>
+                </tr>
+            );
+            children.push(
+                <tr key={'expand' + idx}>
+                    <td className="card-in-grid" colSpan={colSpan}><CardView session={session} edit={edit} row={row} 
+                    datonDef={datonDef} tableDef={tableDef} layer={layer}/></td>
+                </tr>
+            );
+        } else
+            children.push(
+                <tr key={idx} onClick={() => clickRow(idx)}>
+                    {allowDelete && <td style={{width: '1em'}} key="del"><button className="btn-delete-row" onClick={(ev) => deleteRow(ev, idx)}>X</button></td>}
+                    {colInfos.map((ci, idx2) => {
+                        const outValue = <DisplayValue session={session} colDef={ci.colDef} row={row} />;
+                        let cellContent = outValue;
+                        const isClickable = layer && tableDef.primaryKeyColName === ci.colDef.name && ci.colDef.foreignKeyDatonTypeName; 
+                        if (isClickable)
+                            cellContent = <span className="grid-fk" onClick={e => {layer.stackstate.gridKeyClicked(e, layer, tableDef, row, ci.colDef); setExpandRowIdx(-1);}}>
+                                ( {cellContent} )
+                            </span>;
+                        return <td key={idx2}>{cellContent}</td>;
+                    })}
+                </tr>
+            );
     }
+
+    //build header cells
+    const colHeaders = colInfos.map((ci, idx) => {
+        let cellContent = ci.colDef.prompt;
+        const clickable = props.sortClicked && ci.colDef.allowSort;
+        if (clickable) cellContent = <span className="grid-sortable" onClick={() => props.sortClicked(ci.colDef.name)}>{cellContent}</span>;
+        return <th key={idx} style={{width: ci.width + 'em'}}>{cellContent}</th>;
+    });
 
     return (
         <>
-            <table className="grid">
-                <thead>
-                    <tr>
-                        {colInfos.map((ci, idx) => 
-                            <th key={idx} style={{width: ci.width + 'em'}}>{ci.colDef.prompt}</th>
-                        )}
-                    </tr>
-                </thead>
-                <tbody>
-                    {children}
-                </tbody>
-            </table>
-            {edit && 
+            {rows.length > 0 && 
+                <>
+                    <div className="grid-banner">{tableDef.prompt}</div>
+                    <div className="grid-wrap">
+                        <table className="grid">
+                            <thead>
+                                <tr>
+                                    {edit && <th></th>}
+                                    {colHeaders}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {children}
+                            </tbody>
+                        </table>
+                    </div>
+                </>
+            }
+            {(edit && securityUtil.canCreateRow(tableDef)) &&
                 <div>
-                    <button onClick={addRow}> + </button>
+                    <button onClick={addRow}> + {tableDef.prompt} </button>
                 </div>
             }
         </>

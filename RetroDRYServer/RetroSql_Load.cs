@@ -101,7 +101,7 @@ namespace RetroDRY
             var pkType = tabledef.FindCol(tabledef.PrimaryKeyColName).CSType;
             object pk = key.PrimaryKey; //always string here
             if (pkType != typeof(string))
-                pk = Convert.ChangeType(pk, pkType);
+                pk = Utils.ChangeType(pk, pkType);
             var w = new SqlSelectBuilder.Where();
             w.AddWhere($"{tabledef.PrimaryKeyColName}={w.NextParameterName()}", pk);
             return w;
@@ -132,6 +132,7 @@ namespace RetroDRY
         /// The implementation loads one additional row to determine whether the load was complete, if pageSize is nonzero.
         /// </summary>
         /// <param name="pageSize">if zero, does not do paging</param>
+        /// <param name="whereClause">can be null</param>
         protected virtual Task<LoadResult> LoadTable(IDbConnection db, DataDictionary dbdef, TableDef tabledef, SqlSelectBuilder.Where whereClause,
             string sortColName, int pageSize, int pageNo)
         {
@@ -151,17 +152,18 @@ namespace RetroDRY
                 columnNames.Add(CUSTOMCOLNAME);
             }
             var sql = new SqlSelectBuilder(SqlFlavor, tabledef.SqlTableName, sortColName, columnNames) {
-                WhereClause = whereClause,
                 PageSize = pageSize,
                 PageNo = pageNo
             };
+            if (whereClause != null) sql.WhereClause = whereClause;
             var rowsByParentKey = new Dictionary<object, List<Row>>();
             bool isComplete = true;
 
             using (var cmd = db.CreateCommand())
             {
                 cmd.CommandText = CustomizeSqlStatement(sql.ToString());
-                whereClause.ExportParameters(cmd);
+                if (whereClause != null)
+                    whereClause.ExportParameters(cmd);
                 using (var reader = cmd.ExecuteReader())
                 {
                     int rowsLoaded = 0;

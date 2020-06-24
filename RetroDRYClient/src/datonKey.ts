@@ -1,8 +1,31 @@
+//parse a daton key string (performs unescaping)
 export function parseDatonKey(s: string): DatonKey {
-    const parts = s.split('|');
+    const parts = parseSegments(s);
     const typeName = parts.shift();
     if (!typeName) throw new Error('Invalid daton key');
+
     return new DatonKey(typeName, parts);
+}
+
+function parseSegments(s: string) {
+    let segments = s.split('|');
+
+    //unescape; and
+    //in case any of the segments contained \|, it would be misinterpreted as 2 segments, so fix that
+    for (let i = segments.length - 1; i >= 0; --i) {
+        let segi = segments[i].replace(/\\\\/g, '\x01');
+        if (segi[segi.length - 1] === '\\')
+        {
+            segi = segi.substr(0, segi.length - 1) + '|' + segments[i + 1];
+            segments.splice(i + 1, 1);
+        }
+        segments[i] = segi.replace(/\x01/g, '\\');
+    }
+    return segments;
+}
+
+function caseInsensitiveComparer(a:any, b:any) {
+    return a.localeCompare(b, undefined, {sensitivity: 'base'});
 }
 
 //A parsed daton key string
@@ -21,8 +44,10 @@ export default class DatonKey {
     //convert parsed segments to a daton key string
     toKeyString(): string {
         let ret = this.typeName;
-        if (this.otherSegments && this.otherSegments.length) 
-            ret += '|' + this.otherSegments.join();
+        if (this.otherSegments && this.otherSegments.length) {
+            this.otherSegments.sort(caseInsensitiveComparer);
+            ret += '|' + this.otherSegments.map(this.escapeSegment).join('|');
+        }
         return ret;
     }
 
@@ -47,5 +72,9 @@ export default class DatonKey {
 
     persistonKeyAsInt(): number {
         return parseInt(this.persistonKeyAsString(), 10);
+    }
+
+    escapeSegment(s: string): string {
+        return s.replace(/\\/g, '\\\\').replace(/\|/g, '\\|');
     }
 }

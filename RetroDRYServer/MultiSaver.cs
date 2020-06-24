@@ -196,7 +196,9 @@ namespace RetroDRY
             }
             catch (Exception ex)
             {
-                item.Errors.Add(ex.Message);
+                string msg = ex.Message;
+                if (Retroverse.CleanUpSaveException != null) msg = Retroverse.CleanUpSaveException(User, ex);
+                item.Errors.Add(msg);
             }
             AssignPersistonKey(item);
 

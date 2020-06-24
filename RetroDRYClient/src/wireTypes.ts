@@ -51,7 +51,6 @@ export interface RetroResponse
 export interface MainResponse extends RetroResponse
 {
     dataDictionary?: DataDictionaryResponse;
-    permissionSet?: PermissionResponse ;
     condensedDatons?: CondensedDatonResponse[];
     manageDatons?: ManageDatonResponse[];
     savedPersistons?: SavePersistonResponse[];
@@ -60,7 +59,7 @@ export interface MainResponse extends RetroResponse
 
 export interface LongResponse extends RetroResponse
 {
-    permissionSet?: PermissionResponse;
+    dataDictionary?: DataDictionaryResponse;
     condensedDatons?: CondensedDatonResponse[];
 }
 
@@ -81,15 +80,18 @@ export interface DatonDefResponse
 export interface TableDefResponse
 {
     name: string;
+    permissionLevel: number,
     cols: ColDefResponse[];
     children?: TableDefResponse[]; 
     primaryKeyColName?: string;
     prompt?: string;
+    isCriteria: boolean;
 }
 
 export interface ColDefResponse
 {
     name: string;
+    permissionLevel: number,
     wireType: string;
     isComputed: boolean; 
     allowSort: boolean;
@@ -110,19 +112,6 @@ export interface ColDefResponse
     maxNumberValue: number;
     rangeValidationMessage?: string;
     imageUrlColumName?: string;
-}
-
-export interface PermissionResponse
-{
-    level: number;
-    overrides: DetailPermisionResponse[];
-}
-
-export interface DetailPermisionResponse
-{
-    name: string;
-    level: number;
-    overrides: DetailPermisionResponse[];
 }
 
 export interface CondensedDatonResponse

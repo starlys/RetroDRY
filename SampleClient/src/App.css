@@ -1,19 +1,48 @@
-/* BEGIN RESET STYLES - you probably already have these in your app */
-input, textarea, body {
+/* BEGIN RESET STYLES - extremely minimal set of styles; you probably already have these in your app */
+html, body {
+  margin:0;
+  height: 100%;
+}
+input, select, textarea, body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+select {
+  padding: 2px;
 }
 /* END RESET STYLES */
 
 /* BEGIN SAMPLE APP STYLES - only useful within sample app */
-body {
-  margin:1em;
+#root {
+  height: 100%;
+  overflow: hidden;
+}
+#root > .main-left {
+  width: 20%;
+  max-width: 300px;
+  background-color: #eee;
+  display: inline-block;
+  height: 100%;
+  padding: 1em;
+  vertical-align: top;;
+}
+#root > .main-left button{
+  margin:3px;
+}
+#root > .main-right {
+  width: 75%;
+  max-width: 1200px;
+  display: inline-block;
+  margin-left: 1em;
+  height: 100%;
+  overflow: auto;
+  vertical-align: top;;
 }
 /* END SAMPLE APP STYLES */
 
-/* BEGIN IMPORTABLE RETRODRY STYLES - These will be needed in any app using a datonstack */
+/* BEGIN IMPORTABLE RETRODRY STYLES - These will be needed in any app using a datonstack, but you can adjust to fit your theme */
 .daton {
   max-width: 90em; 
-  margin-bottom: 2em;
+  margin: 1em 0;
 }
 .daton .daton-banner {
   color: white;
@@ -21,10 +50,20 @@ body {
   font-size: 1.2em;
   padding: 1px 0.5em;
 }
+.daton .daton-banner .right {
+  float: right;
+}
 .daton .daton-banner button {
   margin: 0 1em;
   position: relative;
   top: -2px;
+}
+.daton .grid-banner {
+  color: white;
+  background-color: #99a;
+  font-size: 1.1em;
+  padding: 1px 0.5em;
+  margin-top: 2px;
 }
 .daton .daton-errors {
   background-color: #fde;
@@ -63,10 +102,25 @@ body {
   color:silver;
 }
 .daton .card-value {
-  padding: 0 1em;
+  display: inline-block;
+  box-sizing: border-box;
+  text-decoration: inherit;
+}
+.daton .grid-wrap {
+  max-height: 40em;
+  overflow-y: auto;
 }
 .daton .grid {
   border-collapse: collapse;
+}
+.daton .grid th {
+  color: silver;
+}
+.daton .grid-sortable {
+  cursor: pointer;
+}
+.daton .grid-sortable:hover {
+  text-decoration: underline;
 }
 .daton .grid td {
   margin: 0;
@@ -77,9 +131,17 @@ body {
 .daton .grid-fk:hover {
   text-decoration: underline;
 }
+.daton .page-select-panel {
+  text-align: center;
+  padding: 2px 0;
+  background-color: #eee;
+}
+.daton .page-select-panel button.current {
+  background-color: lightyellow;
+}
 .daton td.card-in-grid {
   background-color: inherit;
-  border:none;
+  border-left: solid 2px gray;
   cursor: inherit;
 }
 .daton .inputwrap {
@@ -88,9 +150,9 @@ body {
   box-sizing: border-box;
 }
 .daton .inputwrap.invalid {
-  border-right: solid red 10px;
+  border-left: solid red 8px;
 }
-.daton .inputwrap input, .inputwrap textarea {
+.daton .inputwrap input, .daton .inputwrap textarea, .daton .inputwrap select {
   width: calc(100% - 12px);
 }
 .daton .inputwrap textarea {
@@ -104,7 +166,7 @@ body {
   height: 1.1em;
   overflow: hidden;
   top: -1.6em;
-  left: 2px;
+  left: -4px;
   outline: solid red 1px;
   background-color: #fde;
   padding: 0.2em;
@@ -112,11 +174,17 @@ body {
 .daton .criterion {
   width: 5em;
 }
-.daton .criterion.number {
+.daton input.criterion.number {
   width: 3em;
+}
+.daton input.date {
+  width: 10em;
 }
 .daton .btn-lookup {
   position: absolute;
-  right: 4px;
+  right: -21px;
+}
+.daton .btn-delete-row {
+  color: red;
 }
 /* END IMPORTABLE RETRODRY STYLES */

@@ -8,17 +8,20 @@ namespace SampleServer.Schema
     /// <summary>
     /// Lookup table of phone types (like "cell", "work")
     /// </summary>
+    [Prompt("Phone types")]
     public class PhoneTypeLookup : Persiston
     {
-        [Prompt("Type")]
         public List<PhoneTypeRow> PhoneType;
-        
+
+        [Prompt("Type")]
         public class PhoneTypeRow : Row
         {
             [Key]
-            public short PhoneTypeId;
+            [Prompt("ID")]
+            public short? PhoneTypeId;
 
-            [StringLength(20), Required, MainColumn, SortColumn]
+            [StringLength(20), MainColumn, SortColumn]
+            [Prompt("Phone type")]
             public string TypeOfPhone;
         }
     }
@@ -26,16 +29,20 @@ namespace SampleServer.Schema
     /// <summary>
     /// Lookup table of sale statuses (like Confirmed, Shipped etc)
     /// </summary>
+    [Prompt("Sale statuses")]
     public class SaleStatusLookup : Persiston
     {
         public List<SaleStatusRow> SaleStatus;
-        
+
+        [Prompt("Status")]
         public class SaleStatusRow : Row
         {
             [Key]
-            public short StatusId;
+            [Prompt("ID")]
+            public short? StatusId;
 
-            [Required, StringLength(20, MinimumLength = 1), MainColumn, SortColumn]
+            [StringLength(20, MinimumLength = 1), MainColumn, SortColumn]
+            [Prompt("Sale status")]
             public string Name;
 
             [StringLength(20), WireType(Constants.TYPE_NSTRING)]
@@ -50,30 +57,35 @@ namespace SampleServer.Schema
     public class Employee : Persiston
     {
         [Key]
-        public int EmployeeId;
+        [Prompt("ID")]
+        public int? EmployeeId;
 
-        [Required, StringLength(50, MinimumLength = 1), Prompt("First name")]
+        [StringLength(50, MinimumLength = 1), Prompt("First name")]
         public string FirstName;
 
-        [Required, StringLength(50, MinimumLength = 1), Prompt("Last name"), MainColumn]
+        [StringLength(50, MinimumLength = 1), Prompt("Last name"), MainColumn]
         public string LastName;
 
         [ForeignKey(typeof(Employee))]
+        [Prompt("Supervisor ID")]
+        [LookupBehavior(typeof(EmployeeList))]
         public int? SupervisorId;
 
         [LeftJoin("SupervisorId", "LastName"), Prompt("Supervisor")]
         public string SupervisorLastName;
 
-        [Required, Prompt("Hired on")]
+        [Prompt("Hired on")]
         public DateTime HireDate;
 
         public List<EContactRow> EContact;
 
         [SqlTableName("EmployeeContact"), ParentKey("EmployeeId")]
+        [Prompt("Employee contact")]
         public class EContactRow : Row
         {
             [Key]
-            public int ContactId;
+            [Prompt("ID")]
+            public int? ContactId;
 
             [ForeignKey(typeof(PhoneTypeLookup)), Prompt("Phone type")]
             public short PhoneType;
@@ -90,16 +102,18 @@ namespace SampleServer.Schema
     public class Customer : Persiston
     {
         [Key]
-        public int CustomerId;
+        [Prompt("ID")]
+        public int? CustomerId;
 
-        [Required, StringLength(200, MinimumLength = 1)]
+        [StringLength(200, MinimumLength = 1)]
         public string Company;
 
         [ForeignKey(typeof(Employee))]
         [LookupBehavior(typeof(EmployeeList))]
+        [Prompt("Sales rep ID")]
         public int SalesRepId;
 
-        [LeftJoin("SalesRepId", "LastName"), Prompt("Sales rep.")]
+        [LeftJoin("SalesRepId", "LastName"), Prompt("Sales rep")]
         public string SalesRepLastName;
 
         [StringLength(4000), WireType(Constants.TYPE_NSTRING)]
@@ -113,26 +127,29 @@ namespace SampleServer.Schema
     public class Item : Persiston
     {
         [Key]
-        public int ItemId;
+        [Prompt("ID")]
+        public int? ItemId;
 
-        [Required, Prompt("I-code"), RegularExpression("^[A-Z]{2}-[0-9]{4}$"), MainColumn]
+        [Prompt("I-code"), RegularExpression("^[A-Z]{2}-[0-9]{4}$"), MainColumn]
         public string ItemCode;
 
-        [Required, StringLength(200, MinimumLength = 10)]
+        [StringLength(200, MinimumLength = 10)]
         public string Description;
 
         public List<ItemVariantRow> ItemVariant;
 
         [ParentKey("ItemId")]
+        [Prompt("Variant")]
         public class ItemVariantRow : Row
         {
             [Key]
-            public int ItemVariantId;
+            [Prompt("Var-ID")]
+            public int? ItemVariantId;
 
-            [Required, StringLength(20, MinimumLength = 1), Prompt("Sub-code"), MainColumn, SortColumn]
+            [StringLength(20, MinimumLength = 1), Prompt("Sub-code"), MainColumn, SortColumn]
             public string VariantCode;
 
-            [Required, StringLength(200, MinimumLength = 10)]
+            [StringLength(200, MinimumLength = 10)]
             public string Description;
         }
     }
@@ -144,43 +161,53 @@ namespace SampleServer.Schema
     public class Sale : Persiston
     {
         [Key, MainColumn]
-        public int SaleId;
+        [Prompt("ID")]
+        public int? SaleId;
 
-        [Required, ForeignKey(typeof(Customer))]
+        [ForeignKey(typeof(Customer))]
+        [LookupBehavior(typeof(CustomerList))]
+        [Prompt("Customer ID")]
         public int CustomerId;
 
-        [Required, Prompt("Sale date"), WireType(Constants.TYPE_DATETIME)]
+        [Prompt("Sale date"), WireType(Constants.TYPE_DATETIME)]
         public DateTime SaleDate;
 
         [Prompt("Shipped on"), WireType(Constants.TYPE_DATETIME)]
         public DateTime? ShippedDate;
 
-        [Required, ForeignKey(typeof(SaleStatusLookup)), Prompt("Status")]
+        [ForeignKey(typeof(SaleStatusLookup)), Prompt("Status")]
         public short Status;
 
         public List<SaleItemRow> SaleItem;
 
-        [ParentKey("SaleItemId")]
+        [ParentKey("SaleId")]
+        [Prompt("Item sold")]
         public class SaleItemRow : Row
         {
-            [Key, SortColumn] 
-            public int SaleItemId;
+            [Key, SortColumn]
+            [Prompt("ID")]
+            public int? SaleItemId;
 
-            [Required, ForeignKey(typeof(Item))]
+            [ForeignKey(typeof(Item))]
+            [Prompt("Item-ID")]
+            [LookupBehavior(typeof(ItemList))]
             public int ItemId;
 
-            [Required, Range(1, 999)]
-            public int Quantity; 
+            [Range(1, 999)]
+            public int Quantity;
 
-            public int ItemVariantId;
+            [Prompt("Var-ID")]
+            public int? ItemVariantId;
 
             public List<SaleItemNoteRow> SaleItemNote;
 
             [ParentKey("SaleItemId")]
+            [Prompt("Sale note")]
             public class SaleItemNoteRow : Row
             {
                 [Key]
-                public int SaleItemNoteId;
+                [Prompt("ID")]
+                public int? SaleItemNoteId;
 
                 [StringLength(4000), WireType(Constants.TYPE_NSTRING)]
                 public string Note;

@@ -1,9 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc.Formatters;
-using RetroDRY;
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using RetroDRY;
 
 namespace SampleServer
 {
@@ -23,7 +20,9 @@ namespace SampleServer
             TableOverrides = new List<TablePermission>
             {
                 new TablePermission { TableName = "Customer", BaseLevel = PermissionLevel.All },
-                new TablePermission { TableName = "Sale", BaseLevel = PermissionLevel.All } //child tables SaleItem, SaleItemNote are included in this 
+                new TablePermission { TableName = "Sale", BaseLevel = PermissionLevel.All },
+                new TablePermission { TableName = "SaleItem", BaseLevel = PermissionLevel.All },
+                new TablePermission { TableName = "SaleItemNote", BaseLevel = PermissionLevel.All }
             }
         };
         private static readonly RetroRole PublicRole = new RetroRole
@@ -31,7 +30,12 @@ namespace SampleServer
             BaseLevel = PermissionLevel.None,
             TableOverrides = new List<TablePermission>
             {
-                new TablePermission { TableName = "Sale", BaseLevel = PermissionLevel.Create } 
+                new TablePermission { TableName = "Item", BaseLevel = PermissionLevel.View } ,
+                new TablePermission { TableName = "ItemVariant", BaseLevel = PermissionLevel.View } ,
+                new TablePermission { TableName = "PhoneType", BaseLevel = PermissionLevel.View } ,
+                new TablePermission { TableName = "SaleStatus", BaseLevel = PermissionLevel.View } ,
+                new TablePermission { TableName = "Sale", BaseLevel = PermissionLevel.Create } ,
+                new TablePermission { TableName = "SaleItem", BaseLevel = PermissionLevel.Create }
             }
         };
         private static readonly RetroRole CustomerNotesRole = new RetroRole
@@ -42,10 +46,12 @@ namespace SampleServer
                 new TablePermission 
                 {
                     TableName = "Customer", 
-                    BaseLevel = PermissionLevel.None,
+                    BaseLevel = PermissionLevel.Modify,
                     ColumnOverrides = new List<ColumnPermission>
                     {
                         new ColumnPermission { ColumnName = "CustomerId", BaseLevel = PermissionLevel.View },
+                        new ColumnPermission { ColumnName = "Company", BaseLevel = PermissionLevel.View },
+                        new ColumnPermission { ColumnName = "SalesRepId", BaseLevel = PermissionLevel.View },
                         new ColumnPermission { ColumnName = "Notes", BaseLevel = PermissionLevel.View | PermissionLevel.Modify }
                     }
                 }

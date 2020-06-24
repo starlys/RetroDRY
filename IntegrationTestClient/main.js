@@ -10,7 +10,11 @@ sampleClient = {
         const sessionKey = (await newSessionResponse.json()).sessionKey;
 
         //start client side retrodry framework
-        this.session = await retrodry.start(['https://localhost:5001/api/'], sessionKey, -5 * 60);
+        this.session = new retrodry.Session();
+        this.session.sessionKey = sessionKey;
+        this.session.serverList = ['https://localhost:5001/api/'];
+        this.session.timeZoneOffset = -5 * 60;
+        await this.session.start();
 
         //query the database for customer names starting with "Customer 2"
         let customerList = await this.session.get('CustomerList|Company=Customer 2', {forceCheckVersion: true});

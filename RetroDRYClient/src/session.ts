@@ -1,4 +1,4 @@
-import { DataDictionaryResponse, GetDatonRequest, LongResponse, DatonDefResponse } from "./wireTypes";
+import { DataDictionaryResponse, GetDatonRequest, LongResponse, DatonDefResponse, MainResponse } from "./wireTypes";
 import { Retrovert } from "./retrovert";
 import DiffTool from "./diffTool";
 import {parseDatonKey} from "./datonKey";
@@ -8,6 +8,7 @@ import GetOptions from "./getOptions";
 import CloneTool from "./cloneTool";
 import { PanelLayout, GridLayout } from "./layout";
 import { RecurPoint } from "./recurPoint";
+import Mutex from "./mutex";
 
 export default class Session {
     //delay in millis between end of long polling response and sending next long poll request
@@ -53,6 +54,9 @@ export default class Session {
     //cardLayouts and gridLayouts are indexed by "datonName|tableName"
     private cardLayouts: {[name: string]: PanelLayout} = {};
     private gridLayouts: {[name: string]: GridLayout} = {};
+
+    //ensures only one server get call is in progress (this ensures that multiple calls for the same daton don't go to the server twice)
+    private getDatonMutex: Mutex = new Mutex();
 
     //start session; caller should check this.dataDictionary is truthy to see if it was successful
     async start(): Promise<void> {
@@ -104,12 +108,29 @@ export default class Session {
         return responses[0];
     }
 
+    //create a valid empty viewon locally (use this for seeding a searchable viewon for display without loading all rows)
+    createEmptyViewon(datonType: string): any {
+        return {
+            key: datonType,
+            isComplete: true
+        };
+    }
+
     //get one or more datons from cache or server; if any requested datons are not found, they will be omitted from the results
     //so it will not always return an array of the same size as the provided keys array
     async getMulti(datonKeys: string[], options?: GetOptions): Promise<any[]> {
         this.ensureInitialized();
         if (!options) options = new GetOptions();
+        await this.getDatonMutex.acquire();
+        try {
+            return await this.getMultiSingleThread(datonKeys, options);
+        } finally {
+            this.getDatonMutex.release();
+        }
+    }
 
+    //see getMulti
+    private async getMultiSingleThread(datonKeys: string[], options: GetOptions): Promise<any[]> {
         //convert datonKeys to parallel array of parsed keys
         const parsedDatonKeys = datonKeys.map(k => parseDatonKey(k));
 
@@ -157,15 +178,15 @@ export default class Session {
         }
 
         //eliminate empty slots in the return array (for datons that could not be loaded)
-        //if (datons.some(d => !d)) throw new Error('Daton missing'); 
         datons = datons.filter(d => !!d);
 
         //cache and clone if subscribing (unless is new)
         if (options.doSubscribeEdit) {
             for (let i = 0; i < datons.length; ++i) {
                 let daton = datons[i];
-                const isNew = parseDatonKey(daton.key).isNew();
-                if (isNew) continue;
+                const parsedKey = parseDatonKey(daton.key);
+                if (parsedKey.isNew()) continue;
+                if (!parsedKey.isPersiston()) continue;
 
                 //cache
                 this.persistonCache[daton.key] = daton;
@@ -175,7 +196,6 @@ export default class Session {
                 this.versionCache[daton.key] = daton.version;
     
                 //clone it so caller cannot clobber our nice cached version
-                const parsedKey = parseDatonKey(daton.key);
                 const datondef = this.getDatonDef(parsedKey.typeName);
                 if (!datondef) throw new Error('Unknown type name ' + parsedKey.typeName);
                 daton = CloneTool.clone(datondef, daton);
@@ -231,7 +251,8 @@ export default class Session {
     }
 
     //save any number of datons in one transaction; the objects passed in should be abandoned by the caller after a successful save;
-    //returns savePersistonResponse for each daton, and an overall success flag
+    //returns savePersistonResponse for each daton, and an overall success flag, but in the case of an internal server error,
+    //there may be no error messages in the return object
     async save(datons: any[]): Promise<SaveInfo> {
         this.ensureInitialized();
         const diffs: any[] = [];
@@ -269,11 +290,19 @@ export default class Session {
         }
 
         //save on server
-        const request = {
-            sessionKey: this.sessionKey,
-            saveDatons: diffs
-        };
-        const saveResponse = await NetUtils.httpMain(this.baseServerUrl(), request);
+        let saveResponse:MainResponse;
+        try {
+            const request = {
+                sessionKey: this.sessionKey,
+                saveDatons: diffs
+            };
+            saveResponse = await NetUtils.httpMain(this.baseServerUrl(), request);
+        } catch (e) {
+            if (e.message === 'INTERNAL')
+                saveResponse = {savePersistonsSuccess: false};
+            else
+                throw e;
+        }
 
         //unlock whatever we locked (even if failed save)
         if (datonsToLock.length) {
@@ -294,6 +323,45 @@ export default class Session {
         //host app callback
         if (this.onSave && saveResponse?.savePersistonsSuccess) {
             for (let daton of datons) this.onSave(daton);
+        }
+
+        //error reporting
+        const ret = { success: saveResponse?.savePersistonsSuccess || false, details: saveResponse?.savedPersistons || []};
+        return ret;
+    }
+
+    //delete a single-main-row daton, locking if needed
+    //returns savePersistonResponse for each daton, and an overall success flag
+    async deletePersiston(daton: any): Promise<SaveInfo> {
+        this.ensureInitialized();
+        const datonkey = parseDatonKey(daton.key);
+        const datondef = this.getDatonDef(datonkey.typeName);
+        const diff = DiffTool.generateDiffForDelete(datondef!, daton);
+        const subscribeLevel = this.subscribeLevel[daton.key];
+
+        //if lock needed, do before save
+        if (subscribeLevel !== 2) {
+            await this.changeSubscribeState(daton, 2);
+            if (this.subscribeLevel[daton.key] !== 2)  throw new Error('Could not get lock');
+        }
+
+        //save on server
+        const request = {
+            sessionKey: this.sessionKey,
+            saveDatons: [diff]
+        };
+        const saveResponse = await NetUtils.httpMain(this.baseServerUrl(), request);
+
+        //manage cache 
+        if (saveResponse?.savePersistonsSuccess) {
+            delete this.versionCache[daton.key];
+            delete this.persistonCache[daton.key];
+            delete this.subscribeLevel[daton.key];
+        }
+
+        //host app callback
+        if (this.onSave && saveResponse?.savePersistonsSuccess) {
+            this.onSave(daton);
         }
 
         //error reporting
@@ -333,9 +401,6 @@ export default class Session {
         const response = await NetUtils.httpMain(this.baseServerUrl(), request);
         if (response?.dataDictionary)
             this.dataDictionary = response.dataDictionary;
-        if (response?.permissionSet) {
-            //todo store permissions
-        }
     }
     
     private baseServerUrl(): string {
@@ -357,9 +422,7 @@ export default class Session {
                 return; //ends long polling permanently
             }
             pollOk = true;
-            if (response?.permissionSet) {
-                //todo store permissions
-            }
+            if (response?.dataDictionary) this.dataDictionary = response.dataDictionary;
             if (response?.condensedDatons) {
                 for (let condensed of response.condensedDatons) {
                     const daton = Retrovert.expandCondensedDaton(this, condensed);

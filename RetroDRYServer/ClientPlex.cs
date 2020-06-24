@@ -25,7 +25,7 @@ namespace RetroDRY
             public readonly ConcurrentDictionary<DatonKey, string> Subscriptions = new ConcurrentDictionary<DatonKey, string>();
 
             /// <summary>
-            /// Datons that need to be pushed to this client. The objects here have already been changed to meet view permission restructions for this client.
+            /// Datons that need to be pushed to this client. The objects here have already been changed to meet view permission restrictions for this client.
             /// Lock the list on access.
             /// </summary>
             public readonly List<Daton> DatonsToPush = new List<Daton>();
@@ -34,7 +34,8 @@ namespace RetroDRY
 
             /// <summary>
             /// Manages awaiting during long polling, and is only set during the time the long poll is waiting; otherwise this is null.
-            /// The bool generic argument is not used
+            /// The bool generic argument is not used. For thread safety, completing this might be done on multiple threads so it should be ok
+            /// to ignore exceptions in that case.
             /// </summary>
             public TaskCompletionSource<bool> LongPollingCompleter;
         }
@@ -45,7 +46,7 @@ namespace RetroDRY
         public class PushGroup
         {
             public Daton[] Datons;
-            public bool IncludePermissions;
+            public bool IncludeDataDictionary;
         }
 
         /// <summary>
@@ -158,7 +159,7 @@ namespace RetroDRY
                 return new PushGroup
                 {
                     Datons = datons,
-                    IncludePermissions = includePermissions
+                    IncludeDataDictionary = includePermissions
                 };
             }
             return null;
@@ -190,7 +191,11 @@ namespace RetroDRY
                 {
                     cli.FlagPermissionsObsolete = true;
                     var completer = cli.LongPollingCompleter; //another thread could change cli.LongPollingCompleter, so access only through local var
-                    if (completer != null) completer.SetResult(true); 
+                    if (completer != null)
+                    {
+                        try { completer.SetResult(true); }
+                        catch { } //see note in LongPollingCompleted
+                    }
                 }
             }
         }
@@ -232,7 +237,11 @@ namespace RetroDRY
                 if (thisClientChanged)
                 {
                     var completer = cli.LongPollingCompleter; //another thread could change cli.LongPollingCompleter, so access only through local var
-                    if (completer != null) completer.SetResult(true); 
+                    if (completer != null)
+                    {
+                        try { completer.SetResult(true); }
+                        catch { } //see note in LongPollingCompleted
+                    }
                 }
             }
         }

@@ -1,4 +1,4 @@
-import {parseDatonKey, setRowValue} from 'retrodry';
+import {parseDatonKey, afterSetRowValue} from 'retrodry';
 
 //Nonvisual container for the state of a daton stack.
 //To use, pass new instance as props to a DatonStack, then after the stack is rendered, any
@@ -12,19 +12,20 @@ export default class DatonStackState {
 
     //each layer consists of {
     //  stackstate //reference to owning object
+    //  renderCount //integer, incremented to cause the DatonView to be rerendered
+    //  mountCount //integer, incremented to cause the DatonView to be remounted
     //  datonKey
+    //  parsedDatonKey
     //  edit //true if edit mode 
     //  daton //noneditable daton version
     //  datonDef 
     //  lookupSelected //optional function when this layer is a viewon used for lookup; called when item selected; defined in startLookup()
+    //  propagateSaveToViewon //optional function when this layer is a persiston that was opened from a viewon; reflects persison changes in the displayed viewon; defined in gridKeyClicked
     //}
     layers = [];
 
     //if set by host app, DatonView will call this after a successful save, passing args: (datonkey string)
     onLayerSaved;
-
-    //incremented by DatonStack as a way to force rerender of datons (which use uncontrolled inputs)
-    rerenderCount = 0;
 
     //called only by DatonStack in its initialization
     initialize(session, onChanged) { 
@@ -47,11 +48,37 @@ export default class DatonStackState {
         //add layer
         const layer = {
             stackstate: this,
+            renderCount: 0,
+            mountCount: 0,
             datonKey: key,
+            parsedDatonKey: parsedKey,
             edit: edit,
             daton: daton,
             datonDef: datonDef
         };
+        this.layers.push(layer);
+        this.callOnChanged();
+        return layer;
+    }
+
+    //add a layer by viewon type name (having no initial rows); return layer
+    addEmptyViewon(datonType) {
+        //if already there, exit
+        const existingIdx = this.layers.findIndex(x => x.datonKey === datonType);
+        if (existingIdx >= 0) return this.layers[existingIdx];
+        const datonDef = this.session.getDatonDef(datonType);
+
+        //add layer
+        const layer = {
+            stackstate: this,
+            renderCount: 0,
+            mountCount: 0,
+            datonKey: datonType,
+            edit: false,
+            daton: this.session.createEmptyViewon(datonType),
+            datonDef: datonDef
+        };
+        layer.parsedDatonKey = parseDatonKey(layer.daton.key);
         this.layers.push(layer);
         this.callOnChanged();
         return layer;
@@ -71,32 +98,85 @@ export default class DatonStackState {
 
     //replace a viewon key, which performs a search on the new criteria;
     //OR replace a new persiston key with the actual key; cannot be used to change the type!
-    async replaceKey(oldKey, newKey) {
+    async replaceKey(oldKey, newKey, forceLoad) {
         const idx = this.layers.findIndex(x => x.datonKey === oldKey);
         if (idx < 0) return;
-        const daton = await this.session.get(newKey);
+        const daton = await this.session.get(newKey, {forceCheckVersion: forceLoad});
         if (!daton) return;
         const layer = this.layers[idx];
         layer.datonKey = newKey;
         layer.daton = daton;
         layer.edit = false;
+        ++layer.renderCount;
+        ++layer.mountCount;
         this.callOnChanged();
     }
 
+    //called when column header clicked on main viewon table
+    async doSort(layer, colName) {
+        //if we can sort in memory, do that
+        if (layer.daton.isComplete) {
+            const rows = layer.daton[layer.datonDef.mainTableDef.name];
+            rows.sort((a, b) => a[colName] === b[colName] ? 0 : (a[colName] < b[colName] ? -1 : +1));
+            ++layer.renderCount;
+            this.callOnChanged();
+        }
+
+        //incompletely loaded viewons must sort on server
+        else {
+            const keyWithSort = parseDatonKey(layer.datonKey);
+            const pageSegIdx = keyWithSort.otherSegments.findIndex(s => s.indexOf('_page=') === 0);
+            if (pageSegIdx >= 0) keyWithSort.otherSegments.splice(pageSegIdx, 1);
+                const sortSegIdx = keyWithSort.otherSegments.findIndex(s => s.indexOf('_sort=') === 0);
+            if (sortSegIdx >= 0) keyWithSort.otherSegments.splice(sortSegIdx, 1);
+            keyWithSort.otherSegments.push('_sort=' + colName);
+            await this.replaceKey(layer.datonKey, keyWithSort.toKeyString(), false);
+        }
+    }
+
+    //called when a page button clicked on main viewon table
+    async goToPage(layer, pageNo) {
+        const keyWithPage = parseDatonKey(layer.datonKey);
+        const pageSegIdx = keyWithPage.otherSegments.findIndex(s => s.indexOf('_page=') === 0);
+        if (pageSegIdx >= 0) keyWithPage.otherSegments.splice(pageSegIdx, 1);
+        if (pageNo) keyWithPage.otherSegments.push('_page=' + pageNo);
+        await this.replaceKey(layer.datonKey, keyWithPage.toKeyString(), false);
+    }
+
     //called from click event on a foreign key in a grid
-    async gridKeyClicked(ev, layer, tableDef, row, colDef) {
+    async gridKeyClicked(ev, gridLayer, gridTableDef, gridRow, gridColDef) {
         ev.stopPropagation();
 
         //if this layer is a lookup for some other layer and the user clicked on the key of the main table,
         //then copy key/description back and close this layer
-        if (layer.lookupSelected && layer.datonDef.mainTableDef === tableDef) {
-            if (await layer.lookupSelected(row, colDef))
+        if (gridLayer.lookupSelected && gridLayer.datonDef.mainTableDef === gridTableDef) {
+            if (await gridLayer.lookupSelected(gridRow, gridColDef))
                 return;
         }
 
         //fall through to here, so open the persiston referred to by the clicked key value
-        const targetDatonKey = colDef.foreignKeyDatonTypeName + '|=' + row[colDef.name];
-        this.add(targetDatonKey, false);
+        const targetDatonKey = gridColDef.foreignKeyDatonTypeName + '|=' + gridRow[gridColDef.name];
+        const editLayer = await this.add(targetDatonKey, false);
+        if (!editLayer) return;
+
+        //set up behavior for changes saved on edit layer to show up in the calling viewon
+        editLayer.propagateSaveToViewon = (persiston) => {
+            //abort if viewon layer is no longer in the stack 
+            const gridLayerIdx = this.layers.findIndex(x => x === gridLayer);
+            if (gridLayerIdx === -1) return;
+
+            //abort if grid isn't part of a viewon or persiston isn't single-main-row
+            if (parseDatonKey(gridLayer.datonKey).isPersiston()) return;
+            if (editLayer.datonDef.multipleMainRows) return;
+
+            //copy anything over where column names match
+            for (let targetColDef of gridTableDef.cols) {
+                const sourceColDef = editLayer.datonDef.mainTableDef.cols.find(c => c.name === targetColDef.name);
+                if (sourceColDef) gridRow[targetColDef.name] = persiston[sourceColDef.name];
+            }
+            ++gridLayer.renderCount;
+            this.callOnChanged();
+        };
     }
 
     //called from click event on a lookup button to open a viewon for lookup
@@ -104,29 +184,29 @@ export default class DatonStackState {
         //add layer for viewon lookup
         const viewonDef = this.session.getDatonDef(editingColDef.lookupViewonTypeName);
         if (!viewonDef) return;
-        const lookupLayer = await this.add(editingColDef.lookupViewonTypeName, false);
+        const lookupLayer = await this.addEmptyViewon(editingColDef.lookupViewonTypeName);
 
         //define callback when user clicks on a key in the viewon result row;
         //the function is called in gridKeyClicked and returns true on success
         lookupLayer.lookupSelected = async (viewonRow, clickedColDef) => {
             //abort if editing layer is no longer in the stack or is not in edit mode
             const editLayerIdx = this.layers.findIndex(x => x === editingLayer);
-            if (editLayerIdx === -1 || !this.layers[editLayerIdx].edit) return false;
+            if (editLayerIdx === -1) return false;
+            const editingPersiston = editingLayer.parsedDatonKey.isPersiston();
+            if (editingPersiston && !editingLayer.edit) return false;
 
             //abort if clicked col is not the one we need for the editing col
             if (editingColDef.lookupViewonKeyColumnName !== clickedColDef.name) return false;
 
-            //copy key value from viewon (this cascades to also update the description columns)
-            await setRowValue(this.session, editingTableDef, editingColDef, editingRow, viewonRow[clickedColDef.name], null, null, viewonRow);
-            //todo old: editingRow[editingColDef.name] = viewonRow[clickedColDef.name];
-            // //set any leftjoin-defined columns in target row from viewon
-            // for (let descrColDef of editingTableDef.cols) {
-            //     if (descrColDef.leftJoinForeignKeyColumnName === editingColDef.name) {
-            //         const descrValue = viewonRow[descrColDef.leftJoinRemoteDisplayColumnName];
-            //         editingRow[descrColDef.name] = descrValue || null;
-            //     }
-            // }
+            //copy key value from viewon then cascade to also update the description columns
+            let fkValue = viewonRow[clickedColDef.name];
+            if (!editingPersiston) fkValue = fkValue.toString(); //viewon criteria must be strings
+            editingRow[editingColDef.name] = fkValue;
+            ++editingLayer.renderCount;
+            this.callOnChanged();
+            await afterSetRowValue(this.session, editingTableDef, editingColDef, editingRow, null, null, viewonRow);
             this.removeByKey(lookupLayer.datonKey);
+            ++editingLayer.renderCount;
             return true;
         };
     }
