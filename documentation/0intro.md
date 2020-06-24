@@ -1,4 +1,4 @@
-Introduction to RetroDRY
+[docs index](../README.md) > Introduction to RetroDRY
 
 Overview
 ========
@@ -71,8 +71,8 @@ Should I use it?
 
 Here are some of the main points of evaluation to consider:
 
--   **Number of tables. **If your application only deals with a few tables, then the cost of hand-coding load/save functions, API endpoints, and editing forms for those tables is not that great, so RetroDRY could cost a lot of learning time for little benefit. However, if your application has 10 or 100s of tables, then the time spent learning RetroDRY is worth the savings of thousands of lines of code.
--   Legacy database? If your existing database has a lot of features that are not compatible with RetroDRY, it might not be worth it because of having to write code to handle each of those cases. The main one is if tables have multi-column primary keys.
+-   **Number of tables.** If your application only deals with a few tables, then the cost of hand-coding load/save functions, API endpoints, and editing forms for those tables is not that great, so RetroDRY could cost a lot of learning time for little benefit. However, if your application has 10 or 100s of tables, then the time spent learning RetroDRY is worth the savings of thousands of lines of code.
+-   **Legacy database?** If your existing database has a lot of features that are not compatible with RetroDRY, it might not be worth it because of having to write code to handle each of those cases. The main one is if tables have multi-column primary keys.
 
 Data theory
 ===========
@@ -100,11 +100,14 @@ Sample data model
 
     -   PhoneType
     -   SaleStatus
+
 -   Main table diagram, below, shows a couple common considerations:
 
     -   Foreign keys are listed pointing to the parent table from the table holding the reference.
     -   There can be more than one note per line item on a sale, and we assume the UI requirement is for two levels of master-detail on an entry form.
     -   The foreign key from SaleItem to Item may appear redundant, and in the wild, many databases have imperfect normalization (sometimes for good reasons, sometimes mistakes). In this case, the SaleItem's variant is optional because many items do not have any variants.
+
+![sample schema](sample_schema_db.png)
 
 -   While the structure pictured above is fine for traditional data modeling, for RetroDRY we also need to design the persistons as follows:
 
