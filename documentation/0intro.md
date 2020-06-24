@@ -120,6 +120,9 @@ Sample data model
         -   Sale, which contains the line items and notes
     -   Each persiston is noted as a shaded box. Consider that when a sale is loaded, all its line items are loaded too - this is reasonable because each sale will have a reasonable number of items. On the other hand, loading sales when you load the customer is unreasonable, so they are designed as separate persistons. It might be reasonable to consider Item as a "lookup table" meaning it is small and loaded as a unit (a whole-table persiston) but perhaps this hypothetical company has thousands of frequently changing items, so it's more reasonable to load them each as separate persistons.
 
+![sample persistons](sample_schema_persistons.png)
+
+
 The "big idea"
 --------------
 
@@ -157,13 +160,14 @@ High level walkthough
     -   Include boilerplate initialization code.
     -   Include the customer list viewon in a React component. This line of code gives the user the ability to search for customers by any of the criteria you defined earlier, as well as add, edit and delete customers.
 
-        -   Code: &lt;RetroStack seed="CustomerList|+" /&gt;
+        -   Code: `&lt;RetroStack seed="CustomerList|+" /&gt;`
 
 -   If you want to manage your persistons programmatically instead of via user forms, then you can do this in javascript:
 
-    -   const customer = await retrodry.get('customer:123');
-    -   customer.region = 'West';
-    -   await retrodry.save(customer);
+    const customer = await retrodry.get('customer:123');
+    customer.region = 'West';
+    await retrodry.save(customer);
+
 -   This last sample shows how you can think of having access to the database server in client code, but in reality is is going through your app server, with caching, validation and permissions. Only the changed columns get sent back to the server.
 
 Deployment Architecture
@@ -171,6 +175,8 @@ Deployment Architecture
 
 Simplest deployment
 -------------------
+
+![simplest architecture](architecture_basic.png)
 
 In the simplest case the components are:
 
@@ -201,6 +207,8 @@ Deployment options for scaling performance
 
 Deployment options for aggregation
 ----------------------------------
+
+![complex architecture](architecture_complex.png)
 
 -   In some enterprise environments there are many smaller microservices, say for different areas of business data or because they were developed in different eras, but the clients still need to show data from multiple places. In these cases you can build aggregating servers that wrap or combine data from multiple sources into RetroDRY persistons.
 
