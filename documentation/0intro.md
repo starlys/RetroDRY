@@ -207,6 +207,7 @@ Deployment options for scaling performance
 
 Deployment options for aggregation
 ----------------------------------
+-   Warning: As of 2020-June, aggregating architecture support has not been coded.
 
 ![complex architecture](architecture_complex.png)
 
