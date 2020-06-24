@@ -36,7 +36,7 @@ export default (props) => {
     }
 
     //todo language
-    const allowDelete = !datonDef.multipleMainRows && securityUtil.canDeletePersiston(datonDef);
+    const allowDelete = !datonDef.multipleMainRows && !parsedDatonKey.isNew() && securityUtil.canDeletePersiston(datonDef);
     return (
         <div className="daton-banner">
             <div className="right">

@@ -1,4 +1,4 @@
-import { DataDictionaryResponse, GetDatonRequest, LongResponse, DatonDefResponse } from "./wireTypes";
+import { DataDictionaryResponse, GetDatonRequest, LongResponse, DatonDefResponse, MainResponse } from "./wireTypes";
 import { Retrovert } from "./retrovert";
 import DiffTool from "./diffTool";
 import {parseDatonKey} from "./datonKey";
@@ -251,7 +251,8 @@ export default class Session {
     }
 
     //save any number of datons in one transaction; the objects passed in should be abandoned by the caller after a successful save;
-    //returns savePersistonResponse for each daton, and an overall success flag
+    //returns savePersistonResponse for each daton, and an overall success flag, but in the case of an internal server error,
+    //there may be no error messages in the return object
     async save(datons: any[]): Promise<SaveInfo> {
         this.ensureInitialized();
         const diffs: any[] = [];
@@ -289,11 +290,19 @@ export default class Session {
         }
 
         //save on server
-        const request = {
-            sessionKey: this.sessionKey,
-            saveDatons: diffs
-        };
-        const saveResponse = await NetUtils.httpMain(this.baseServerUrl(), request);
+        let saveResponse:MainResponse;
+        try {
+            const request = {
+                sessionKey: this.sessionKey,
+                saveDatons: diffs
+            };
+            saveResponse = await NetUtils.httpMain(this.baseServerUrl(), request);
+        } catch (e) {
+            if (e.message === 'INTERNAL')
+                saveResponse = {savePersistonsSuccess: false};
+            else
+                throw e;
+        }
 
         //unlock whatever we locked (even if failed save)
         if (datonsToLock.length) {

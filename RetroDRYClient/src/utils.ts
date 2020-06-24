@@ -22,6 +22,111 @@ export function getBaseType(wireTypeName: string): string {
     return baseType;
 }
 
+//return a datetime component number into a 2-char string
+function pad2(n: number){
+    if (n < 10) return '0' + n;
+    return n.toString();
+}
+
+//convert a wire datetime (YYYYMMDDMMHH) that must be a 12-char string into an 
+//array of numbers [year, month, day, hour, minute]. The time is offset by the
+//session timezone. The month is in range 1-12. Could throw exceptions.
+function wireDateTimeToNumbers(session: Session, wire: string): number[] {
+    //implementation notes: The point in time represented by the
+    //Date instance is "wrong" because we're avoiding any browser zone conversons.
+    const yr = parseInt(wire.substr(0, 4));
+    const mo = parseInt(wire.substr(4, 2));
+    const dy = parseInt(wire.substr(6, 2));
+    const hr = parseInt(wire.substr(8, 2));
+    const mi = parseInt(wire.substr(10, 2));
+    const d = new Date(Date.UTC(yr, mo - 1, dy, hr, mi + session.timeZoneOffset, 0, 0));
+    return [
+        d.getUTCFullYear(),
+        d.getUTCMonth() + 1,
+        d.getUTCDate(),
+        d.getUTCHours(),
+        d.getUTCMinutes()
+    ];
+}
+
+//convert a wire date (YYYYMMDD) to a readable date for display only; returns empty string if invalid or empty
+export function wireDateToReadable(wire: string|null): string {
+    return wireDateToInput(wire); //happens to be the same implementation
+}
+
+//convert a wire datetime (YYYYMMDDHHMM) to a readable datetime for display only, with timezone conversion;
+//returns empty string if invalid or empty
+export function wireDateTimeToReadable(session: Session, wire: string|null): string {
+    if (!wire || wire.length !== 12) return '';
+    try {
+        const parts = wireDateTimeToNumbers(session, wire);
+        return parts[0] + '-' + pad2(parts[1]) + '-' + pad2(parts[2]) + ' ' + pad2(parts[3]) + ':' + pad2(parts[4]);
+    }  catch {
+        return '';
+    }
+}
+
+//convert a wire date (YYYYMMDD) to a date suitable for an input control; returns empty string if invalid or empty
+export function wireDateToInput(wire: string|null): string {
+    if (!wire || wire.length !== 8) return '';
+    return wire.substr(0, 4) + '-' + wire.substr(4, 2) + '-' + wire.substr(6, 2);    
+}
+
+//convert a wire datetime (YYYYMMDDHHMM) to a date suitable for an input control and a time suitable for an input control; returns empty string if invalid or empty
+export function wireDateTimeToDateTimeInputs(session: Session, wire: string|null): [string, string] {
+    if (!wire || wire.length !== 12) return ['', ''];
+    try {
+        const parts = wireDateTimeToNumbers(session, wire);
+        return [
+            parts[0] + '-' + pad2(parts[1]) + '-' + pad2(parts[2]),
+            pad2(parts[3]) + ':' + pad2(parts[4])
+        ];
+    }  catch {
+        return ['', ''];
+    }
+}
+
+//convert a value from a date input control (YYYY-M-D, allowing padding) to a wire date (YYYYMMDD), or null if invalid or empty
+export function inputDateToWire(ctrlvalue: string|null): string|null {
+    if (!ctrlvalue) return null;
+    const parts = ctrlvalue.split('-');
+    if (parts.length !== 3) return null;
+    try {
+        const yr = parseInt(parts[0]);
+        const mo = parseInt(parts[1]);
+        const dy = parseInt(parts[2]);
+        return yr + pad2(mo) + pad2(dy);
+    } catch {
+        return null;
+    }
+}
+
+//convert a value from a date input control (YYYY-M-D, allowing padding) and a time input control(h:m allowing padding and seconds)
+//to a wire datetime (YYYYMMDDHHMM), or null if invalid or empty
+export function inputDateTimeToWire(session: Session, dctrlvalue: string|null, tctrlvalue: string|null): string|null {
+    if (!dctrlvalue) return null;
+    if (!tctrlvalue) tctrlvalue = '00:00';
+    const dparts = dctrlvalue.split('-');
+    const tparts = tctrlvalue.split(':');
+    if (dparts.length !== 3 || tparts.length < 2) return null;
+    try {
+        const yr = parseInt(dparts[0]);
+        const mo = parseInt(dparts[1]);
+        const dy = parseInt(dparts[2]);
+        const hr = parseInt(tparts[0]);
+        const mi = parseInt(tparts[1]);
+
+        const d = new Date(Date.UTC(yr, mo - 1, dy, hr, mi - session.timeZoneOffset, 0, 0));
+        return d.getUTCFullYear()
+            + pad2(d.getUTCMonth() + 1)
+            + pad2(d.getUTCDate())
+            + pad2(d.getUTCHours())
+            + pad2(d.getUTCMinutes());
+    } catch {
+        return null;
+    }
+}
+
 //validate a string against the validation rules in colDef, and return null if ok or an error message
 export function validateString(colDef: ColDefResponse, value: string): string|null {
     const s = value || '';
@@ -213,6 +318,19 @@ export async function processNumberRangeEntry(session: Session, tableDef: TableD
     return [msg, anyCascades];
 }
 
+//if date/datetime or date/datetime range (as wire string) is ok, returns null; if bad, sets row invalid message and returns message.
+//session is optional.
+//Return is 2-element array with invalid message and bool flag indicating if any additional columns were updated
+export async function processDateTimeEntry(session: Session, tableDef: TableDefResponse, colDef: ColDefResponse, 
+    row: any, invalidMemberName: string): Promise<[string|null, boolean]> {
+    const value = row[colDef.name];
+    let msg = null;
+    if (!value && (colDef.wireType === 'datetime' || colDef.wireType == 'date')) 
+        msg = colDef.prompt || '!';
+    const anyCascades = await afterSetRowValue(session, tableDef, colDef, row, invalidMemberName, msg, null);
+    return [msg, anyCascades];
+}
+
 //wrapper for validateXX functions; sets invalid message in row and returns message, but if there was already a message there, just use it
 function validateAnyType(colDef: ColDefResponse, isCriteria: boolean, row: any, baseType: string, value: any, invalidMemberName: string) {
     let msg: string|null|undefined = row[invalidMemberName];
@@ -226,7 +344,7 @@ function validateAnyType(colDef: ColDefResponse, isCriteria: boolean, row: any, 
         else
             [msg, ] = validateNumber(colDef, baseType, value);
     } else
-        msg = null; //todo other types
+        msg = null; //other types don't have local validation: bool, date/times
     
     if (msg) row[invalidMemberName] = msg;
     return msg;
@@ -287,199 +405,5 @@ export function splitOnTilde(s: string) {
     if (lo.length === 0) lo = null;
     if (hi.length === 0) hi = null;
     return [lo, hi];
-}
-
-
-
-
-
-//TODO CONFUSING SECTION ON ALL DATETIME STUFF BELOW
-
-//return a datetime component number into a 2-char string
-function pad2(n: number){
-    if (n < 10) return '0' + n;
-    return n.toString();
-}
-
-//convert a wire datetime (YYYYMMDDMMHH) that must be a 12-char string into an 
-//array of numbers [year, month, day, hour, minute]. The time is offset by the
-//session timezone. The month is in range 1-12. Could throw exceptions.
-function wireDateTimeToNumbers(session: Session, wire: string): number[] {
-    //implementation notes: The point in time represented by the
-    //Date instance is "wrong" because we're avoiding any browser zone conversons.
-    const yr = parseInt(wire.substr(0, 4));
-    const mo = parseInt(wire.substr(4, 2));
-    const dy = parseInt(wire.substr(6, 2));
-    const hr = parseInt(wire.substr(8, 2));
-    const mi = parseInt(wire.substr(10, 2));
-    const d = new Date(Date.UTC(yr, mo - 1, dy, hr, mi + session.timeZoneOffset, 0, 0));
-    return [
-        d.getUTCFullYear(),
-        d.getUTCMonth() + 1,
-        d.getUTCDate(),
-        d.getUTCHours(),
-        d.getUTCMinutes()
-    ];
-}
-
-//convert a wire date (YYYYMMDD) to a readable date for display only; returns empty string if invalid or empty
-export function wireDateToReadable(wire: string|null): string {
-    return wireDateToInput(wire); //happens to be the same implementation
-}
-
-//convert a wire datetime (YYYYMMDDHHMM) to a readable datetime for display only, with timezone conversion;
-//returns empty string if invalid or empty
-export function wireDateTimeToReadable(session: Session, wire: string|null): string {
-    if (!wire || wire.length !== 12) return '';
-    try {
-        const parts = wireDateTimeToNumbers(session, wire);
-        return parts[0] + '-' + pad2(parts[1]) + '-' + pad2(parts[2]) + ' ' + pad2(parts[3]) + ':' + pad2(parts[4]);
-    }  catch {
-        return '';
-    }
-}
-
-//convert a wire date (YYYYMMDD) to a date suitable for an input control; returns empty string if invalid or empty
-export function wireDateToInput(wire: string|null): string {
-    if (!wire || wire.length !== 8) return '';
-    return wire.substr(0, 4) + '-' + wire.substr(4, 2) + '-' + wire.substr(6, 2);    
-}
-
-//convert a wire datetime (YYYYMMDDHHMM) to a date suitable for an input control and a time suitable for an input control; returns empty string if invalid or empty
-export function wireDateTimeToDateTimeInputs(session: Session, wire: string|null): [string, string] {
-    if (!wire || wire.length !== 12) return ['', ''];
-    try {
-        const parts = wireDateTimeToNumbers(session, wire);
-        return [
-            parts[0] + '-' + pad2(parts[1]) + '-' + pad2(parts[2]),
-            pad2(parts[3]) + ':' + pad2(parts[4])
-        ];
-    }  catch {
-        return ['', ''];
-    }
-}
-
-//todo
-//convert a wire datetime (YYYYMMDDHHMM) to a time suitable for an input control, ignoring the date portion; returns empty string if invalid or empty
-/*export function wireDateTimeToTimeInput(session: Session, wire: string|null): string {
-    if (!wire || wire.length !== 12) return '';
-    try {
-        const parts = wireDateTimeToNumbers(session, wire);
-        return pad2(parts[3]) + ':' + pad2(parts[4]);
-    }  catch {
-        return '';
-    }
-}*/
-
-//convert a value from a date input control (YYYY-M-D, allowing padding) to a wire date (YYYYMMDD), or null if invalid or empty
-export function inputDateToWire(ctrlvalue: string|null): string|null {
-    if (!ctrlvalue) return null;
-    const parts = ctrlvalue.split('-');
-    if (parts.length !== 3) return null;
-    try {
-        const yr = parseInt(parts[0]);
-        const mo = parseInt(parts[1]);
-        const dy = parseInt(parts[2]);
-        return yr + pad2(mo) + pad2(dy);
-    } catch {
-        return null;
-    }
-}
-
-//convert a value from a date input control (YYYY-M-D, allowing padding) and a time input control(h:m allowing padding and seconds)
-//to a wire datetime (YYYYMMDDHHMM), or null if invalid or empty
-export function inputDateTimeToWire(session: Session, dctrlvalue: string|null, tctrlvalue: string|null): string|null {
-    if (!dctrlvalue) return null;
-    if (!tctrlvalue) tctrlvalue = '00:00';
-    const dparts = dctrlvalue.split('-');
-    const tparts = tctrlvalue.split(':');
-    if (dparts.length !== 3 || tparts.length < 2) return null;
-    try {
-        const yr = parseInt(dparts[0]);
-        const mo = parseInt(dparts[1]);
-        const dy = parseInt(dparts[2]);
-        const hr = parseInt(tparts[0]);
-        const mi = parseInt(tparts[1]);
-
-        const d = new Date(Date.UTC(yr, mo - 1, dy, hr, mi - session.timeZoneOffset, 0, 0));
-        return d.getUTCFullYear()
-            + pad2(d.getUTCMonth() + 1)
-            + pad2(d.getUTCDate())
-            + pad2(d.getUTCHours())
-            + pad2(d.getUTCMinutes());
-    } catch {
-        return null;
-    }
-}
-
-/*todo
-export function expandDateTimeRange(s: string): [string|null, string|null, string|null, string|null] {
-    const [loBoth, hiBoth] = splitOnTilde(s);
-    let loDate:string|null = null, loTime:string|null = null, hiDate:string|null = null, hiTime:string|null = null;
-    if (loBoth) {
-        loDate = loBoth.substr(0, 4) + '-' + loBoth.substr(4, 2) + '-' + loBoth.substr(6, 2);
-        if (loBoth.length > 8) loTime = loBoth.substr(8, 2) + ':' + loBoth.substr(10, 2);
-    }
-    if (hiBoth) {
-        hiDate = hiBoth.substr(0, 4) + '-' + hiBoth.substr(4, 2) + '-' + hiBoth.substr(6, 2);
-        if (hiBoth.length > 8) hiTime = hiBoth.substr(8, 2) + ':' + hiBoth.substr(10, 2);
-    }
-    return [loDate, loTime, hiDate, hiTime];
-}
-
-export function compactDateTimeRange(loDate: string|null, loTime: string|null, hiDate: string|null, hiTime: string|null): string|null {
-    const compactTime = (s:string) => {
-        if (s.length === 5) return s.substr(0, 2) + s.substr(3, 2);
-        if (s.length === 4) return '0' + s.substr(0, 1) + s.substr(2, 2);
-        return '0000';
-    };
-    let loBoth = loDate?.replace(/-/g, '');
-    if (loTime) loBoth += compactTime(loTime);
-    let hiBoth = hiDate?.replace(/-/g, '');
-    if (hiTime) hiBoth += compactTime(hiTime);
-    return 
-}
-*/
-
-//todo move
-/*
-//validate a date (user entered string), and return null if ok or an error message
-export function validateDate(colDef: ColDefResponse, value: string): string|null {
-    if (!value) {
-        if (colDef.wireType === 'ndate') return null;
-        return colDef.prompt || '';
-    }
-    if (typeof(value) !== 'string') return 'Invalid date entry type'; 
-    //const patternMatch = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    //if (!patternMatch) return 'Invalid date pattern';
-    return null;
-}
-
-//validate a datetime (user entered ISO string) , and return null if ok or an error message
-export function validateDateTime(colDef: ColDefResponse, value: string): string|null {
-    if (!value) {
-        if (colDef.wireType === 'ndatetime') return null;
-        return colDef.prompt || '';
-    }
-    if (typeof(value) !== 'string') return 'Invalid date entry type'; 
-    const datePart = value.substr(0, 10);
-    let msg = validateDate(colDef, datePart);
-    if (msg) return msg;
-    var ms = Date.parse(value);
-    if(isNaN(ms)) return 'Invalid time pattern';
-    return null;
-}*/
-
-//if date/datetime or date/datetime range (as wire string) is ok, returns null; if bad, sets row invalid message and returns message.
-//session is optional.
-//Return is 2-element array with invalid message and bool flag indicating if any additional columns were updated
-export async function processDateTimeEntry(session: Session, tableDef: TableDefResponse, colDef: ColDefResponse, 
-    row: any, invalidMemberName: string): Promise<[string|null, boolean]> {
-    const value = row[colDef.name];
-    let msg = null;
-    if (!value && (colDef.wireType === 'datetime' || colDef.wireType == 'date')) 
-        msg = colDef.prompt || '!';
-    const anyCascades = await afterSetRowValue(session, tableDef, colDef, row, invalidMemberName, msg, null);
-    return [msg, anyCascades];
 }
 

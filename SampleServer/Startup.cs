@@ -96,6 +96,13 @@ namespace SampleServer
             //error reporting; In a real app you would send this to your logging destinations
             Globals.Retroverse.Diagnostics.ReportClientCallError = msg => Console.WriteLine(msg);
 
+            //sample exception text rewriter
+            Globals.Retroverse.CleanUpSaveException = (user, ex) =>
+            {
+                if (ex.Message.Contains("violates foreign key constraint")) return "Cannot delete record because other records depend on it.";
+                return ex.Message;
+            };
+
             //only for integration testing
             if (integrationTestMode)
                 InitializeRetroDRYIntegrationTesting(ddict, dbResolver);

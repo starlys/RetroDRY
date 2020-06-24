@@ -52,9 +52,12 @@ export default (props) => {
     } else if (baseType === 'datetime') {
         const readable = wireDateTimeToReadable(session, value)
         return <span className="card-value" style={wrapStyle}>{readable}</span>;
+    } else if (baseType === 'double' || baseType === 'decimal') {
+        //future feature: format floats with the right number of decimal places; for now, always assume 2
+        const readable = value.toFixed(2);
+        return <span className="card-value" style={wrapStyle}>{readable}</span>;
     }
 
-    //default for numbers, date
+    //default for numbers
     return <span className="card-value" style={wrapStyle}>{value}</span>;
 };
-//todo float format

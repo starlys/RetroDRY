@@ -53,6 +53,21 @@ namespace RetroDRY
         }
 
         /// <summary>
+        /// Change the value of certain defaults to be more user friendly (namely, non-nullable dates and times)
+        /// </summary>
+        /// <param name="d">a newly created persisto</param>
+        public static void FixTopLevelDefaultsInNewPersiston(DatonDef datondef, Daton d)
+        {
+            if (datondef.MultipleMainRows) return;
+            foreach (var coldef in datondef.MainTableDef.Cols)
+                if (coldef.CSType == typeof(DateTime))
+                {
+                    var field = datondef.Type.GetField(coldef.Name);
+                    field.SetValue(d, DateTime.UtcNow);
+                }
+        }
+
+        /// <summary>
         /// Wrapper to Convert.ChangeType that allows for nullable types, treating empty strings as null
         /// </summary>
         public static object ChangeType(object value, Type type)
