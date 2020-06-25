@@ -66,6 +66,7 @@ export interface LongResponse extends RetroResponse
 export interface DataDictionaryResponse
 {
     datonDefs: DatonDefResponse[];
+    messageConstants: any;
 }
 
 export interface DatonDefResponse

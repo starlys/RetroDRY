@@ -33,7 +33,7 @@ namespace RetroDRY
             //custom validation
             if (datondef.CustomValidator != null)
             {
-                var errs = await datondef.CustomValidator(daton);
+                var errs = await datondef.CustomValidator(daton, User);
                 if (errs != null) Errors.AddRange(errs);
             }
         }

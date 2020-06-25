@@ -76,6 +76,11 @@ namespace RetroDRY
     public class DataDictionaryResponse
     {
         public List<DatonDefResponse> DatonDefs { get; set; }
+
+        /// <summary>
+        /// Natural language messages whose keys match those desclared in Constants.EnglishMessages, in the language of this session
+        /// </summary>
+        public Dictionary<string, string> MessageConstants { get; set; }
     }
 
     public class DatonDefResponse

@@ -210,10 +210,10 @@ namespace UnitTest
             firstnamedef.SetPrompt("fr", "PREMIER");
             Assert.AreEqual(3, firstnamedef.Prompt.Count);
             var birgitte = new User { LangCode = "de" };
-            var wiredict = Retrovert.DataDictionaryToWire(ddict, birgitte);
+            var wiredict = Retrovert.DataDictionaryToWire(ddict, birgitte, null);
             Assert.AreEqual("ERSTE", wiredict.DatonDefs[0].MainTableDef.Cols.Single(c => c.Name == "firstName").Prompt);
             var jaques = new User { LangCode = "fr" };
-            wiredict = Retrovert.DataDictionaryToWire(ddict, jaques);
+            wiredict = Retrovert.DataDictionaryToWire(ddict, jaques, null);
             Assert.AreEqual("PREMIER", wiredict.DatonDefs[0].MainTableDef.Cols.Single(c => c.Name == "firstName").Prompt);
         }
     }

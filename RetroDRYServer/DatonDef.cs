@@ -32,7 +32,7 @@ namespace RetroDRY
         /// <summary>
         /// Injectable custom validator
         /// </summary>
-        public Func<Daton, Task<IEnumerable<string>>> CustomValidator;
+        public Func<Daton, IUser, Task<IEnumerable<string>>> CustomValidator;
 
         /// <summary>
         /// Injectable initializer of new datons

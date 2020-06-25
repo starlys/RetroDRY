@@ -416,7 +416,8 @@ namespace RetroDRY
         /// <summary>
         /// Convert the serializable portions of a data dictionary to a wire-ready structure.
         /// </summary>
-        public static DataDictionaryResponse DataDictionaryToWire(DataDictionary ddict, IUser user)
+        /// <param name="languageMessages">may be null; see Retroverse.LanguageMessages</param>
+        public static DataDictionaryResponse DataDictionaryToWire(DataDictionary ddict, IUser user, Dictionary<string, Dictionary<string, string>> languageMessages)
         {
             var guard = new SecurityGuard(ddict, user);
             var datonWires = new List<DatonDefResponse>();
@@ -432,9 +433,21 @@ namespace RetroDRY
                     MultipleMainRows = datondef.MultipleMainRows
                 });
             }
+
+            var messages = new Dictionary<string, string>();
+            Dictionary<string, string> dictByLanguage = null;
+            languageMessages?.TryGetValue(user.LangCode, out dictByLanguage);
+            foreach ((string code, string englishMessage) in Constants.EnglishMessages)
+            {
+                messages[code] = englishMessage;
+                string overrideMessage = null;
+                if (dictByLanguage?.TryGetValue(code, out overrideMessage) == true) messages[code] = overrideMessage;
+            }
+
             return new DataDictionaryResponse
             {
-                DatonDefs = datonWires
+                DatonDefs = datonWires,
+                MessageConstants = messages
             };
         }
 

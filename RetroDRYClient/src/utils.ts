@@ -273,7 +273,7 @@ export async function afterSetRowValue(session:Session, tableDef: TableDefRespon
         anyCascades = lookupCascadeResult === 2;
         if (lookupCascadeResult === 0) {
             ok = false;
-            invalidMessage = 'Lookup value does not exist'; //todo language
+            invalidMessage = session.dataDictionary!.messageConstants.ERRLOOKUP;
         }
     }
 

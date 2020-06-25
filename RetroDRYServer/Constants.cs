@@ -65,5 +65,31 @@ namespace RetroDRY
             (typeof(byte[]), TYPE_BLOB),
             (typeof(byte[]), TYPE_NBLOB)
         };
+
+        /// <summary>
+        /// English language prompts used on client (other languages can be injected)
+        /// </summary>
+        public static readonly (string, string)[] EnglishMessages = new[]
+        {
+            //related to errors
+            ("ERRLOOKUP", "Lookup value does not exist"),
+            ("ERRLOCK", "Cannot lock: another user is editing this"),
+            ("ERRUNLOCK", "Cannot unlock"),
+            ("ERRINTERNAL", "Internal server error"),
+
+            //buttons
+            ("BTNRDELETE", "Really delete"),
+            ("BTNDELETE", "Delete"),
+            ("BTNEDIT", "Edit"),
+            ("BTNSAVE", "Save"),
+            ("BTNKEEP", "Keep"),
+            ("BTNCANCELEDIT", "Cancel Edits"),
+
+            //info messages
+            ("INFOWORKING", "Working"),
+
+            //navigational
+            ("NAVPAGE", "Page")
+        };
     }
 }

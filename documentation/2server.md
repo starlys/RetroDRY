@@ -399,12 +399,9 @@ MyGlobals.DataDictionary = dataDictionary;
 ```c#
 var ticklerDate = dataDictionary.Daton["Customer"].Table["Customer"].AddCustomColumn("TicklerDate", typeof(DateTime));
 tickerDate.SetPrompt("Tickler Date"); //set up other data dictionary info here
-```
 
-    -   (In practice you would design storage for all your custom columns and loop through them to push them into the data dictionary, instead of line by line as in this example. Also see the data model section for how to make room in your database to store custom values.) Example to override load and save:
-
-```c#
-dataDictionary.Daton["Customer"].SqlOverride = new CustomerSql(); //CustomerSql is a class that overrides some or all SQL behavior
+//In practice you would design storage for all your custom columns and loop through them to push them into the data dictionary, 
+//instead of line by line as in this example. Also see the data model section for how to make room in your database to store custom values.) 
 ```
 
 -   When you are done setting up all the data dictionary details, call DataDictionary.FinalizeInheritance; this copies inherited metadata based on the InheritFrom annotation.
@@ -417,11 +414,12 @@ dataDictionary.Daton["Customer"].SqlOverride = new CustomerSql(); //CustomerSql 
     -   Validators are async so you could potentially check with an outside system during validation.
     -   Example to set a persiston validator:
 
-        -   `dataDictionary.DatonDefs["Customer"].Validator = (cust) => { /* customer validation here */ };`
+        -   `dataDictionary.DatonDefs["Customer"].Validator = (cust, user) => { /* customer validation here */ };`
 
     -   Example to set up a viewon criteria validator (which is run before viewon loads):
 
-        -   `dataDictionary.DatonDefs["CustomerList"].Validator = (cri) => { /* customer list criteria validation here */ };`
+        -   (As of 2020 June, this has not been coded!)
+        -   `dataDictionary.DatonDefs["CustomerList"].Validator = (cri, user) => { /* customer list criteria validation here */ };`
 
 ### Default values
 
@@ -434,9 +432,17 @@ dataDictionary.Daton["Customer"].SqlOverride = new CustomerSql(); //CustomerSql 
 -   For a simple role system, see UserCache class in the sample app.
 -   For a complex role system, you would read permission data from the database and create the roles, storing them in global variables.
 
-### Override save error messages
+### Override language messages
 
--   To change cryptic database exceptions into user-readable strings, set Retroverse.CleanUpSaveException to a function that returns the improved error message.
+There are multiple places where you can inject messages by language:
+
+-   Changing table and column prompts: See section above on data dictionary setup.
+-   Changing client side labels and messages: Inject a dictionary by setting Retroverse.LanguageMessages (based on codes found in Constants.cs)
+-   Changing validation messages for custom validation: That is handled in your injected validator function (see validation section above).
+-   Changing validation messages for built-in validation: Set any of the messages defined in ColDef to include additional languages like this:
+    -   `dataDictionary.Daton["Customer"].Table["Customer"].Column["Rating"].RangeValidationMessage["de"] = "Muss 0-5 sein";`
+-   Changing cryptic database exceptions into user-readable strings: Set Retroverse.CleanUpSaveException to a function that returns the improved error message.
+-   Changing exception messages for errors that are related to bugs: In this case, only the hard coded English messages are supported.
 
 ### Initialize retroverse and API
 
@@ -454,14 +460,22 @@ Load and save overrides
 -   By default RetroDRY uses the data dictionary to construct SQL selects, inserts, updates, and deletes. However there are cases where your database schema doesn't match the in-memory daton structure exactly, or you use stored procedures, or you need some kind of optimization, such as a full text search. For these cases you can override the load, save, and/or some of the detail behaviors.
 -   To override this behavior, first create a class that derives from RetroSql with your Daton subclass as a generic type argument, like this:
 
-    -   public class CustomerSql : RetroSql { ... }
--   In that class, you can override these methods to either write all new behavior or override certain details. You should look at the RetroDRY source code to fully understand how to override behavior.
+    -   `public class CustomerSql : RetroSql { ... }`
+-   In that class, you can override methods to either write all new behavior or override certain details. You should look at the RetroDRY source code to fully understand how to override behavior.
+-   To inject your custom class into the framework:
+
+```c#
+//Example to override load and save:
+dataDictionary.Daton["Customer"].SqlOverride = new CustomerSql(); //CustomerSql is a class that overrides some or all SQL behavior
+```
+
 -   Overridable methods for loading:
 
     -   Load() - Override this to load the daton by key value, and bypass all default behavior. Or you can call the base behavior and add some post-loading behavior after that.
     -   LoadTable() - Override this to change the loading behavior for one table. The default behavior loads the rows related to the daton at once even if it is a child table that cannot select by a single parent key. The return value from this method is a structure of lists of rows indexed by the parent key value, so that the framework can distribute those rows to their parents.
     -   MainTableWhereClause() - Override this to change the where-clause on the main table's load. There are two overloads of the method, one for persistons and one for viewons. A typical use for this is to define your own special criteria that don't map to column names. In this case, you can all the base implementation then modify the where clause to include your implementation of the special criteria, if present.
     -   SqlColumnExpression() - Override this to change the column name or expression to use to load a column.
+
 -   Overridable methods for saving:
 
     -   Save() - Override this to change the save behavior as a whole. You receive the pristine and modifed daton versions as well as the diff, so you can scan for values and call stored procedures from here. Be sure that your implementation reads database-assigned primary keys assigns them to the Modified persison's rows; this allows the framework to detect the new daton key for newly inserted persistons.
@@ -469,6 +483,7 @@ Load and save overrides
     -   PopulateWriterColumns() - Override this to change the way column values are accumulated for a particular row. This gets called when the diff row is being examined, for both insert and updates. The default behavior appends all columns from a row (except primary key and computed columns) to a SqlWriteBuilder instance, including custom values. You might override this to append more values to the SqlWriteBuilder or change the values.
     -   DeleteRowWithCascade() - Override this to change the delete behavior for a row with cascading to child rows. The default implementation recursively calls DeleteSingleRow, but if you have a stored procedure or some other way to handle cascading, override this method.
     -   DeleteSingleRow() - Override this to change delete behavior for a single row. The framework will call this for the most nested child rows first, working up to the top level deleted row, so the implementation of this override does not need to cascade.
+
 -   Overridable methods that affect both save and load:
 
     -   CustomizeSqlStatement() - Override this to rewrite the actual SQL statement as a string; this may be any kind of statement. This is a last resort if you can't override the behavior using the other virtual methods.

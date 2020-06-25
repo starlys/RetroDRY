@@ -7,7 +7,7 @@ Create sample database
 ----------------------
 
 -   Development has focused on PostgreSQL, so use that for quickest results.
--   Refer to the server implementation guide for the crete-table script for the RetroLock table.
+-   Refer to the server implementation guide for the create-table script for the RetroLock table.
 -   Then run the create table script below to add sample tables that are used by the sample server and client and integration tests.
 
 Create table scripts for sample database
@@ -100,6 +100,7 @@ SaleItemNoteId serial primary key,
 SaleItemId int not null references SaleItem,
 Note varchar(4000)
 );
+```
 
 Server side setup
 -----------------
@@ -109,7 +110,7 @@ Server side setup
 
     -   Open solution RetroDRY.sln
     -   Set startup project to SampleServer.
-    -   Create file SampleServer/appsettings\_dev.json by copying the content of appsettings\_sample.json and modifying it to suit your local database server.
+    -   Create file SampleServer/appsettings/_dev.json by copying the content of appsettings/_sample.json and modifying it to suit your local database server.
     -   Run server. This opens a window noting that it is listening on port 5001 (https)
 
 Client RetroDRY library setup

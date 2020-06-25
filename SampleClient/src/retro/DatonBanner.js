@@ -10,8 +10,9 @@ import {securityUtil} from 'retrodry';
 //props.removeClicked is the handler for remove button (meaning remove daton from stack)
 //props.deleteClicked is the handler for deleting a persiston (only called after this component handles confirmation)
 //props.parsedDatonKey
+//props.session is the Session object for language strings 
 export default (props) => {
-    const {datonDef, editState, parsedDatonKey} = props;
+    const {datonDef, editState, parsedDatonKey, session} = props;
     const [isDeleteConfirming, setDeleteConfirming] = useState(false);
 
     //event handlers
@@ -35,7 +36,7 @@ export default (props) => {
         title = 'Query: ' + title;
     }
 
-    //todo language
+    const lang = session.dataDictionary.messageConstants;
     const allowDelete = !datonDef.multipleMainRows && !parsedDatonKey.isNew() && securityUtil.canDeletePersiston(datonDef);
     return (
         <div className="daton-banner">
@@ -44,17 +45,17 @@ export default (props) => {
                     <button className="btn-delete-row" onClick={deleteStarted}>X</button>
                 }
                 {(editState === 2 && isDeleteConfirming) && <>
-                    <span>Really delete {title}?</span>
-                    <button className="btn-delete-row" onClick={props.deleteClicked}>Delete</button>
-                    <button onClick={deleteCanceled}>Keep</button>
+                    <span>{lang.BTNRDELETE} {title}?</span>
+                    <button className="btn-delete-row" onClick={props.deleteClicked}>{lang.BTNDELETE}</button>
+                    <button onClick={deleteCanceled}>{lang.BTNKEEP}</button>
                 </>}
             </div>
             {editState !== 2 && <button onClick={props.removeClicked}> X </button>}
             {title}
-            {editState === -1 && <button>Working...</button>}
-            {editState === 1 && <button onClick={props.editClicked}>Edit</button>}
-            {editState === 2 && <button onClick={props.saveClicked}>Save</button>}
-            {editState === 2 && <button onClick={props.cancelClicked}>Cancel Edits</button>}
+            {editState === -1 && <button>{lang.INFOWORKING}...</button>}
+            {editState === 1 && <button onClick={props.editClicked}>{lang.BTNEDIT}</button>}
+            {editState === 2 && <button onClick={props.saveClicked}>{lang.BTNSAVE}</button>}
+            {editState === 2 && <button onClick={props.cancelClicked}>{lang.BTNCANCELEDIT}</button>}
         </div>
     );
 

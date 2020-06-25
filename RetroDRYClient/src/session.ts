@@ -28,7 +28,7 @@ export default class Session {
     //empty string for the default language or a code supported by the server; caller should set this
     languageCode: string = '';
 
-    //the data dictionary; set in start()
+    //the data dictionary; set in start() (also contains language messages)
     dataDictionary?: DataDictionaryResponse;
 
     //if set, Session will call this whenever a daton is received from the server (when initiated by this client)
