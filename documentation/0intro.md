@@ -71,7 +71,8 @@ Should I use it?
 
 Here are some of the main points of evaluation to consider:
 
--   **Number of tables.** If your application only deals with a few tables, then the cost of hand-coding load/save functions, API endpoints, and editing forms for those tables is not that great, so RetroDRY could cost a lot of learning time for little benefit. However, if your application has 10 or 100s of tables, then the time spent learning RetroDRY is worth the savings of thousands of lines of code.
+-   **Number of tables.** If your application only deals with a few tables, then the cost of hand-coding load/save functions, API endpoints, and editing forms for those tables is not that great, so RetroDRY could cost a lot of learning time for little benefit. However, if your application has 10s or 100s of tables, then the time spent learning RetroDRY is worth the savings of thousands of lines of code.
+-   **Customer-facing?** If your application has a lot of use by internal business users, they will like the consistent interface, but if it is mainly customer facing, the users might want a simplified interface without showing the daton stack.
 -   **Legacy database?** If your existing database has a lot of features that are not compatible with RetroDRY, it might not be worth it because of having to write code to handle each of those cases. The main one is if tables have multi-column primary keys.
 
 Data theory

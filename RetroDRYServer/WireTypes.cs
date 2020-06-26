@@ -168,24 +168,14 @@ namespace RetroDRY
         public string ForeignKeyDatonTypeName { get; set; }
 
         /// <summary>
-        /// When this column is a left-joined description column, the foreign key column in this same table
+        /// Information needed to define selection behavior
         /// </summary>
-        public string LeftJoinForeignKeyColumnName;
+        public ColDef.SelectBehaviorInfo SelectBehavior;
 
         /// <summary>
-        /// When this column is a left-joined description column, the column in the joined table to join in (usually a name or description column)
+        /// Information needed to load this column via a left-join.
         /// </summary>
-        public string LeftJoinRemoteDisplayColumnName;
-
-        /// <summary>
-        /// The viewon type name used to choose values for this column
-        /// </summary>
-        public string LookupViewonTypeName;
-
-        /// <summary>
-        /// Used with LookupViewonTypeName; refers to the key column in the viewon whose value should be copied into this column
-        /// </summary>
-        public string LookupViewonKeyColumnName;
+        public ColDef.LeftJoinInfo LeftJoin;
 
         /// <summary>
         /// If true, this column is the readable name or description that users would see to identify the row (or in some cases it could also be the primary key)

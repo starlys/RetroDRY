@@ -26,8 +26,8 @@ export default (props) => {
     const wrapStyle = {width: width};
     const baseType = getBaseType(colDef.wireType);
 
-    //determine from metadata if this is a dropdown select
-    if (!selectSource && !colDef.lookupViewonTypeName && colDef.foreignKeyDatonTypeName) {
+    //determine from metadata if this is a simple dropdown select (ignore if complex select behavior is defined) //todo be smarter here
+    if (!selectSource && !colDef.selectBehavior && colDef.foreignKeyDatonTypeName) {
         const selectDef = session.getDatonDef(colDef.foreignKeyDatonTypeName);
         if (selectDef && selectDef.multipleMainRows) {
             session.get(colDef.foreignKeyDatonTypeName + '|+', {doSubscribeEdit: true}).then(d => {

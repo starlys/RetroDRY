@@ -26,6 +26,36 @@ namespace RetroDRY
             public string RemoteDisplayColumnName;
         }
 
+        public class SelectBehaviorInfo
+        {
+            /// <summary>
+            /// The viewon type name used to choose values for this column
+            /// </summary>
+            public string ViewonTypeName;
+
+            /// <summary>
+            /// If set, the viewon will be seeded with a value for this criterion
+            /// </summary>
+            public string AutoCriterionName { get; set; }
+
+            /// <summary>
+            /// When used with AutoCriterionName, the viewon's criteria value is taken from the value of this column in the local row
+            /// </summary>
+            public string AutoCriterionValueColumnName { get; set; }
+
+            /// <summary>
+            /// The value in the viewon's main result table to be copied back into the column being edited; if omitted, the Key column
+            /// of the viewon will be used.
+            /// </summary>
+            public string ViewonValueColumnName { get; set; }
+
+            /// <summary>
+            /// If true, all possible values from the viewon are shown as a dropdown list (only use if you know the number of options will be reasonable);
+            /// if false, then the user will open the viewon separately and perform a search
+            /// </summary>
+            public bool UseDropdown { get; set; }
+        }
+
         /// <summary>
         /// SQL column name and name of Field in the containing Row class
         /// </summary>
@@ -62,14 +92,9 @@ namespace RetroDRY
         public string ForeignKeyDatonTypeName;
 
         /// <summary>
-        /// The viewon type name used to choose values for this column
+        /// Information needed to define selection behavior
         /// </summary>
-        public string LookupViewonTypeName;
-
-        /// <summary>
-        /// Used with LookupViewonTypeName; refers to the key column in the viewon whose value should be copied into this column
-        /// </summary>
-        public string LookupViewonKeyColumnName;
+        public SelectBehaviorInfo SelectBehavior;
 
         /// <summary>
         /// Information needed to load this column via a left-join.

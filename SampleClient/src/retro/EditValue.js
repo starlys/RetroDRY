@@ -1,6 +1,6 @@
 import React, {useState} from 'react';
 import EditorPopupError from './EditorPopupError';
-import {splitOnTilde, getInvalidMemberName, processNumberEntry, processNumberRangeEntry, processStringEntry, 
+import {DatonKey, splitOnTilde, getInvalidMemberName, processNumberEntry, processNumberRangeEntry, processStringEntry, 
     processDateTimeEntry, inputDateToWire, inputDateTimeToWire, wireDateToInput, wireDateTimeToDateTimeInputs,
     getBaseType, isNumericBaseType} from 'retrodry';
 
@@ -38,6 +38,7 @@ export default (props) => {
     const invalidMemberName = getInvalidMemberName(colDef);
     const [hasFocus, setHasFocus] = useState(false);
     const [valueAtFocus, setValueAtFocus] = useState(null);
+    const [selectKind, setSelectKind] = useState(0); //0:unknown at first render; -1:nothing; 1:in process of being calculated; 2:use lookup button; 3:use dropdpown select
     const [selectSource, setSelectSource] = useState(null); //only for select-type inputs; the array of rows to select from
     const [selectValueCol, setSelectValueCol] = useState(null); //only for select-type inputs; the column name of the value (primary key)
     const [selectDisplayCols, setSelectDisplayCols] = useState([]); //only for select-type inputs; the column names of the display values
@@ -71,7 +72,7 @@ export default (props) => {
         row[colDef.name] = ev.target.value;
         props.onChanged();
     };
-    const selectChanged = (ev) => {
+    const selectChanged = (ev) => { //todo is bool criteron callin gthis?
         if (baseType === 'string') 
             stringChanged(ev);
         else if (isCriterion)
@@ -86,7 +87,7 @@ export default (props) => {
     const ctrlBlurred = async (isLoOfRange) => {
         setHasFocus(false);
 
-        //special case: if user entered lo and hi is not set, then set hi to the same
+        //special case: if user entered lo, and hi is not set, then set hi to the same
         if (isLoOfRange) autoPopulateHiFromLo(row, colDef);
 
         //validate on tab-out if any change
@@ -109,22 +110,65 @@ export default (props) => {
         layer.stackstate.startLookup(layer, props.tableDef, row, colDef);
     };
 
-    //determine from metadata if this is a dropdown select
-    if (!selectSource && !colDef.lookupViewonTypeName && colDef.foreignKeyDatonTypeName) {
-        const selectDef = session.getDatonDef(colDef.foreignKeyDatonTypeName);
-        if (selectDef && selectDef.multipleMainRows) {
-            session.get(colDef.foreignKeyDatonTypeName + '|+', {doSubscribeEdit: true}).then(d => {
-                setSelectSource(d[selectDef.mainTableDef.name]); //this is the array of rows, not the top level of the whole-table persiston
-                setSelectValueCol(selectDef.mainTableDef.primaryKeyColName);
-                setSelectDisplayCols(getDropdownColumns(selectDef.mainTableDef));
-            }); 
+    //determine from metadata if this is a dropdown select or lookup using a separate viewon in the stack
+    if (selectKind === 1) return null; //in process
+    if (selectKind === 0) {
+        setSelectKind(1); //in process
+        if (colDef.selectBehavior) {
+
+            //use dropdown loaded with the contents of a viewon
+            if (colDef.selectBehavior.useDropdown) {
+                const filters = [];
+                if (colDef.selectBehavior.autoCriterionName && colDef.selectBehavior.autoCriterionValueColumnName) {
+                    let name = colDef.selectBehavior.autoCriterionName;
+                    name = name[0].toUpperCase() + name.substr(1);
+                    const criValue = row[colDef.selectBehavior.autoCriterionValueColumnName];
+                    if (criValue === undefined || criValue === null) criValue = '-1';
+                    filters.push(name + '=' + criValue);
+                }
+                const parsedViewonKey = new DatonKey(colDef.selectBehavior.viewonTypeName, filters);
+                const viewonKey = parsedViewonKey.toKeyString();
+                const selectDef = session.getDatonDef(colDef.selectBehavior.viewonTypeName);
+                if (selectDef && selectDef.multipleMainRows) {
+                    session.get(viewonKey).then(d => {
+                        setSelectKind(3); //using dropdown
+                        setSelectSource(d[selectDef.mainTableDef.name]); //this is the array of rows, not the top level of the whole-table persiston
+                        setSelectValueCol(selectDef.mainTableDef.primaryKeyColName);
+                        setSelectDisplayCols(getDropdownColumns(selectDef.mainTableDef));
+                    });
+                }
+            }
+
+            //use lookup button 
+            else {
+                setSelectKind(2);
+            }
+        } 
+        
+        //if select behavior wasn't specified in metadata but a foreign key was, then assume that the foreign
+        //key is to a whole-table persiston and show a dropdown of the contents
+        else if (colDef.foreignKeyDatonTypeName) {
+            const selectDef = session.getDatonDef(colDef.foreignKeyDatonTypeName);
+            if (selectDef && selectDef.multipleMainRows) {
+                session.get(colDef.foreignKeyDatonTypeName + '|+', {doSubscribeEdit: true}).then(d => {
+                    setSelectKind(3); //using dropdown
+                    setSelectSource(d[selectDef.mainTableDef.name]); //this is the array of rows, not the top level of the whole-table persiston
+                    setSelectValueCol(selectDef.mainTableDef.primaryKeyColName);
+                    setSelectDisplayCols(getDropdownColumns(selectDef.mainTableDef));
+                }); 
+            }
         }
+
+        else setSelectKind(-1);
+        
+        //don't show anything while we load dropdown contents
+        return null;
     }
 
     //setup components that appear before/after the main control
     const popupError = <EditorPopupError show={hasFocus} message={row[invalidMemberName]}/>;
     let lookupButton = null;
-    if (colDef.lookupViewonTypeName && layer) {
+    if (selectKind === 2 && layer) { 
         lookupButton = <button className="btn-lookup" onClick={startLookup}>..</button>;
         wrapStyle.width = 'calc(' + wrapStyle.width + ' - 20px'; //for example changes '50%' to 'calc(50% - 20px)'
         containerClass += ' has-btn';
@@ -132,7 +176,7 @@ export default (props) => {
 
     //setup main input control
     let inputCtrl = null;
-    if (selectSource && selectValueCol) {
+    if (selectKind === 3 && selectSource && selectValueCol) {
         inputCtrl = <select value={row[colDef.name] || ''} onChange={selectChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}>
             <option key="-1" value={null}></option>
             {selectSource.map(r => <option key={r[selectValueCol]} value={r[selectValueCol]}>{r[selectDisplayCols[0]]}</option>)}

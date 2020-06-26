@@ -476,10 +476,8 @@ namespace RetroDRY
                 PermissionLevel = (int)guard.FinalLevel(null, source.Name, c.Name),
                 AllowSort = c.AllowSort,
                 ForeignKeyDatonTypeName = c.ForeignKeyDatonTypeName,
-                LookupViewonTypeName = c.LookupViewonTypeName,
-                LookupViewonKeyColumnName = CamelCasify(c.LookupViewonKeyColumnName),
-                LeftJoinForeignKeyColumnName = CamelCasify(c.LeftJoin?.ForeignKeyColumnName),
-                LeftJoinRemoteDisplayColumnName = CamelCasify(c.LeftJoin?.RemoteDisplayColumnName),
+                LeftJoin = ToWire(c.LeftJoin),
+                SelectBehavior = ToWire(c.SelectBehavior),
                 ImageUrlColumName = c.Image?.UrlColumName,
                 IsComputed = c.IsComputed,
                 IsMainColumn = c.IsMainColumn,
@@ -495,6 +493,29 @@ namespace RetroDRY
                 Regex = c.Regex,
                 RegexValidationMessage = DataDictionary.ResolvePrompt(c.RegexValidationMessage, user),
                 WireType = c.WireType
+            };
+        }
+
+        private static ColDef.LeftJoinInfo ToWire(ColDef.LeftJoinInfo lji)
+        {
+            if (lji == null) return null;
+            return new ColDef.LeftJoinInfo
+            {
+                ForeignKeyColumnName = CamelCasify(lji.ForeignKeyColumnName),
+                RemoteDisplayColumnName = CamelCasify(lji.RemoteDisplayColumnName)
+            };
+        }
+
+        private static ColDef.SelectBehaviorInfo ToWire(ColDef.SelectBehaviorInfo sbi)
+        {
+            if (sbi == null) return null;
+            return new ColDef.SelectBehaviorInfo
+            {
+                AutoCriterionName = sbi.AutoCriterionName,
+                AutoCriterionValueColumnName = CamelCasify(sbi.AutoCriterionValueColumnName),
+                UseDropdown = sbi.UseDropdown,
+                ViewonTypeName = sbi.ViewonTypeName,
+                ViewonValueColumnName = CamelCasify(sbi.ViewonValueColumnName)
             };
         }
 

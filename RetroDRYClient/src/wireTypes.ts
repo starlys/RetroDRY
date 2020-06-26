@@ -97,10 +97,8 @@ export interface ColDefResponse
     isComputed: boolean; 
     allowSort: boolean;
     foreignKeyDatonTypeName: string;
-    lookupViewonTypeName: string;
-    lookupViewonKeyColumnName: string;
-    leftJoinForeignKeyColumnName: string;
-    leftJoinRemoteDisplayColumnName: string;
+    selectBehavior: SelectBehaviorResponse;
+    leftJoin: LeftJoinResponse;
     isMainColumn: boolean;
     isVisibleInDropdown: boolean;
     prompt?: string;
@@ -113,6 +111,19 @@ export interface ColDefResponse
     maxNumberValue: number;
     rangeValidationMessage?: string;
     imageUrlColumName?: string;
+}
+
+export interface LeftJoinResponse {
+    foreignKeyColumnName: string;
+    remoteDisplayColumnName: string;
+}
+
+export interface SelectBehaviorResponse {
+    viewonTypeName: string;
+    autoCriterionName?: string;
+    autoCriterionValueColumnName?: string;
+    viewonValueColumnName: string;
+    useDropdown: boolean;
 }
 
 export interface CondensedDatonResponse

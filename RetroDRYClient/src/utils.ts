@@ -230,7 +230,7 @@ export function validateNumberRange(colDef: ColDefResponse, baseType: string, va
 async function setLookupDescription(session: Session, editingTableDef: TableDefResponse, editingColDef: ColDefResponse, 
     editingRow: any, sourceRow: any): Promise<number> {
     //collect description columns
-    const descrColDefs = editingTableDef.cols.filter(c => c.leftJoinForeignKeyColumnName === editingColDef.name);
+    const descrColDefs = editingTableDef.cols.filter(c => c.leftJoin?.foreignKeyColumnName === editingColDef.name);
     if (descrColDefs.length === 0) return 1;
     
     //if viewon row not given, get main row of persiston
@@ -244,7 +244,7 @@ async function setLookupDescription(session: Session, editingTableDef: TableDefR
     //copy from source row to editing row; if sourceRow was undefined, this will have the effect of clearing the description columns
     let anyChanges = false;
     for (let descrColDef of descrColDefs) {
-        const descrValue = sourceRow[descrColDef.leftJoinRemoteDisplayColumnName];
+        const descrValue = sourceRow[descrColDef.leftJoin.remoteDisplayColumnName];
         editingRow[descrColDef.name] = descrValue || null;
         anyChanges = true;
     }

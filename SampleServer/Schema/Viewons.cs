@@ -109,6 +109,34 @@ namespace SampleServer.Schema
     }
 
     /// <summary>
+    /// List of item variants (used only as source of dropdown select for Sale.ItemVariantId)
+    /// </summary>
+    public class ItemVariantList : Viewon
+    {
+        public List<TopRow> ItemVariant;
+
+        public class TopRow : Row
+        {
+            [Key]
+            public int ItemVariantId;
+
+            public int ItemId;
+
+            [MainColumn, SortColumn(true)]
+            public string VariantCode;
+
+            [VisibleInDropdown]
+            public string Description;
+        }
+
+        [Criteria]
+        public abstract class Criteria
+        {
+            public int? ItemId;
+        }
+    }
+
+    /// <summary>
     /// List of sales
     /// </summary>
     public class SaleList : Viewon
@@ -136,7 +164,7 @@ namespace SampleServer.Schema
         {
             [InheritFrom("Sale.CustomerId")]
             [ForeignKey(typeof(Customer))]
-            [LookupBehavior(typeof(CustomerList))]
+            [SelectBehavior(typeof(CustomerList))]
             public int? CustomerId;
 
             public DateTime? SaleDate;
