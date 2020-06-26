@@ -23,7 +23,7 @@ export function getBaseType(wireTypeName: string): string {
 }
 
 //return a datetime component number into a 2-char string
-function pad2(n: number){
+export function pad2(n: number){
     if (n < 10) return '0' + n;
     return n.toString();
 }

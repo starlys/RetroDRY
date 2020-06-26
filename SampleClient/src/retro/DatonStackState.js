@@ -42,7 +42,7 @@ export default class DatonStackState {
         //get daton or abort
         const parsedKey = parseDatonKey(key);
         const datonDef = this.session.getDatonDef(parsedKey.typeName);
-        const daton = await this.session.get(key, {doSubscribeEdit: true});
+        const daton = await this.session.get(key, {isForEdit: parsedKey.isPersiston()});
         if (!daton) return;
 
         //add layer

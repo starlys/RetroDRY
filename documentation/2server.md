@@ -254,27 +254,38 @@ Foreign key details
 
 ### Discussion
 
--   In the following, the "key value" refers to the foreign key value, usually an int, GUID, or string code column that the database enforces referential integrity on. The "display value" refers to some other column in the target table, usually a name or description column. Users need to see the display value on load and after any edits to the column.
+-   In the following, the "key value" refers to the foreign key value, usually an int, GUID, or string code column that the database enforces referential integrity on. The "display value" refers to some other column in the target table, usually a name or description column. Users need to see the display value on load and after any edits to the column. There are two common cases and an exception case as explained below.
+
 -   For foreign keys that reference a row in the main table of a whole-table persiston:
 
-    -   This scenario is called "foreign key to row within persiston". An example is a column CustomerTypeId which references a small CustomerType lookup table. The entire CustomerTable table is part of the CustomerType persiston.
+    -   This is the common scenario where there is a small lookup table and the UI is built with a dropdown selection that includes all rows of the lookup table.
+    -   An example is a column Customer.CustomerTypeId which references a small CustomerType lookup table. The entire CustomerTable table is part of the CustomerType persiston.
     -   Only the key value is loaded, stored, and communicated, not the associated display value if any.
     -   In order to format the display client side, the key is hidden and replaced with a dynamic lookup of the display value from the whole-table persiston.
-    -   The client fetches, caches, and subscribes to the target persiston, so that this lookup can occur repeatedly for display (and for dropdown selection) with good performance.
+    -   The client fetches, caches, and subscribes to the target persiston (the lookup table), so that this lookup can occur repeatedly for display (and for dropdown selection) with good performance.
+
 -   For foreign keys that reference a single-main-row persiston:
 
-    -   This scenario is called "foreign key as persiston key". An example is a column CustomerId, which references a large Customer table. Each customer in the Customer table is a separate persiston.
-    -   Both the key value and display value are loaded and communicated.
-    -   In persistons, the display value is read only (not saved) except that it is updated when the key value changes. This can affect the diff format; the changed display value will be included in the diff.
-    -   The data dictionary info on the display column is used to enable automatic SQL to left-join the display value.
-    -   The display column may also include InheritFrom annotation - this works in viewons and persistons
-    -   The client can allow the user to enter the key value directly or use some other viewon to search for it. To automate the lookup process, use the annotation LookupBehavior with arguments for the viewon type to use, and the column name in the main table of the viewon that is the key value (or omit to use primary key). When a row is selected in the viewon, the key is copied back to the row being edited, and any other columns in that row with LeftJoin defined cause description values to also be copied back.
+    -   This is the common scenario where selecting the foreign key value requires a search instead of a dropdown, because the number of possible records is large.
+    -   An example is a column Sale.CustomerId, which references a large Customer table. Each customer in the Customer table is a separate persiston. The Sale persiston can define an additional read-only column CustomerName, so that users can see the customer name associated with the value of CustomerId.
+    -   Both the key value and read-only display value are loaded and communicated. The display value cannot be user-edited but it is updated automatically when the key value changes. (This can affect the diff format; the changed display value will be included in the diff.)
+    -   The data dictionary info on the read-only display column is used to enable automatic SQL to left-join the display value.
+    -   The display column may also include InheritFrom annotation - this works in viewons and persistons.
+    -   The client can allow the user to enter the key value directly or use some other viewon to search for it. To automate the lookup process, use the annotation SelectBehavior with arguments for the viewon type to use, and the column name in the main table of the viewon that is the key value (or omit to use primary key). When a row is selected in the viewon, the key is copied back to the row being edited, and any other columns in that row with LeftJoin defined cause description values to also be copied back.
+
+-   For foreign keys that do not fit the two above scenarios:
+
+    -   You can define a special-purpose viewon that is used to provide the user with choices for a foreign key. Use this when neither of the two common scenarios fits. In the sample app, the SaleItem.ItemVariantId is chosen in this manner: the dropdown contains only variants that are children of the item chosen in the same SaleItem row.
 
 ### Implementation
 
 -   Use the InheritFrom annotation within any daton to copy the data dictionary from some other persiston. This doesn't affect loading behavior.
--   Use the ForeignKey annotation with a single argument for the persiston type whose primary key the column points to.
--   Use the LeftJoin annotation with 2 arguments: the name of the foreign key value column in the table being defined, and the name of the column in the table that the foreign key refers to.
+-   Use the ForeignKey annotation with a single argument to link a column to the persiston type whose primary key the column points to.
+-   Use the LeftJoin annotation on the read-only display column. It takes 2 arguments: the name of the foreign key value column in the table being defined, and the name of the column in the foreign table whose value should be loaded into the display column.
+-   Use the SelectBehavior attribute to define which viewon to use when the user needs to choose a value from a list for the column.
+    -   Simple case of SelectBehavior: just include the viewon type argument, and the framework will set up selection to use that viewon, returning the primary key fo the selected row.
+    -   Dynamic case of SelectBehavior: include AutoCriterionName and AutoCriterionValueColumnName to cause the viewon to load with a criterion value - this restricts it to show rows relevant to the row being edited. AutoCriterionName is the criteron name defined by the viewon, and AutoCriterionValueColumnName is the name of the column in the current row whose value should be used as the argument to the criterion.
+    -   Choice of dropdown or search: If you set UseDropdown=true in SelectBehavior, the UI loads the viewon rows into a dropdown control; else it shows the viewon allowing the user to search and select rows.
 -   You can override SQL loading; if you do, then the LeftJoin annotation won't have any effect.
 -   Example in a single-main-row persiston:
 
@@ -285,7 +296,7 @@ public class Customer : Persiston {
     public int CompanyId;
 
     [ForeignKey(typeof(Employee))]
-    [LookupBehavior(typeof(EmployeeList), KeyColumnName: "EmployeeId")] //normally KeyColumnName can be omitted
+    [SelectBehavior(typeof(EmployeeList), ViewonValueColumnName = "EmployeeId", UseDropdown = false)] //normally ViewonValueColumnName can be omitted
     public int SalesRepId;
 
     [LeftJoin("SalesRepId", "Name"), InheritFrom("'Employee.Name")] //"SalesRepId" must be the name of some other field in this class

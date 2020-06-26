@@ -86,7 +86,7 @@ export default React.memo(props => {
         
         //get latest version if existing persiston
         setIsWorking(true);
-        session.get(daton.key, {doSubscribeEdit:true, forceCheckVersion:true}).then(d => {
+        session.get(daton.key, {isForEdit:true, forceCheckVersion:true}).then(d => {
             setDaton(d);
             session.changeSubscribeState([d], 2).then(errors => {
                 setIsWorking(false);
@@ -160,7 +160,7 @@ export default React.memo(props => {
             layer.stackstate.removeByKey(daton.key, false);
         else {
             session.changeSubscribeState([daton], 1).then(() => {
-                session.get(daton.key, {doSubscribeEdit:false, forceCheckVersion:true}).then(d => {
+                session.get(daton.key, {forceCheckVersion:true}).then(d => {
                     setDaton(d);
                 });    
             })

@@ -8,3 +8,4 @@ export {securityUtil} from './src/securityUtil';
 export * from './src/wireTypes';
 export {default as DatonKey, parseDatonKey} from './src/datonKey';
 export * from './src/utils';
+export {default as DropdownState} from './src/dropdownState';

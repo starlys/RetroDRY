@@ -72,7 +72,8 @@ export default props => {
                 let cells = [];
                 for (let idx2 = 0; idx2 < colInfos.length; ++idx2) {
                     const c = colInfos[idx2];
-                    if (isCriteria || (edit && securityUtil.canEditColDef(c.colDef)))
+                    const editableCol = securityUtil.canEditColDef(c.colDef) && !c.colDef.isComputed && !c.colDef.leftJoin;
+                    if (isCriteria || (edit && editableCol))
                         cells.push(<EditValue key={idx2} tableDef={tableDef} colDef={c.colDef} isCriterion={isCriteria}
                             row={row || criset} width={c.width} session={session} layer={layer} onChanged={incrementCardRenderCount}/>);
                     else

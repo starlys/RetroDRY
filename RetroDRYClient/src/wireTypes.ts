@@ -135,7 +135,7 @@ export interface CondensedDatonResponse
 export interface ManageDatonResponse
 {
     key: string;
-    subscribeState: number;
+    subscribeState: 0|1|2;
     errorCode?: string;
 }
 

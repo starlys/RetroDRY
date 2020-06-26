@@ -6,9 +6,10 @@ import SaveInfo from "./saveInfo";
 import NetUtils from "./netUtils";
 import GetOptions from "./getOptions";
 import CloneTool from "./cloneTool";
-import { PanelLayout, GridLayout } from "./layout";
+import { PanelLayout, GridLayout } from "./layout"; 
 import { RecurPoint } from "./recurPoint";
 import Mutex from "./mutex";
+import CacheEntry from "./cacheEntry";
 
 export default class Session {
     //delay in millis between end of long polling response and sending next long poll request
@@ -42,14 +43,8 @@ export default class Session {
 
     private serverIdx: number = 0;
 
-    //pristine persistons that are subscribed or locked, indexed by key
-    private persistonCache: any = {};
-
-    //pristine persiston version numbers that are in persistonCache, indexed by key
-    private versionCache: any = {};
-
-    //subscribe level (1=subscribed; 2=locked) indexed by persiston key
-    private subscribeLevel: any = {};
+    //cache indexed by key; cleaned on long polling intervals 
+    private datonCache: {[key: string]: CacheEntry} = {};
 
     //cardLayouts and gridLayouts are indexed by "datonName|tableName"
     private cardLayouts: {[name: string]: PanelLayout} = {};
@@ -120,7 +115,7 @@ export default class Session {
     //so it will not always return an array of the same size as the provided keys array
     async getMulti(datonKeys: string[], options?: GetOptions): Promise<any[]> {
         this.ensureInitialized();
-        if (!options) options = new GetOptions();
+        if (!options) options = {};
         await this.getDatonMutex.acquire();
         try {
             return await this.getMultiSingleThread(datonKeys, options);
@@ -131,22 +126,33 @@ export default class Session {
 
     //see getMulti
     private async getMultiSingleThread(datonKeys: string[], options: GetOptions): Promise<any[]> {
-        //convert datonKeys to parallel array of parsed keys
-        const parsedDatonKeys = datonKeys.map(k => parseDatonKey(k));
+        if (options.isForEdit) options.doSubscribe = true;
+        const doCache = options.doSubscribe  || options.shortCache;
 
-        //get from cache; array will have undefined elements for any keys that weren't found
-        let datons: any[] = datonKeys.map(k => this.persistonCache[k]);
+        //convert datonKeys to array of {datonKey, parsedKey, daton(from cache), isPersiston}
+        let workItems = datonKeys.map(k => {
+            const cacheEntry = this.datonCache[k];
+            const ce = {
+                datonKey: k,
+                parsedKey: parseDatonKey(k),
+                daton: cacheEntry?.daton,
+                isPersiston: false
+            };
+            ce.isPersiston = ce.parsedKey.isPersiston();
+            return ce;
+        });
 
-        //make list of requests for those we need get from server 
+        //make list of requests for those we need get from server; validate inputs
         const datonRequests: GetDatonRequest[] = [];
-        for (let i = 0; i < datonKeys.length; ++i) {
-            if (!datons[i] || options.forceCheckVersion) {
-                const isNew = parsedDatonKeys[i].isNew();
+        for (let workItem of workItems) {
+            if (!workItem.isPersiston && options.doSubscribe) throw new Error('Can only subscribe or edit persistons');
+            if (!workItem.daton || options.forceCheckVersion) {
+                const isNew = workItem.parsedKey.isNew();
                 const datonRequest = {
-                    key: datonKeys[i],
-                    doSubscribe: options.doSubscribeEdit && !isNew,
-                    forceLoad: options.forceCheckVersion,
-                    knownVersion: this.versionCache[datonKeys[i]]
+                    key: workItem.datonKey,
+                    doSubscribe: !!(options.doSubscribe && !isNew),
+                    forceLoad: !!options.forceCheckVersion,
+                    knownVersion: workItem.daton?.version
                 };
                 datonRequests.push(datonRequest);
             }
@@ -167,48 +173,52 @@ export default class Session {
                 for (let condensed of response.condensedDatons) {
                     const daton = Retrovert.expandCondensedDaton(this, condensed);
 
-                    //stick this one in the datons list in the right place, as defined by the position of the daton key in the caller's array
-                    const idxOfKey = datonKeys.findIndex(d => d === daton.key);
+                    //stick this one in the working list
+                    const idxOfKey = workItems.findIndex(w => w.datonKey === daton.key);
                     if (idxOfKey < 0) throw new Error('Server returned daton key that was not requested');
-                    datons[idxOfKey] = daton;
+                    workItems[idxOfKey].daton = daton;
 
                     if (this.onReceiveDaton) this.onReceiveDaton(daton);
                 }
             }
         }
 
-        //eliminate empty slots in the return array (for datons that could not be loaded)
-        datons = datons.filter(d => !!d);
+        //eliminate empty slots in the working list (for datons that could not be loaded)
+        workItems = workItems.filter(w => !!w.daton);
 
-        //cache and clone if subscribing (unless is new)
-        if (options.doSubscribeEdit) {
-            for (let i = 0; i < datons.length; ++i) {
-                let daton = datons[i];
-                const parsedKey = parseDatonKey(daton.key);
-                if (parsedKey.isNew()) continue;
-                if (!parsedKey.isPersiston()) continue;
+        //cache and optionally clone if subscribing (unless is new)
+        if (doCache) {
+            for (let workItem of workItems) {
+                if (workItem.parsedKey.isNew()) continue;
 
                 //cache
-                this.persistonCache[daton.key] = daton;
-                const oldSubscribeLevel = this.subscribeLevel[daton.key];
-                if (!oldSubscribeLevel)
-                    this.subscribeLevel[daton.key] = 1;
-                this.versionCache[daton.key] = daton.version;
-    
+                let cacheEntry = this.datonCache[workItem.datonKey];
+                if (!cacheEntry) {
+                    let expires = 0;
+                    if (!workItem.isPersiston && options.shortCache) expires = Date.now() + 1000*60;
+                    cacheEntry = {daton: workItem.daton, expires: expires, subscribeLevel: 1};
+                    this.datonCache[workItem.datonKey] = cacheEntry;
+                }
+
+                if (workItem.isPersiston && !cacheEntry.subscribeLevel) cacheEntry.subscribeLevel = 1;
+
                 //clone it so caller cannot clobber our nice cached version
-                const datondef = this.getDatonDef(parsedKey.typeName);
-                if (!datondef) throw new Error('Unknown type name ' + parsedKey.typeName);
-                daton = CloneTool.clone(datondef, daton);
-                datons[i] = daton;
+                if (options.isForEdit) {
+                    const datondef = this.getDatonDef(workItem.parsedKey.typeName);
+                    if (!datondef) throw new Error('Unknown type name ' + workItem.parsedKey.typeName);
+                    workItem.daton = CloneTool.clone(datondef, workItem.daton);
+                }
             }
         }
         
-        return datons;
+        return workItems.map(w => w.daton);
     }
 
     //get subscription state by daton key (see changeSubscriptionState for meaning of values)
     getSubscribeState(datonkey: string): 0|1|2 {
-        return this.subscribeLevel[datonkey] || 0;
+        const cacheEntry = this.datonCache[datonkey];
+        if (cacheEntry) return cacheEntry.subscribeLevel;
+        return 0;
     }
 
     //change the subscription/lock state of one or more previously-cached persistons
@@ -218,14 +228,15 @@ export default class Session {
         const requestDetails: any = [];
         for (const daton of datons) {
             if (!daton.key) throw new Error('Daton key missing');
-            const currentState = this.subscribeLevel[daton.key] || 0;
+            const cacheEntry = this.datonCache[daton.key];
+            const currentState = cacheEntry ? cacheEntry.subscribeLevel : 0;
             if (currentState === 0 && subscribeState !== 0)
                 throw new Error('Can only change subscribe state if initial get was subscribed');
             if (subscribeState !== currentState)
                 requestDetails.push({ 
                     key: daton.key, 
                     subscribeState: subscribeState,
-                    version: this.versionCache[daton.key]
+                    version: cacheEntry?.daton.version
                 });
         }
         if (!requestDetails.length) return {};
@@ -240,11 +251,10 @@ export default class Session {
         for (const responseDetail of response.manageDatons) {
             ret[responseDetail.key] = responseDetail.errorCode;
             if (responseDetail.subscribeState === 0) {
-                delete this.persistonCache[responseDetail.key];
-                delete this.versionCache[responseDetail.key];
-                delete this.subscribeLevel[responseDetail.key];
+                delete this.datonCache[responseDetail.key];
             } else {
-                this.subscribeLevel[responseDetail.key] = responseDetail.subscribeState;
+                const cacheEntry = this.datonCache[responseDetail.key];
+                if (cacheEntry) cacheEntry.subscribeLevel = responseDetail.subscribeState;
             }
         }
         return ret;
@@ -262,20 +272,21 @@ export default class Session {
             if (!modified.key) throw new Error('daton.key required');
 
             //get pristine version
-            const datonkey = parseDatonKey(modified.key);
+            const parsedkey = parseDatonKey(modified.key);
+            const cacheEntry = this.datonCache[modified.key];
             let pristine = null;
-            if (!datonkey.isNew())
-                pristine = this.persistonCache[modified.key];
-            const subscribeLevel = this.subscribeLevel[modified.key];
-            if (!datonkey.isNew()) {
-                if (!pristine || !subscribeLevel) throw new Error('daton cannot be saved because it was not cached; you must get with doSubscribeEdit:true before making edits');
+            if (!parsedkey.isNew())
+                pristine = cacheEntry?.daton;
+            const subscribeLevel = cacheEntry ? cacheEntry.subscribeLevel : 0;
+            if (!parsedkey.isNew()) {
+                if (!pristine || !subscribeLevel) throw new Error('daton cannot be saved because it was not cached; you must get with isForEdit:true before making edits');
             }
             
             //determine if lock needed
             if (pristine && subscribeLevel === 1) datonsToLock.push(pristine);
 
             //generate diff
-            const datondef = this.getDatonDef(datonkey.typeName);
+            const datondef = this.getDatonDef(parsedkey.typeName);
             if (!datondef) throw new Error('invalid type name');
             const diff = DiffTool.generate(datondef, pristine, modified); //pristine is falsy for new single-main-row persistons here
             if (diff)
@@ -285,7 +296,7 @@ export default class Session {
         //if any need to be locked, do that before save, and recheck all are actually locked
         if (datonsToLock.length) {
             await this.changeSubscribeState(datonsToLock, 2);
-            const anyunlocked = datonsToLock.some(d => this.subscribeLevel[d.key] !== 2);
+            const anyunlocked = datonsToLock.some(d => this.datonCache[d.key]?.subscribeLevel !== 2);
             if (anyunlocked) throw new Error('Could not get lock');
         }
 
@@ -313,10 +324,12 @@ export default class Session {
         //(But note this newly cached saved version can't be edited again; we have to refetch from database for that)
         if (saveResponse?.savePersistonsSuccess) {
             for (let daton of datons) {
-                const datonkey = parseDatonKey(daton.key);
-                delete this.versionCache[daton.key];
-                if (!datonkey.isNew())
-                    this.persistonCache[daton.key] = daton;
+                delete daton.version;
+                const parsedkey = parseDatonKey(daton.key);
+                if (!parsedkey.isNew()) {
+                    const cacheEntry = this.datonCache[daton.key];
+                    if (cacheEntry) cacheEntry.daton = daton;
+                }
             }
         }
 
@@ -337,12 +350,14 @@ export default class Session {
         const datonkey = parseDatonKey(daton.key);
         const datondef = this.getDatonDef(datonkey.typeName);
         const diff = DiffTool.generateDiffForDelete(datondef!, daton);
-        const subscribeLevel = this.subscribeLevel[daton.key];
+        const cacheEntry = this.datonCache[daton.key];
+        const subscribeLevel = cacheEntry ? cacheEntry.subscribeLevel : 0;
 
         //if lock needed, do before save
         if (subscribeLevel !== 2) {
             await this.changeSubscribeState(daton, 2);
-            if (this.subscribeLevel[daton.key] !== 2)  throw new Error('Could not get lock');
+            const checkCacheEntry = this.datonCache[daton.key];
+            if (!checkCacheEntry || checkCacheEntry.subscribeLevel !== 2) throw new Error('Could not get lock');
         }
 
         //save on server
@@ -354,9 +369,7 @@ export default class Session {
 
         //manage cache 
         if (saveResponse?.savePersistonsSuccess) {
-            delete this.versionCache[daton.key];
-            delete this.persistonCache[daton.key];
-            delete this.subscribeLevel[daton.key];
+            delete this.datonCache[daton.key];
         }
 
         //host app callback
@@ -387,9 +400,7 @@ export default class Session {
     //end retroDRY session; stop long polling
     async quit() {
         //free up memory and reset so that it could be initialized again
-        this.persistonCache = {};
-        this.versionCache = {};
-        this.subscribeLevel = {};
+        this.datonCache = {};
         this.dataDictionary = undefined;
 
         const request = { sessionKey: this.sessionKey, doQuit: true };
@@ -426,8 +437,8 @@ export default class Session {
             if (response?.condensedDatons) {
                 for (let condensed of response.condensedDatons) {
                     const daton = Retrovert.expandCondensedDaton(this, condensed);
-                    this.persistonCache[daton.key] = daton;
-                    this.versionCache[daton.key] = daton.version;
+                    const cacheEntry = this.datonCache[daton.key];
+                    if (cacheEntry) cacheEntry.daton = daton;
                     if (this.onSubscriptionUpdate) this.onSubscriptionUpdate(daton);
                 }
             }
@@ -437,8 +448,21 @@ export default class Session {
             console.log(e);
         }
 
+        this.cleanCache()
+
         //restart polling indefinitely
         const delay = this.longPollDelay + (pollOk ? 0 : 20000);
         setTimeout(() => this.longPoll(), delay); 
+    }
+
+    //clean out expired items in cache
+    private cleanCache() {
+        const now = Date.now();
+        const obsoleteKeys: string[] = [];
+        for (let [datonKey, cacheEntry] of Object.entries(this.datonCache))
+            if (cacheEntry.expires && cacheEntry.expires < now)
+                obsoleteKeys.push(datonKey);
+        for (let datonKey of obsoleteKeys)
+            delete this.datonCache[datonKey];
     }
 }

@@ -1,18 +1,8 @@
-import React, {useState} from 'react';
+import React, {useState, useReducer} from 'react';
 import EditorPopupError from './EditorPopupError';
-import {DatonKey, splitOnTilde, getInvalidMemberName, processNumberEntry, processNumberRangeEntry, processStringEntry, 
+import {DropdownState, splitOnTilde, getInvalidMemberName, processNumberEntry, processNumberRangeEntry, processStringEntry, 
     processDateTimeEntry, inputDateToWire, inputDateTimeToWire, wireDateToInput, wireDateTimeToDateTimeInputs,
     getBaseType, isNumericBaseType} from 'retrodry';
-
-//Get the columns to be shown in a dropdown 
-function getDropdownColumns(tableDef) {
-    const ret = [];
-    const mainCol = tableDef.cols.find(c => c.isMainColumn);
-    if (mainCol) ret.push(mainCol.name);
-    for (let secondaryCol of tableDef.cols.filter(c => c.isVisibleInDropdown))
-        ret.push(secondaryCol.name);
-    return ret;
-}
 
 //modify row so the hi range is the same as the lo, if hi wasn't set; example: changes '6~' to '6'
 function autoPopulateHiFromLo(row, colDef) {
@@ -39,10 +29,9 @@ export default (props) => {
     const [hasFocus, setHasFocus] = useState(false);
     const [valueAtFocus, setValueAtFocus] = useState(null);
     const [selectKind, setSelectKind] = useState(0); //0:unknown at first render; -1:nothing; 1:in process of being calculated; 2:use lookup button; 3:use dropdpown select
-    const [selectSource, setSelectSource] = useState(null); //only for select-type inputs; the array of rows to select from
-    const [selectValueCol, setSelectValueCol] = useState(null); //only for select-type inputs; the column name of the value (primary key)
-    const [selectDisplayCols, setSelectDisplayCols] = useState([]); //only for select-type inputs; the column names of the display values
+    const [dropdownState, setDropdownState] = useState(null); //DropdownState instance
     const [, setInvalidMessage] = useState(row[invalidMemberName]);
+    const [, incrementDropdownRenderCount] = useReducer(x => x + 1, 0); 
     let containerClass = row[invalidMemberName] ? 'invalid inputwrap' : 'valid inputwrap';
     const wrapStyle = {width: width};
     const baseType = getBaseType(colDef.wireType);
@@ -72,10 +61,13 @@ export default (props) => {
         row[colDef.name] = ev.target.value;
         props.onChanged();
     };
-    const selectChanged = (ev) => { //todo is bool criteron callin gthis?
+    const selectChanged = (ev) => { 
         if (baseType === 'string') 
             stringChanged(ev);
-        else if (isCriterion)
+        else if (baseType === 'bool') { //critiron values -1,0,1
+            if (ev.target.value === '-1') delete row[colDef.name];
+            else row[colDef.name] = ev.target.value;
+        } else if (isCriterion) //date or number ranges
             rangeChanged(ev.target.value, ev.target.value);
         else 
             numberChanged(ev);
@@ -113,55 +105,20 @@ export default (props) => {
     //determine from metadata if this is a dropdown select or lookup using a separate viewon in the stack
     if (selectKind === 1) return null; //in process
     if (selectKind === 0) {
-        setSelectKind(1); //in process
-        if (colDef.selectBehavior) {
-
-            //use dropdown loaded with the contents of a viewon
-            if (colDef.selectBehavior.useDropdown) {
-                const filters = [];
-                if (colDef.selectBehavior.autoCriterionName && colDef.selectBehavior.autoCriterionValueColumnName) {
-                    let name = colDef.selectBehavior.autoCriterionName;
-                    name = name[0].toUpperCase() + name.substr(1);
-                    const criValue = row[colDef.selectBehavior.autoCriterionValueColumnName];
-                    if (criValue === undefined || criValue === null) criValue = '-1';
-                    filters.push(name + '=' + criValue);
-                }
-                const parsedViewonKey = new DatonKey(colDef.selectBehavior.viewonTypeName, filters);
-                const viewonKey = parsedViewonKey.toKeyString();
-                const selectDef = session.getDatonDef(colDef.selectBehavior.viewonTypeName);
-                if (selectDef && selectDef.multipleMainRows) {
-                    session.get(viewonKey).then(d => {
-                        setSelectKind(3); //using dropdown
-                        setSelectSource(d[selectDef.mainTableDef.name]); //this is the array of rows, not the top level of the whole-table persiston
-                        setSelectValueCol(selectDef.mainTableDef.primaryKeyColName);
-                        setSelectDisplayCols(getDropdownColumns(selectDef.mainTableDef));
-                    });
-                }
-            }
-
-            //use lookup button 
-            else {
-                setSelectKind(2);
-            }
-        } 
-        
-        //if select behavior wasn't specified in metadata but a foreign key was, then assume that the foreign
-        //key is to a whole-table persiston and show a dropdown of the contents
-        else if (colDef.foreignKeyDatonTypeName) {
-            const selectDef = session.getDatonDef(colDef.foreignKeyDatonTypeName);
-            if (selectDef && selectDef.multipleMainRows) {
-                session.get(colDef.foreignKeyDatonTypeName + '|+', {doSubscribeEdit: true}).then(d => {
-                    setSelectKind(3); //using dropdown
-                    setSelectSource(d[selectDef.mainTableDef.name]); //this is the array of rows, not the top level of the whole-table persiston
-                    setSelectValueCol(selectDef.mainTableDef.primaryKeyColName);
-                    setSelectDisplayCols(getDropdownColumns(selectDef.mainTableDef));
-                }); 
-            }
+        const mightUseDDState = colDef.selectBehavior || colDef.foreignKeyDatonTypeName;
+        if (mightUseDDState) {
+            setSelectKind(1); //in process
+            const ddstate = new DropdownState(session, row, colDef);
+            setDropdownState(ddstate);
+            ddstate.build().then(() => {
+                if (ddstate.useLookupButton) setSelectKind(2);
+                else if (ddstate.useDropdown) setSelectKind(3);
+                else setSelectKind(-1);
+            });
         }
+        else setSelectKind(-1); //not using ddState
 
-        else setSelectKind(-1);
-        
-        //don't show anything while we load dropdown contents
+        //don't show anything while we load initial dropdown contents
         return null;
     }
 
@@ -176,12 +133,16 @@ export default (props) => {
 
     //setup main input control
     let inputCtrl = null;
-    if (selectKind === 3 && selectSource && selectValueCol) {
+    if (selectKind === 3) {
+        dropdownState.build().then(anyChanges => {
+            if (anyChanges) incrementDropdownRenderCount();
+        });
         inputCtrl = <select value={row[colDef.name] || ''} onChange={selectChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}>
             <option key="-1" value={null}></option>
-            {selectSource.map(r => <option key={r[selectValueCol]} value={r[selectValueCol]}>{r[selectDisplayCols[0]]}</option>)}
+            {dropdownState.dropdownRows.map(r => <option key={r[dropdownState.dropdownValueCol]} value={r[dropdownState.dropdownValueCol]}>
+                {dropdownState.dropdownDisplayCols.map(dcname => r[dcname]).join(' - ')}
+            </option>)}
         </select>;
-        //todo show all display cols
     } 
     else if (baseType === 'bool') {
         if (isCriterion)

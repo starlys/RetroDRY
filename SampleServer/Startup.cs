@@ -115,6 +115,7 @@ namespace SampleServer
         /// </summary>
         public static void InitializeRetroDRYIntegrationTesting(DataDictionary ddict, Func<int, DbConnection> dbResolver)
         {
+            Globals.Retroverse.ViewonPageSize = 500;
             Globals.TestingRetroverse[0] = Globals.Retroverse;
             Globals.TestingRetroverse[1]?.Dispose();
             Globals.TestingRetroverse[1] = new Retroverse(SqlFlavorizer.VendorKind.PostgreSQL, ddict, dbResolver, integrationTestMode: true);

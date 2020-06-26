@@ -33,7 +33,7 @@ namespace UnitTest
             Assert.AreEqual(1, validator.Errors.Count); //company name bad
         }
 
-        private Task<IEnumerable<string>> ValidateCustomer(Daton cust0)
+        private Task<IEnumerable<string>> ValidateCustomer(Daton cust0, IUser user)
         {
             var errs = new List<string>();
             var cust = cust0 as Customer;
