@@ -103,7 +103,7 @@ const integrationTestContainer = {
         const session = await this.startSession([this.sampleApi0], sessionKey);
         if (!session) this.fail('Expected successful session start');
         const numDatons = session.dataDictionary.datonDefs.length;
-        if (numDatons !== 10) this.fail('Wrong number of datons in data dict');
+        if (numDatons !== 11) this.fail('Wrong number of datons in data dict');
         this.session1 = session;
     },
     
@@ -115,7 +115,7 @@ const integrationTestContainer = {
     
     'a30-10': async function() {
         //add rows to PhoneType and save
-        const phoneTypes = await this.session1.get('PhoneTypeLookup|+', { doSubscribeEdit: true });
+        const phoneTypes = await this.session1.get('PhoneTypeLookup|+', { isForEdit: true });
         phoneTypes.phoneType.push({phoneTypeId: -1, typeOfPhone: 'Office'});
         phoneTypes.phoneType.push({phoneTypeId: -1, typeOfPhone: 'Cell'});
         const saveResult = await this.session1.save([phoneTypes]);
@@ -129,7 +129,7 @@ const integrationTestContainer = {
             employeeId: -1,
             firstName: 'Sammy',
             lastName: 'Snead',
-            hireDate: new Date(2008, 12, 25),
+            hireDate: '20081225',
             eContact: [
                 {
                     contactId: -1,
@@ -180,7 +180,7 @@ const integrationTestContainer = {
     'a50-10': async function() {
         //lock customer
         const widgetKey = 'Customer|=' + this.widgetCoId;
-        this.widgetCo = await this.session1.get(widgetKey, { doSubscribeEdit: true });
+        this.widgetCo = await this.session1.get(widgetKey, { isForEdit: true });
         if (!this.widgetCo) this.fail('Cannot load persiston WidgetCo');
         //this.widgetCo is a clone of the locally cached version
         const stateErrors = await this.session1.changeSubscribeState([this.widgetCo], 2);
@@ -195,7 +195,7 @@ const integrationTestContainer = {
 
     'a70-10': async function() {
         //edit employee and child contact record and save, then unlock
-        const sammy = await this.session1.get('Employee|=1', { doSubscribeEdit: true });
+        const sammy = await this.session1.get('Employee|=1', { isForEdit: true });
         if (!sammy) this.fail('Cannot load persiston Sammy');
         sammy.lastName = 'Smurf';
         sammy.eContact[0].phone = '505 555 1234';
@@ -224,13 +224,13 @@ const integrationTestContainer = {
         const numCustomers = custRows.length;
         if (numCustomers !== 1) this.fail('Expected one customer');
         const widgetCoRow = custRows[0];
-        if (widgetCoRow.company) this.fail('Expected company name to be invisible to Nate (viewon)');
+        if (widgetCoRow.salesRepId) this.fail('Expected salesRepId to be invisible to Nate (viewon)');
 
         //get customer persiston and re-confirm the same
         const widgetKey = 'Customer|=' + this.widgetCoId;
-        let widgetCo = await this.session2.get(widgetKey, { doSubscribeEdit: true });
+        let widgetCo = await this.session2.get(widgetKey, { isForEdit: true });
         if (!widgetCo) this.fail('Cannot load persiston WidgetCo');
-        if (widgetCo.company) this.fail('Expected company name to be invisible to Nate (persiston)');
+        if (widgetCo.salesRepId) this.fail('Expected salesRepId to be invisible to Nate (persiston)');
         if (!widgetCo.notes) this.fail('Expected company notes to be visible to Nate (persiston)');
 
         //attempt to save changes to an invalid column
@@ -241,9 +241,9 @@ const integrationTestContainer = {
         if (saveResult.success) this.fail('Expected to be unallowed to save customer');
 
         //re-get widget co from local cache
-        widgetCo = await this.session2.get(widgetKey, { doSubscribeEdit: true });
+        widgetCo = await this.session2.get(widgetKey, { isForEdit: true, forceCheckVersion: true });
         if (!widgetCo.key) this.fail('Expected widgetCo to load');
-        if (widgetCo.company) this.fail('Expected company name to be unchanged by the test');
+        if (widgetCo.company.indexOf('not allowed') >= 0) this.fail('Expected company name to be unchanged by the test');
 
         //attempt to save changes to only the valid field 
         widgetCo.notes = 'Customer canceled their holliday parties';
@@ -266,7 +266,7 @@ const integrationTestContainer = {
         const session = await this.startSession([this.sampleApi1], sessionKey);
 
         //create SaleStatus, Item, Employee for use in later steps
-        const saleStatusses = await session.get('SaleStatusLookup|+', { doSubscribeEdit: true });
+        const saleStatusses = await session.get('SaleStatusLookup|+', { isForEdit: true });
         saleStatusses.saleStatus.push({ name: 'Hold' });
         saleStatusses.saleStatus.push({ name: 'Ordered' });
         saleStatusses.saleStatus.push({ name: 'Shipped' });
@@ -279,7 +279,7 @@ const integrationTestContainer = {
             key: 'Employee|=-1',
             firstName: 'Sammy',
             lastName: 'Snead',
-            hireDate: new Date(2008, 12, 25),
+            hireDate: '20081225',
         };
         const saveResult = await session.save([saleStatusses, item, sammy]);
         if (!saveResult.success) this.fail('Expected to save sale status, item');
@@ -313,13 +313,16 @@ const integrationTestContainer = {
             const customerId = customerKey.persistonKeyAsInt();
             if (!customerId) this.fail('Expected server to return valid customer ID on insert');
             const sales = [];
-            for (let i = 0; i < 40; ++i)
+            for (let i = 0; i < 40; ++i) {
+                //avoid timezone problems on server which may not be in UTC
+                const packedDate = '2020' + retrodry.pad2(this.randomInt(12) + 1) + retrodry.pad2(this.randomInt(24) + 2);
                 sales.push({
                     key: 'Sale|=-1',
                     customerId: customerId, 
-                    saleDate: new Date(2020, this.randomInt(12), this.randomInt(24) + 2), //avoid timezone problems on local server
+                    saleDate: packedDate, 
                     status: 1
                 });
+            }
             await session.save(sales);
         });
     },
@@ -329,6 +332,7 @@ const integrationTestContainer = {
         for (let i = 0; i < 24; ++i) this.mdata.push({});
 
         //get all sales in one month
+        let totalSales = 0;
         await this.inParallel(async (sesNo, session) => {
             await this.delay((sesNo % 2) * 1000);
             const monthNo = Math.floor(sesNo / 2) + 1;
@@ -337,7 +341,10 @@ const integrationTestContainer = {
             const toDate = '2020' + monthAs2Digits + '29';
             const sales = await session.get('SaleList|SaleDate=' + fromDate + '~' + toDate);
             this.mdata[sesNo].saleRows = sales.sale; //note that elements are rows in SaleList
+            totalSales += sales.sale.length;
         });
+
+        if (totalSales != 960 * 2) this.fail('Expected 960*2 sales to be found by all clients total');
     },
 
     'b30-20': async function() {
@@ -348,7 +355,7 @@ const integrationTestContainer = {
         //get and subscribe to all the sales that were queried
         await this.inParallel(async (sesNo, session) => {
             const datonKeys = this.mdata[sesNo].saleRows.map(r => 'Sale|=' + r.saleId);
-            const sales = await session.getMulti(datonKeys, { doSubscribeEdit: true });
+            const sales = await session.getMulti(datonKeys, { isForEdit: true });
             if (!sales || sales.length !== datonKeys.length) this.fail('Got wrong number of sales back');
             this.mdata[sesNo].sales = sales;
         });
@@ -378,7 +385,7 @@ const integrationTestContainer = {
         //change shipped date of all sales that are locked by each client
         await this.inParallel(async (sesNo, session) => {
             const sales = this.mdata[sesNo].sales; 
-            for (let sale of sales) sale.shippedDate = '2020-12-24T23:00:00';
+            for (let sale of sales) sale.shippedDate = '202012242300';
             await session.save(sales);
         });
     },
@@ -406,7 +413,7 @@ const integrationTestContainer = {
         await this.inParallel(async (sesNo, session) => {
             const watchingSales = this.mdata[sesNo].watchingSales;
             for (let sale of watchingSales) {
-                const sale2 = session.persistonCache[sale.key]; //using private member of session to get the updated version
+                const sale2 = session.datonCache[sale.key].daton; //using private member of session to get the updated version
                 if (!sale2 || !sale2.shippedDate) 
                     this.fail('Sale being watched did not get subscription update');
             }

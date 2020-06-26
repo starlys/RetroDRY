@@ -42,7 +42,7 @@ export default class DatonStackState {
         //get daton or abort
         const parsedKey = parseDatonKey(key);
         const datonDef = this.session.getDatonDef(parsedKey.typeName);
-        const daton = await this.session.get(key, {doSubscribeEdit: true});
+        const daton = await this.session.get(key, {isForEdit: parsedKey.isPersiston()});
         if (!daton) return;
 
         //add layer
@@ -182,9 +182,9 @@ export default class DatonStackState {
     //called from click event on a lookup button to open a viewon for lookup
     async startLookup(editingLayer, editingTableDef, editingRow, editingColDef) {
         //add layer for viewon lookup
-        const viewonDef = this.session.getDatonDef(editingColDef.lookupViewonTypeName);
+        const viewonDef = this.session.getDatonDef(editingColDef.selectBehavior.viewonTypeName);
         if (!viewonDef) return;
-        const lookupLayer = await this.addEmptyViewon(editingColDef.lookupViewonTypeName);
+        const lookupLayer = await this.addEmptyViewon(editingColDef.selectBehavior.viewonTypeName);
 
         //define callback when user clicks on a key in the viewon result row;
         //the function is called in gridKeyClicked and returns true on success
@@ -196,7 +196,7 @@ export default class DatonStackState {
             if (editingPersiston && !editingLayer.edit) return false;
 
             //abort if clicked col is not the one we need for the editing col
-            if (editingColDef.lookupViewonKeyColumnName !== clickedColDef.name) return false;
+            if (editingColDef.selectBehavior.viewonValueColumnName !== clickedColDef.name) return false;
 
             //copy key value from viewon then cascade to also update the description columns
             let fkValue = viewonRow[clickedColDef.name];

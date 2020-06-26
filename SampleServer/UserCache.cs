@@ -51,7 +51,7 @@ namespace SampleServer
                     {
                         new ColumnPermission { ColumnName = "CustomerId", BaseLevel = PermissionLevel.View },
                         new ColumnPermission { ColumnName = "Company", BaseLevel = PermissionLevel.View },
-                        new ColumnPermission { ColumnName = "SalesRepId", BaseLevel = PermissionLevel.View },
+                        //must be invisible for integration tests: new ColumnPermission { ColumnName = "SalesRepId", BaseLevel = PermissionLevel.View },
                         new ColumnPermission { ColumnName = "Notes", BaseLevel = PermissionLevel.View | PermissionLevel.Modify }
                     }
                 }

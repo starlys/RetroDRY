@@ -66,6 +66,7 @@ export interface LongResponse extends RetroResponse
 export interface DataDictionaryResponse
 {
     datonDefs: DatonDefResponse[];
+    messageConstants: any;
 }
 
 export interface DatonDefResponse
@@ -96,10 +97,8 @@ export interface ColDefResponse
     isComputed: boolean; 
     allowSort: boolean;
     foreignKeyDatonTypeName: string;
-    lookupViewonTypeName: string;
-    lookupViewonKeyColumnName: string;
-    leftJoinForeignKeyColumnName: string;
-    leftJoinRemoteDisplayColumnName: string;
+    selectBehavior: SelectBehaviorResponse;
+    leftJoin: LeftJoinResponse;
     isMainColumn: boolean;
     isVisibleInDropdown: boolean;
     prompt?: string;
@@ -114,6 +113,19 @@ export interface ColDefResponse
     imageUrlColumName?: string;
 }
 
+export interface LeftJoinResponse {
+    foreignKeyColumnName: string;
+    remoteDisplayColumnName: string;
+}
+
+export interface SelectBehaviorResponse {
+    viewonTypeName: string;
+    autoCriterionName?: string;
+    autoCriterionValueColumnName?: string;
+    viewonValueColumnName: string;
+    useDropdown: boolean;
+}
+
 export interface CondensedDatonResponse
 {
     isComplete?: boolean;
@@ -123,7 +135,7 @@ export interface CondensedDatonResponse
 export interface ManageDatonResponse
 {
     key: string;
-    subscribeState: number;
+    subscribeState: 0|1|2;
     errorCode?: string;
 }
 

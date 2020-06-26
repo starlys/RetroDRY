@@ -35,16 +35,17 @@ function unpackViewonKey(key) {
 }
 
 //create panel with buttons to load each page up to the current one; currentPageNo may be NaN or falsy if we are on page 0
+//layer must be set here.
 function buildTopPagingButtons(layer, currentPageNo, allowNext) {
     if (isNaN(currentPageNo) || !currentPageNo) currentPageNo = 0;
     const buttons = [];
+    const lang = layer.stackstate.session.dataDictionary.messageConstants;
     for (let i = 0; i < currentPageNo; ++i) buttons.push(
         <button onClick={() => layer.stackstate.goToPage(layer, i)}> {i + 1} </button>
     );
     buttons.push(<button disabled="true" className="current"> {currentPageNo + 1} </button>);
     if (allowNext) buttons.push(<button onClick={() => layer.stackstate.goToPage(layer, currentPageNo + 1)}> &gt;&gt; </button>);
-    return <div className="page-select-panel">Page {buttons}</div>;
-    //todo language
+    return <div className="page-select-panel">{lang.NAVPAGE} {buttons}</div>;
 }
 
 //Displays or edits one daton; also scrolls to it
@@ -76,6 +77,7 @@ export default React.memo(props => {
     const editClicked = () => {
         //note this can be called before a real render happened
         const isNew = parseDatonKey(daton.key).isNew();
+        const lang = session.dataDictionary.messageConstants;
         if (isNew) {
             setIsEditing(true);
             if (layer) layer.edit = true;
@@ -84,13 +86,13 @@ export default React.memo(props => {
         
         //get latest version if existing persiston
         setIsWorking(true);
-        session.get(daton.key, {doSubscribeEdit:true, forceCheckVersion:true}).then(d => {
+        session.get(daton.key, {isForEdit:true, forceCheckVersion:true}).then(d => {
             setDaton(d);
             session.changeSubscribeState([d], 2).then(errors => {
                 setIsWorking(false);
                 const myerrors = errors[d.key];
                 if (myerrors) {
-                    setErrorItems(['Cannot lock']); //todo language
+                    setErrorItems([lang.ERRLOCK]); 
                     setIsEditing(false);
                     if (layer) layer.edit = false;
                 } else {
@@ -103,6 +105,7 @@ export default React.memo(props => {
     };
     const saveClicked = () => {
         const isNew = parsedDatonKey.isNew();
+        const lang = session.dataDictionary.messageConstants;
         validationCount.current = validationCount.current + 1;
 
         //local errors
@@ -133,7 +136,7 @@ export default React.memo(props => {
                     session.changeSubscribeState([daton], 1).then(errors => {
                         const myerrors = errors[daton.key];
                         if (myerrors) {
-                            setErrorItems(['Cannot unlock']); //todo language
+                            setErrorItems([lang.ERRUNLOCK]);
                         } else {
                             setErrorItems([]);
                         }
@@ -143,7 +146,7 @@ export default React.memo(props => {
             } else {
                 let errors = [];
                 if (saveInfo && saveInfo.details && saveInfo.details[0]) errors = saveInfo.details[0].errors;
-                else errors.push('Internal server error'); //todo language
+                else errors.push(lang.ERRINTERNAL); 
                 setErrorItems(errors);
             }
         });
@@ -157,7 +160,7 @@ export default React.memo(props => {
             layer.stackstate.removeByKey(daton.key, false);
         else {
             session.changeSubscribeState([daton], 1).then(() => {
-                session.get(daton.key, {doSubscribeEdit:false, forceCheckVersion:true}).then(d => {
+                session.get(daton.key, {forceCheckVersion:true}).then(d => {
                     setDaton(d);
                 });    
             })
@@ -266,7 +269,7 @@ export default React.memo(props => {
     return (
         <div className="daton" ref={domElement}>
             <DatonBanner datonDef={datonDef} editState={bannerState} parsedDatonKey={parsedDatonKey} editClicked={editClicked} saveClicked={saveClicked} 
-                cancelClicked={cancelClicked} removeClicked={removeClicked} deleteClicked={deleteClicked}/>
+                cancelClicked={cancelClicked} removeClicked={removeClicked} deleteClicked={deleteClicked} session={session}/>
             {errorItems.length > 0 && <ul className="daton-errors">
                 {errorItems.map((s, idx3) => <li key={idx3}>{s}</li>)}
             </ul>}

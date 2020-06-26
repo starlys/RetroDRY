@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {getBaseType, wireDateToReadable, wireDateTimeToReadable} from 'retrodry';
+import {DropdownState, getBaseType, wireDateToReadable, wireDateTimeToReadable} from 'retrodry';
 
 function textToHtml(s) {
     return (s || '').replace(/&/g, '&amp;')
@@ -18,30 +18,23 @@ function textToHtml(s) {
 //props.session is the retrodry Session 
 export default (props) => {
     const {colDef, row, width, session} = props;
-    const [selectSource, setSelectSource] = useState(null); //only for select-type inputs; the array of rows to select from
-    const [selectValueCol, setSelectValueCol] = useState(null); //only for select-type inputs; the column name of the value (primary key)
-    const [selectDisplayCol, setSelectDisplayCol] = useState([]); //only for select-type inputs; the column name of the display value
+    const [displayAs, setDisplayAs] = useState(null); //mapped value via DropdownState, if any
 
-    const value = row[colDef.name];
+    let value = row[colDef.name];
     const wrapStyle = {width: width};
-    const baseType = getBaseType(colDef.wireType);
+    let baseType = getBaseType(colDef.wireType);
+    if (displayAs) { value = displayAs; baseType = 'string'; }
 
-    //determine from metadata if this is a dropdown select
-    if (!selectSource && !colDef.lookupViewonTypeName && colDef.foreignKeyDatonTypeName) {
-        const selectDef = session.getDatonDef(colDef.foreignKeyDatonTypeName);
-        if (selectDef && selectDef.multipleMainRows) {
-            session.get(colDef.foreignKeyDatonTypeName + '|+', {doSubscribeEdit: true}).then(d => {
-                setSelectSource(d[selectDef.mainTableDef.name]); //this is the array of rows, not the top level of the whole-table persiston
-                setSelectValueCol(selectDef.mainTableDef.primaryKeyColName);
-                const displayCol = selectDef.mainTableDef.cols.find(c => c.isMainColumn);
-                setSelectDisplayCol(displayCol.name);
-            }); 
-        }
+    //determine from metadata if this requires a lookup to another persiston or viewon
+    const mightUseDDState = colDef.selectBehavior || colDef.foreignKeyDatonTypeName;
+    if (!displayAs && mightUseDDState) {
+        const ddstate = new DropdownState(session, row, colDef);
+        ddstate.getDisplayValue(value).then((d) => {
+            if (d !== null) setDisplayAs(d);
+        });
     }
 
-    if (selectSource) 
-        return <span className="card-value" style={wrapStyle}>{selectSource.filter(r => r[selectValueCol] === value).map(r => r[selectDisplayCol])}</span>;
-    else if (baseType === 'bool')
+    if (baseType === 'bool')
         return <input className="card-value" type="checkbox" readOnly checked={value}/>;
     else if (baseType === 'string') {
         let html = textToHtml(value);

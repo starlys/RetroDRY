@@ -12,7 +12,7 @@ namespace RetroDRY
         //these lists are populated during AddDatonUsingClassAnnotation (they can't be filled any other way) and then cleared out in Finalize
         private List<(TableDef, InheritFromAttribute)> TableInheritances = new List<(TableDef, InheritFromAttribute)>();
         private List<(ColDef, InheritFromAttribute)> ColumnInheritances = new List<(ColDef, InheritFromAttribute)>();
-        private List<ColDef> IncompleteLookupBehaviors = new List<ColDef>();
+        private List<ColDef> IncompleteSelectBehaviors = new List<ColDef>();
 
         /// <summary>
         /// daton definitions indexed by name
@@ -133,17 +133,17 @@ namespace RetroDRY
             }
 
             //fix any assumed defaults in lookup behavior
-            foreach (var coldef in IncompleteLookupBehaviors)
+            foreach (var coldef in IncompleteSelectBehaviors)
             {
-                if (DatonDefs.TryGetValue(coldef.LookupViewonTypeName, out var viewonDef))
+                if (DatonDefs.TryGetValue(coldef.SelectBehavior.ViewonTypeName, out var viewonDef))
                 {
-                    coldef.LookupViewonKeyColumnName = viewonDef.MainTableDef?.PrimaryKeyColName;
+                    coldef.SelectBehavior.ViewonValueColumnName = viewonDef.MainTableDef?.PrimaryKeyColName;
                 }
             }
 
             TableInheritances = null;
             ColumnInheritances = null;
-            IncompleteLookupBehaviors = null;
+            IncompleteSelectBehaviors = null;
             IsFinalized = true;
         }
 
@@ -294,12 +294,18 @@ namespace RetroDRY
                     var foreignkey = field.GetCustomAttribute<ForeignKeyAttribute>();
                     if (foreignkey != null) coldef.ForeignKeyDatonTypeName = foreignkey.Target.Name;
 
-                    var lookupBehavior = field.GetCustomAttribute<LookupBehaviorAttribute>();
-                    if (lookupBehavior != null)
+                    var selectBehavior = field.GetCustomAttribute<SelectBehaviorAttribute>();
+                    if (selectBehavior != null)
                     {
-                        coldef.LookupViewonTypeName = lookupBehavior.ViewonType.Name;
-                        coldef.LookupViewonKeyColumnName = lookupBehavior.KeyColumnName;
-                        if (coldef.LookupViewonKeyColumnName == null) IncompleteLookupBehaviors.Add(coldef); //to be fixed during finalization
+                        coldef.SelectBehavior = new ColDef.SelectBehaviorInfo
+                        {
+                            ViewonTypeName = selectBehavior.ViewonType.Name,
+                            UseDropdown = selectBehavior.UseDropdown,
+                            ViewonValueColumnName = selectBehavior.ViewonValueColumnName,
+                            AutoCriterionName = selectBehavior.AutoCriterionName,
+                            AutoCriterionValueColumnName = selectBehavior.AutoCriterionValueColumnName
+                        };
+                        if (coldef.SelectBehavior.ViewonValueColumnName == null) IncompleteSelectBehaviors.Add(coldef); //to be fixed during finalization
                     }
 
                     var prompt = field.GetCustomAttribute<PromptAttribute>();

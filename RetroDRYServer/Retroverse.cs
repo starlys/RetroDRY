@@ -19,6 +19,13 @@ namespace RetroDRY
         public DataDictionary DataDictionary { get; private set; }
 
         /// <summary>
+        /// Injectable language messages by language code, whose message codes match those declared in Constants.EnglishMessages.
+        /// If this is nonnull, then any messages here will override the default English messages based on the user's language.
+        /// The usage is: LanguageMessages[langCode][messageCode] = message, where langCode may be empty string for the default language.
+        /// </summary>
+        public Dictionary<string, Dictionary<string, string>> LanguageMessages;
+
+        /// <summary>
         /// Page size applied to loading viewons' main table
         /// </summary>
         public int ViewonPageSize = 500;
@@ -170,7 +177,7 @@ namespace RetroDRY
             //initialize
             if (req.Initialze != null)
             {
-                resp.DataDictionary = Retrovert.DataDictionaryToWire(DataDictionary, user);
+                resp.DataDictionary = Retrovert.DataDictionaryToWire(DataDictionary, user, LanguageMessages);
             }
 
             //load datons
@@ -474,7 +481,7 @@ namespace RetroDRY
 
             //if permissions changed, resend the whole data dictionary
             if (pg.IncludeDataDictionary)
-                response.DataDictionary = Retrovert.DataDictionaryToWire(DataDictionary, user);
+                response.DataDictionary = Retrovert.DataDictionaryToWire(DataDictionary, user, LanguageMessages);
             
             return response;
         }

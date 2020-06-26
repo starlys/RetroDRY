@@ -68,7 +68,7 @@ namespace SampleServer.Schema
 
         [ForeignKey(typeof(Employee))]
         [Prompt("Supervisor ID")]
-        [LookupBehavior(typeof(EmployeeList))]
+        [SelectBehavior(typeof(EmployeeList))]
         public int? SupervisorId;
 
         [LeftJoin("SupervisorId", "LastName"), Prompt("Supervisor")]
@@ -109,7 +109,7 @@ namespace SampleServer.Schema
         public string Company;
 
         [ForeignKey(typeof(Employee))]
-        [LookupBehavior(typeof(EmployeeList))]
+        [SelectBehavior(typeof(EmployeeList))]
         [Prompt("Sales rep ID")]
         public int SalesRepId;
 
@@ -133,7 +133,7 @@ namespace SampleServer.Schema
         [Prompt("I-code"), RegularExpression("^[A-Z]{2}-[0-9]{4}$"), MainColumn]
         public string ItemCode;
 
-        [StringLength(200, MinimumLength = 10)]
+        [StringLength(200, MinimumLength = 3)]
         public string Description;
 
         public List<ItemVariantRow> ItemVariant;
@@ -149,7 +149,7 @@ namespace SampleServer.Schema
             [StringLength(20, MinimumLength = 1), Prompt("Sub-code"), MainColumn, SortColumn]
             public string VariantCode;
 
-            [StringLength(200, MinimumLength = 10)]
+            [StringLength(200, MinimumLength = 3)]
             public string Description;
         }
     }
@@ -165,7 +165,7 @@ namespace SampleServer.Schema
         public int? SaleId;
 
         [ForeignKey(typeof(Customer))]
-        [LookupBehavior(typeof(CustomerList))]
+        [SelectBehavior(typeof(CustomerList))]
         [Prompt("Customer ID")]
         public int CustomerId;
 
@@ -190,13 +190,17 @@ namespace SampleServer.Schema
 
             [ForeignKey(typeof(Item))]
             [Prompt("Item-ID")]
-            [LookupBehavior(typeof(ItemList))]
+            [SelectBehavior(typeof(ItemList), UseDropdown = true)] //UseDropdown here is ok because the company has only a few items
             public int ItemId;
+
+            [LeftJoin("ItemId", "Description")]
+            public string ItemDescription;
 
             [Range(1, 999)]
             public int Quantity;
 
             [Prompt("Var-ID")]
+            [SelectBehavior(typeof(ItemVariantList), AutoCriterionName ="ItemId", AutoCriterionValueColumnName = "ItemId", ViewonValueColumnName = "ItemVariantId", UseDropdown = true)]
             public int? ItemVariantId;
 
             public List<SaleItemNoteRow> SaleItemNote;

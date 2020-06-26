@@ -24,7 +24,7 @@ sampleClient = {
         //change the name of the first customer found and save
         if (customerList.customer.length) {
             const custId =  customerList.customer[0].customerId;
-            const cust = await this.session.get('Customer|=' + custId, {doSubscribeEdit:true});
+            const cust = await this.session.get('Customer|=' + custId, {isForEdit:true});
             cust.company = 'Widgets 4U';
             await this.session.save([cust]);
             console.log('Saved changes to customer ID ' + custId);
