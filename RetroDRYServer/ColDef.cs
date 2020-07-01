@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 
 namespace RetroDRY
@@ -13,6 +14,7 @@ namespace RetroDRY
             public string UrlColumName;
         }
 
+        [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
         public class LeftJoinInfo
         {
             /// <summary>
@@ -26,6 +28,7 @@ namespace RetroDRY
             public string RemoteDisplayColumnName;
         }
 
+        [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
         public class SelectBehaviorInfo
         {
             /// <summary>

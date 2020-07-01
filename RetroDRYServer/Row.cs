@@ -33,6 +33,24 @@ namespace RetroDRY
         }
 
         /// <summary>
+        /// Get a standard or custom value from this row
+        /// </summary>
+        public object GetValue(ColDef coldef)
+        {
+            if (coldef.IsCustom) return GetCustom(coldef.Name);
+            return GetType().GetField(coldef.Name).GetValue(this);
+        }
+
+        /// <summary>
+        /// Set a standard or custom value in this row
+        /// </summary>
+        public void SetValue(ColDef coldef, object value)
+        {
+            if (coldef.IsCustom) SetCustom(coldef.Name, value);
+            else GetType().GetField(coldef.Name).SetValue(this, value);
+        }
+
+        /// <summary>
         /// When overridden, computes values of computed columns in the row
         /// </summary>
         public virtual void Recompute(Daton daton) { }
@@ -42,14 +60,18 @@ namespace RetroDRY
         /// </summary>
         public object Clone(TableDef tableDef) 
         {
-            var target = Utils.Construct(tableDef.RowType);
+            var target = Utils.Construct(tableDef.RowType) as Row;
 
-            //copy fields in this row
+            //copy custom fields in this row
+            if (CustomValues != null) target.CustomValues = new Dictionary<string, object>(CustomValues);
+
+            //copy other fields in this row
             foreach (var colDef in tableDef.Cols)
             {
+                if (colDef.IsCustom) continue;
                 var targetField = tableDef.RowType.GetField(colDef.Name);
                 if (targetField == null) continue;
-                var value = targetField.GetValue(this);
+                var value = targetField.GetValue(this); 
                 targetField.SetValue(target, value);
             }
 

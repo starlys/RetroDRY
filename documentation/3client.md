@@ -100,10 +100,7 @@ Managing the cache
 
 -   Layout components will automatically get and cache the persistons needed to resolve the display value for "foreign key to row in peristion"-style keys. So when the app first displays a persiston with that kind of foreign key, this causes a subscription to last for the rest of the session.
 -   For typical sized apps with under 100 lookup tables, probably no cache management is needed.
--   For larger apps, some management could be helpful for cutting down on memory usage.
-
-    -   Suppose your app has some main areas: customer ordering, employees, and so on. If the user spends some time in the employee area, then goes to the customer area for the rest of the day, you might want to time out the employee-related cache after a while.
-    -   Use retrodry.ClearCache for this purpose, passing a function to determine whether to retain an item in cache. Any removed item will cause a removed subscription. (todo - this might not be coded)
+-   For larger apps, some management could be helpful for cutting down on memory usage. (As of June 2020 there is no feature yet to do cache management.)
 
 Using the daton stack
 ---------------------

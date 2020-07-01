@@ -74,7 +74,7 @@ namespace RetroDRY
                 //reached here, so its a plain update of the single row; primary key ignored
                 bool anyChanges = false;
                 foreach (string colName in source.Columns.Keys)
-                    anyChanges |= SetValue(source, colName, target, target.GetType());
+                    anyChanges |= SetValue(datondef.MainTableDef, source, colName, target);
 
                 //child tables
                 anyChanges |= ApplyChildTables(source, target, target.GetType());
@@ -127,7 +127,7 @@ namespace RetroDRY
 
                 //copy values
                 foreach (string colName in source.Columns.Keys)
-                    anyChanges |= SetValue(source, colName, target, itemType);
+                    anyChanges |= SetValue(tabledef, source, colName, target);
 
                 //process child tables
                 anyChanges |= ApplyChildTables(source, target, itemType);
@@ -139,12 +139,12 @@ namespace RetroDRY
         /// Set value of colName in target from source
         /// </summary>
         /// <returns>true if it was a real change; false if same value</returns>
-        private bool SetValue(DiffRow source, string colName, Row target, Type targetType)
+        private bool SetValue(TableDef tabledef, DiffRow source, string colName, Row target)
         {
-            var field = targetType.GetField(colName);
-            if (field != null)
+            var coldef = tabledef.FindCol(colName);
+            if (coldef != null)
             {
-                var oldValue = field.GetValue(target);
+                var oldValue = target.GetValue(coldef);
                 var newValue = source.Columns[colName];
                 bool isChange = (
                     (oldValue != null && !oldValue.Equals(newValue))
@@ -153,7 +153,7 @@ namespace RetroDRY
                     );
                 if (isChange)
                 {
-                    field.SetValue(target, newValue);
+                    target.SetValue(coldef, newValue);
                     return true;
                 }
             }

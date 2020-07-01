@@ -34,6 +34,11 @@ namespace RetroDRY
         public string PrimaryKeyColName;
 
         /// <summary>
+        /// True if the database assigns the primary key when the row is inserted; false if the client has to supply the value
+        /// </summary>
+        public bool DatabaseAssignsKey;
+
+        /// <summary>
         /// The column name of default ordering in this table (also see ColDef.AllowSort)
         /// </summary>
         public string DefaulSortColName;

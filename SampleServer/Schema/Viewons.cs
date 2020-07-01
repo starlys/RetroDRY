@@ -15,7 +15,7 @@ namespace SampleServer.Schema
         [InheritFrom("Employee")]
         public class TopRow : Row
         {
-            [Key, ForeignKey(typeof(Employee)), SortColumn(false)]
+            [PrimaryKey(true), ForeignKey(typeof(Employee)), SortColumn(false)]
             public int EmployeeId;
 
             [SortColumn(false)]
@@ -29,6 +29,8 @@ namespace SampleServer.Schema
 
             [LeftJoin("SupervisorId", "LastName"), Prompt("Supervisor")]
             public string SupervisorLastName;
+
+            public bool IsToxic;
         }
 
         [Criteria]
@@ -36,6 +38,9 @@ namespace SampleServer.Schema
         {
             [Prompt("Last name starts with")]
             public string LastName;
+
+            [Prompt("Toxic human?")]
+            public bool IsToxic;
         }
     }
 
@@ -50,7 +55,7 @@ namespace SampleServer.Schema
         [InheritFrom("Customer")]
         public class TopRow : Row
         {
-            [Key, ForeignKey(typeof(Customer)), SortColumn(false)]
+            [PrimaryKey(true), ForeignKey(typeof(Customer)), SortColumn(false)]
             public int CustomerId;
 
             [SortColumn(true)]
@@ -87,7 +92,7 @@ namespace SampleServer.Schema
         [InheritFrom("Item")]
         public class TopRow : Row
         {
-            [Key, ForeignKey(typeof(Item))]
+            [PrimaryKey(true), ForeignKey(typeof(Item))]
             public int ItemId;
 
             [SortColumn(true)]
@@ -95,6 +100,10 @@ namespace SampleServer.Schema
 
             [SortColumn(false)]
             public string Description;
+
+            public double? Weight;
+
+            public decimal Price;
         }
 
         [Criteria]
@@ -105,6 +114,8 @@ namespace SampleServer.Schema
 
             [Prompt("Item description")] 
             public string Description;
+
+            public double? Weight;
         }
     }
 
@@ -117,7 +128,7 @@ namespace SampleServer.Schema
 
         public class TopRow : Row
         {
-            [Key]
+            [PrimaryKey(true)]
             public int ItemVariantId;
 
             public int ItemId;
@@ -143,10 +154,10 @@ namespace SampleServer.Schema
     {
         public List<TopRow> Sale;
 
-        [InheritFrom("Sale")]
+        [InheritFrom("Sale", IncludeCustom = true)]
         public class TopRow : Row
         {
-            [Key, ForeignKey(typeof(Sale))]
+            [PrimaryKey(true), ForeignKey(typeof(Sale))]
             public int SaleId;
 
             [ForeignKey(typeof(Customer))]

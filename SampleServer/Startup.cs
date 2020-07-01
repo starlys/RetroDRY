@@ -81,6 +81,10 @@ namespace SampleServer
             //};
             //ddict.DatonDefs["Customer"].MainTableDef.Prompt["de"] = "..,";
 
+            //sample custom values (dynamic columns that are not declared in the database or at compile time)
+            ddict.DatonDefs["Sale"].MainTableDef.AddCustomColum("CouponCode", typeof(string), Constants.TYPE_NSTRING);
+            ddict.DatonDefs["Sale"].MainTableDef.AddCustomColum("IsRushOrder", typeof(bool?), Constants.TYPE_NBOOL);
+
             //sample custom validation
             ddict.DatonDefs["Customer"].CustomValidator = Validators.ValidateCustomer;
 

@@ -20,7 +20,7 @@ namespace RetroDRY
             if (cdata.DiffRow.Kind == DiffKind.NewRow)
             {
                 var builder = new SqlInsertBuilder(SqlFlavor, CustomizeSqlStatement);
-                bool dbAssignsKey = DatabaseAssignsKeysForTable(cdata.TableDef.Name);
+                bool dbAssignsKey = cdata.TableDef.DatabaseAssignsKey;
                 PopulateWriterColumns(builder, cdata, !dbAssignsKey);
                 if (cdata.TableDef.ParentKeyColumnName != null)
                     builder.AddNonKey(cdata.TableDef.ParentKeyColumnName, null, cdata.ParentKey);
@@ -60,12 +60,13 @@ namespace RetroDRY
                 if (!includePrimaryKey && coldef.Name == cdata.TableDef.PrimaryKeyColName) continue;
                 if (!cdata.DiffRow.Columns.TryGetValue(coldef.Name, out object value)) continue;
                 if (coldef.IsCustom)
-                    customColValues[coldef.Name] = Retrovert.FormatRawJsonValue(coldef, value);
+                    customColValues[coldef.Name] = value;
                 else
                     builder.AddNonKey(coldef.Name, coldef.WireType, value);
             }
 
-            //if any custom columns are to be written, include CustomValues column with old and new values
+            //if any custom columns are to be written, include CustomValues column with old and new values/
+            //Example: if custom cols A and B exist, and the current write only updates A, we still need to include the pristine value of B in the json
             if (customColValues.Any())
             {
                 if (cdata.PristineRow != null)
@@ -73,12 +74,11 @@ namespace RetroDRY
                     foreach (var coldef in cdata.TableDef.Cols.Where(c => c.IsCustom))
                     {
                         if (customColValues.ContainsKey(coldef.Name)) continue; //don't overwrite old over new
-                        object value = cdata.TableDef.RowType.GetField(coldef.Name).GetValue(cdata.PristineRow);
-                        customColValues[coldef.Name] = value;
+                        customColValues[coldef.Name] = cdata.PristineRow.GetCustom(coldef.Name);
                     }
                 }
                 string json = CustomValuesToJson(cdata.TableDef, customColValues);
-                builder.AddNonKey(CUSTOMCOLNAME, null, json);
+                builder.AddNonKey(CUSTOMCOLNAME, null, json, useJson: true);
             }
         }
 

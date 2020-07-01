@@ -61,5 +61,21 @@ namespace RetroDRY
             //For SQL Server, another way if we need to is to convert "abc" to "[Aa][Bb][Cc]" which is more performant than "lower(colname) like value"
             return s + "%";
         }
+
+#pragma warning disable IDE0060
+        /// <summary>
+        /// Format the expression for a SQL column value such that it can fit in the blanks in the following:
+        /// "update X set col1=___" or "insert into X (col1) values (___)".
+        /// Default behavior is to use the parameter name only such as "@p1"
+        /// </summary>
+        public string LiteralUpdateColumnExperession(string colName, string paramName, bool useJson)
+        {
+            if (useJson)
+            {
+                if (Vendor == VendorKind.PostgreSQL) return $"cast(@{paramName} as jsonb)";
+            }
+            return "@" + paramName;
+        }
     }
+#pragma warning restore IDE0060
 }

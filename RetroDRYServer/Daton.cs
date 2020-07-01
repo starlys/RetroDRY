@@ -53,6 +53,9 @@ namespace RetroDRY
             }                
         }
 
+        /// <summary>
+        /// Calls Recompute on each row in the daton
+        /// </summary>
         public void Recompute(DatonDef datondef)
         {
             var r = RecurPoint.FromDaton(datondef, this);

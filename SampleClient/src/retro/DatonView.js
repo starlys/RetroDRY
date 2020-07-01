@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CardView from './CardView';
 import GridView from './GridView';
-import {TableRecurPointFromDaton, DatonKey, parseDatonKey, validateAll, validateCriteria, securityUtil} from 'retrodry';
+import {TableRecurPointFromDaton, DatonKey, parseDatonKey, validateAll, validateCriteria, securityUtil, IdleTimer} from 'retrodry';
 import DatonBanner from './DatonBanner';
 import CardStack from './CardStack';
 
@@ -56,13 +56,14 @@ function buildTopPagingButtons(layer, currentPageNo, allowNext) {
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
 //props.renderCount is a number incremented by the caller to force rerender when no other props changed
 export default React.memo(props => {
-    const {datonDef, session, edit, layer} = props;
+    const {datonDef, session, layer} = props;
     const [topStyle, setTopStyle] = useState(null); //'c' or 'g' for card or grid; null on first render
     const [parsedDatonKey, setParsedDatonKey] = useState(null); 
-    const [isEditing, setIsEditing] = useState(edit); //note we have to set layer.edit whenever we set this so other controls know the mode
+    const [isEditing, setIsEditing] = useState(props.edit); //note we have to set layer.edit whenever we set this so other controls know the mode
     const [isWorking, setIsWorking] = useState(false);
     const [daton, setDaton] = useState(props.daton);
     const [errorItems, setErrorItems] = useState([]); //array of strings to display as errors
+    const idleTimer = useRef(null);
     const criset = useRef({}); //the viewon key segments in unpacked object form (includes _sort and _page)
     const domElement = useRef();
     const validationCount = useRef(0); //used to force rerender of EditValues after validation is run
@@ -73,7 +74,41 @@ export default React.memo(props => {
             domElement.current.parentElement.scrollTo(0, domElement.current.offsetTop);
     }, [domElement]);
 
+    //clean up idle timer
+    const cancelIdleTimer = () => {
+        if (idleTimer.current) idleTimer.current.stop();
+    };
+    useEffect(() => {
+        return () => cancelIdleTimer;
+    });
+
     //event handlers
+    const editingNearingTimeout = () => {
+        const lang = session.dataDictionary.messageConstants;
+        setErrorItems([lang.INFOTIMEOUT]);
+    };
+    const editingNotNearingTimeout = () => {
+        setErrorItems([]); 
+    };
+    const editingTimedOut = () => {
+        cancelClicked(); 
+    };
+    const cancelClicked = () => {
+        setIsEditing(false);
+        cancelIdleTimer();
+        setErrorItems([]);
+        if (layer) layer.edit = false;
+        const isNew = parsedDatonKey.isNew();
+        if (isNew)
+            layer.stackstate.removeByKey(daton.key, false);
+        else {
+            session.changeSubscribeState([daton], 1).then(() => {
+                session.get(daton.key, {forceCheckVersion:true}).then(d => {
+                    setDaton(d);
+                });    
+            })
+        }
+    };
     const editClicked = () => {
         //note this can be called before a real render happened
         const isNew = parseDatonKey(daton.key).isNew();
@@ -97,6 +132,8 @@ export default React.memo(props => {
                     if (layer) layer.edit = false;
                 } else {
                     setIsEditing(true);
+                    if (!idleTimer.current) idleTimer.current = new IdleTimer();
+                    idleTimer.current.start(5 * 60, 6 * 60, editingNearingTimeout, editingNotNearingTimeout, editingTimedOut);
                     if (layer) layer.edit = true;
                     setErrorItems([]);
                 }
@@ -121,6 +158,7 @@ export default React.memo(props => {
             setIsWorking(false);
             if (saveInfo.success) {
                 setIsEditing(false);
+                cancelIdleTimer();
                 if (layer) layer.edit = false;
                 if (layer && layer.propagateSaveToViewon) layer.propagateSaveToViewon(daton);
                 if (isNew) {
@@ -151,21 +189,6 @@ export default React.memo(props => {
             }
         });
     };
-    const cancelClicked = () => {
-        setIsEditing(false);
-        setErrorItems([]);
-        if (layer) layer.edit = false;
-        const isNew = parsedDatonKey.isNew();
-        if (isNew)
-            layer.stackstate.removeByKey(daton.key, false);
-        else {
-            session.changeSubscribeState([daton], 1).then(() => {
-                session.get(daton.key, {forceCheckVersion:true}).then(d => {
-                    setDaton(d);
-                });    
-            })
-        }
-    };
     const removeClicked = () => {
         if (isEditing || !layer) return;
         layer.stackstate.removeByKey(daton.key, true);
@@ -175,6 +198,7 @@ export default React.memo(props => {
         session.deletePersiston(daton).then(saveInfo => {
             setIsWorking(false);
             if (saveInfo.success) {
+                cancelIdleTimer();
                 if (layer) layer.stackstate.removeByKey(daton.key, true);
             } else {
                 const result = saveInfo.details[0];
@@ -216,7 +240,7 @@ export default React.memo(props => {
         if (datonDef.criteriaDef) criset.current = unpackViewonKey(daton.key);
 
         //optionally start editing 
-        if (edit) editClicked();
+        if (props.edit) editClicked();
 
         return null;
     }

@@ -87,9 +87,11 @@ namespace RetroDRY
 
             //info messages
             ("INFOWORKING", "Working"),
+            ("INFOTIMEOUT", "Your edits will be canceled if you do not enter anything soon"),
 
             //navigational
-            ("NAVPAGE", "Page")
+            ("NAVPAGE", "Page"),
+            ("NAVLIST", "List of")
         };
     }
 }

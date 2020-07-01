@@ -43,7 +43,7 @@ namespace RetroDRY
             foreach (var coldef in rr.TableDef.Cols)
             {
                 if (coldef.IsComputed) continue;
-                object value = rr.TableDef.RowType.GetField(coldef.Name).GetValue(rr.Row);
+                object value = rr.Row.GetValue(coldef);
                 string valueS = value == null ? "" : value.ToString();
                 string prompt = DataDictionary.ResolvePrompt(coldef.Prompt, User, coldef.Name);
 

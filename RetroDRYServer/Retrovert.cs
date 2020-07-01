@@ -33,6 +33,23 @@ namespace RetroDRY
             }
         }
 
+        //todo
+        /// <summary>
+        /// JSON serializing conversion for removing null and blank values
+        /// </summary>
+        //public class DataDictionaryResponseConverter : JsonConverter<DataDictionaryResponse>
+        //{
+        //    public override DataDictionaryResponse ReadJson(JsonReader reader, Type objectType, DataDictionaryResponse existingValue, bool hasExistingValue, JsonSerializer serializer)
+        //    {
+        //        throw new NotImplementedException();
+        //    }
+
+        //    public override void WriteJson(JsonWriter writer, DataDictionaryResponse value, JsonSerializer serializer)
+        //    {
+        //        throw new NotImplementedException();
+        //    }
+        //}
+
         /// <summary>
         /// Convert daton to JSON wire format
         /// </summary>
@@ -471,6 +488,7 @@ namespace RetroDRY
         //see DataDictionaryToWire
         private static ColDefResponse ToWire(SecurityGuard guard, TableDef source, ColDef c, IUser user)
         {
+            bool isDBAssignedKey = source.PrimaryKeyColName == c.Name && source.DatabaseAssignsKey;
             return new ColDefResponse
             {
                 PermissionLevel = (int)guard.FinalLevel(null, source.Name, c.Name),
@@ -479,19 +497,19 @@ namespace RetroDRY
                 LeftJoin = ToWire(c.LeftJoin),
                 SelectBehavior = ToWire(c.SelectBehavior),
                 ImageUrlColumName = c.Image?.UrlColumName,
-                IsComputed = c.IsComputed,
+                IsComputed = c.IsComputed || isDBAssignedKey,
                 IsMainColumn = c.IsMainColumn,
                 IsVisibleInDropdown = c.IsVisibleInDropdown,
-                LengthValidationMessage = DataDictionary.ResolvePrompt(c.LengthValidationMessage, user),
+                LengthValidationMessage = DataDictionary.ResolvePrompt(c.LengthValidationMessage, user, defaultValue: null),
                 MaxLength = c.MaxLength,
                 MaxNumberValue = c.MaxNumberValue,
                 MinLength = c.MinLength,
                 MinNumberValue = c.MinNumberValue,
                 Name = CamelCasify(c.Name),
                 Prompt = DataDictionary.ResolvePrompt(c.Prompt, user, c.Name),
-                RangeValidationMessage = DataDictionary.ResolvePrompt(c.RangeValidationMessage, user),
+                RangeValidationMessage = DataDictionary.ResolvePrompt(c.RangeValidationMessage, user, defaultValue: null),
                 Regex = c.Regex,
-                RegexValidationMessage = DataDictionary.ResolvePrompt(c.RegexValidationMessage, user),
+                RegexValidationMessage = DataDictionary.ResolvePrompt(c.RegexValidationMessage, user, defaultValue: null),
                 WireType = c.WireType
             };
         }

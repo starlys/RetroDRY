@@ -47,7 +47,7 @@ export default (props) => {
         return <span className="card-value" style={wrapStyle}>{readable}</span>;
     } else if (baseType === 'double' || baseType === 'decimal') {
         //future feature: format floats with the right number of decimal places; for now, always assume 2
-        const readable = value.toFixed(2);
+        const readable = value ? value.toFixed(2) : '';
         return <span className="card-value" style={wrapStyle}>{readable}</span>;
     }
 

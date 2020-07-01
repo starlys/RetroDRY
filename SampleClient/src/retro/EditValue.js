@@ -12,6 +12,23 @@ function autoPopulateHiFromLo(row, colDef) {
     if (i === value.length - 1) row[colDef.name] = value.substr(0, value.length - 1);
 }
 
+//get the formatted version of a numeric col value from the row, by using the name$s property of the row to store it
+//Example: row['price$s'] stores what the user is typing while row['price'] stores the parsed number
+function getFormattedNumber(row, colName, baseType) {
+    let s = row[colName + '$s'];
+    if (s) return s;
+    if (baseType === 'decimal' || baseType === 'double') {
+        let n = parseFloat(row[colName]);
+        if (isNaN(n)) s = '';
+        else s = n.toFixed(2);
+    } else {
+        let n = parseInt(row[colName]);
+        if (isNaN(n)) s = '';
+        else s = n.toString(); 
+    }
+    return s;
+}
+
 //Show an editor for a single value of any type and maintains its value in row[colDef.name]; it also maintains
 //the invalid message, for example for column 'firstName' the invalid message is in row['firstName$v'].
 //This is used for both row values within persistons and criset values within viewon criteria.
@@ -41,9 +58,14 @@ export default (props) => {
         setHasFocus(true);
         setValueAtFocus(row[colDef.name]);
     };
-    const boolChanged = (ev) => row[colDef.name] = ev.target.checked;
+    const boolChanged = (ev) => {
+        row[colDef.name] = ev.target.checked;
+        props.onChanged();
+    };
     const numberChanged = (ev) => {
-        row[colDef.name] = parseFloat(ev.target.value);
+        row[colDef.name + '$s'] = ev.target.value; //see getFormattedNumber
+        row[colDef.name] = parseFloat(ev.target.value); //may be NaN
+        //note this stores strings in the $s property while the focus is in the input
         props.onChanged();
     };
     const rangeChanged = (lo, hi) => { //accepts string entries; use for any range types
@@ -74,7 +96,10 @@ export default (props) => {
     };
     const afterEntryProcessed = ([msg, anyCascades]) => {
         setInvalidMessage(msg);
-        if (anyCascades && layer) layer.stackstate.callOnChanged(); 
+        if (anyCascades && layer) {
+            ++layer.renderCount;
+            layer.stackstate.callOnChanged(); 
+        }
     };
     const ctrlBlurred = async (isLoOfRange) => {
         setHasFocus(false);
@@ -127,7 +152,6 @@ export default (props) => {
     let lookupButton = null;
     if (selectKind === 2 && layer) { 
         lookupButton = <button className="btn-lookup" onClick={startLookup}>..</button>;
-        wrapStyle.width = 'calc(' + wrapStyle.width + ' - 20px'; //for example changes '50%' to 'calc(50% - 20px)'
         containerClass += ' has-btn';
     }
 
@@ -168,8 +192,10 @@ export default (props) => {
                 <input className="criterion number" type="number" value={loHi[1] || ''} onChange={hiNumberChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>
             </>;
         }
-        else
-            inputCtrl = <input type="number" value={row[colDef.name] || ''} onChange={numberChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>;
+        else {
+            //the input will use the string version of the number for editing, which is in the row with $s appended.
+            inputCtrl = <input type="number" value={getFormattedNumber(row, colDef.name, baseType)} onChange={numberChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>;
+        }
     }
     else if (baseType === 'string') {
         //string renders multiline control if max length is > 200
