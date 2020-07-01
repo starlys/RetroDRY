@@ -155,6 +155,9 @@ select {
 .daton .inputwrap input, .daton .inputwrap textarea, .daton .inputwrap select {
   width: calc(100% - 12px);
 }
+.daton .inputwrap.has-btn input, .daton .inputwrap.has-btn textarea, .daton .inputwrap.has-btn select {
+  width: calc(100% - 32px);
+}
 .daton .inputwrap textarea {
   height: 3.5em;
   resize: vertical;
@@ -179,10 +182,6 @@ select {
 }
 .daton input.date {
   width: 10em;
-}
-.daton .btn-lookup {
-  position: absolute;
-  right: -21px;
 }
 .daton .btn-delete-row {
   color: red;

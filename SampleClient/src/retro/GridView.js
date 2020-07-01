@@ -91,11 +91,12 @@ export default props => {
         return <th key={idx} style={{width: ci.width + 'em'}}>{cellContent}</th>;
     });
 
+    const lang = session.dataDictionary.messageConstants;
     return (
         <>
             {rows.length > 0 && 
                 <>
-                    <div className="grid-banner">{tableDef.prompt}</div>
+                    <div className="grid-banner">{lang.NAVLIST} {tableDef.prompt}</div>
                     <div className="grid-wrap">
                         <table className="grid">
                             <thead>

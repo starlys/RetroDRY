@@ -315,6 +315,7 @@ namespace RetroDRY
             {
                 object value = reader.GetValue(ci.Index);
                 if (value is DBNull) value = null;
+                else value = Utils.ChangeType(value, ci.Field.FieldType);
                 ci.Field.SetValue(target, value);
             }
         }

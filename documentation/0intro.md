@@ -49,7 +49,7 @@ Why did we make this?
     -   Duplicating the natural language labels and validation rules on the client side.
     -   Coding the search/results grid.
     -   Coding the entry form.
-    -   After editing a record, reloading or updating the list of customers to reflect the change.
+    -   After editing a record, reloading or updating the selection list to reflect the change.
 
 An opinionated framework
 ------------------------
@@ -159,15 +159,18 @@ High level walkthough
 
     -   Define client-side layouts for display and editing of the customer persiston and customer viewon. The layouts are defined by ordering and grouping entry columns, with size-responsive indications (for example 2 groups could be shown side by side on large screens).
     -   Include boilerplate initialization code.
-    -   Include the customer list viewon in a React component. This line of code gives the user the ability to search for customers by any of the criteria you defined earlier, as well as add, edit and delete customers.
+    -   Include the customer list viewon in a React component. This line of code gives the user the ability to search for customers by any of the criteria you defined earlier, as well as add, edit and delete customers, based on their permissions.
 
-        -   Code: `&lt;RetroStack seed="CustomerList|+" /&gt;`
+        -   HTML: `<DatonStack session={globals.session} stackstate={stackstate} />;`
+        -   Javascript: `stackstate.add('CustomerList');`
 
 -   If you want to manage your persistons programmatically instead of via user forms, then you can do this in javascript:
 
-    const customer = await retrodry.get('customer:123');
-    customer.region = 'West';
-    await retrodry.save(customer);
+```javascript
+let customer = await retrodry.get('customer|=123');
+customer.region = 'West';
+await retrodry.save(customer);
+```
 
 -   This last sample shows how you can think of having access to the database server in client code, but in reality is is going through your app server, with caching, validation and permissions. Only the changed columns get sent back to the server.
 
@@ -178,6 +181,8 @@ Simplest deployment
 -------------------
 
 ![simplest architecture](architecture_basic.png)
+
+*graphic update needed: SignalR is not used*
 
 In the simplest case the components are:
 

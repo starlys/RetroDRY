@@ -118,9 +118,8 @@ namespace RetroDRY
                 {
                     foreach (var sourceColdef in sourceTabledef.Cols.Where(c => c.IsCustom))
                     {
-                        var targetColdef = new ColDef { Name = sourceColdef.Name, CSType = sourceColdef.CSType };
+                        var targetColdef = targetTabledef.AddCustomColum(sourceColdef.Name, sourceColdef.CSType, sourceColdef.WireType);
                         CopyColumnInheritance(sourceColdef, targetColdef);
-                        targetTabledef.Cols.Add(targetColdef);
                     }
                 }
             }
@@ -254,11 +253,12 @@ namespace RetroDRY
                     else
                         coldef.WireType = Utils.InferredWireType(coldef.CSType);
 
-                    var key = field.GetCustomAttribute<KeyAttribute>();
+                    var key = field.GetCustomAttribute<PrimaryKeyAttribute>();
                     if (key != null)
                     {
-                        if (tabledef.PrimaryKeyColName != null) throw new Exception($"Key attribute may not be used on more than one field member of {tabledef.Name}");
+                        if (tabledef.PrimaryKeyColName != null) throw new Exception($"PrimaryKey attribute may not be used on more than one field member of {tabledef.Name}");
                         tabledef.PrimaryKeyColName = field.Name;
+                        tabledef.DatabaseAssignsKey = key.DatabaseAssigned;
                     }
                     
                     var stringlength = field.GetCustomAttribute<StringLengthAttribute>();

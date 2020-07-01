@@ -41,6 +41,9 @@ export default class Session {
     //if set, Session will call this whenever a daton was received from the server because this session or another session edited it
     onSubscriptionUpdate?: (daton: any) => void;
 
+    //set by session (only after start called) to the time of the latest keystroke; can be used by UI to handle lock timeouts
+    //todo lastActivityMillis: number = 0;
+
     private serverIdx: number = 0;
 
     //cache indexed by key; cleaned on long polling intervals 
@@ -61,6 +64,9 @@ export default class Session {
 
         //start long polling
         setTimeout(() => this.longPoll(), 10000);
+
+        //support activity timers
+        //tod document.addEventListener('keydown', this.keyDownHandler);
     }
 
     //register default card layout to use with the given daton and table
@@ -402,6 +408,7 @@ export default class Session {
         //free up memory and reset so that it could be initialized again
         this.datonCache = {};
         this.dataDictionary = undefined;
+        //todo document.removeEventListener('keydown', this.keyDownHandler);
 
         const request = { sessionKey: this.sessionKey, doQuit: true };
         await NetUtils.httpMain(this.baseServerUrl(), request);
@@ -465,4 +472,8 @@ export default class Session {
         for (let datonKey of obsoleteKeys)
             delete this.datonCache[datonKey];
     }
+
+    // private keyDownHandler() { todo
+    //     this.lastActivityMillis = Date.now();
+    // }
 }

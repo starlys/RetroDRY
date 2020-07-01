@@ -83,6 +83,19 @@ namespace RetroDRY
     }
 
     /// <summary>
+    /// Specifies that this column is the primary key of the table
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
+    public class PrimaryKeyAttribute : Attribute
+    {
+        /// <summary>
+        /// True if the database assigns the primary key when the row is inserted; false if the client has to supply the value
+        /// </summary>
+        public bool DatabaseAssigned { get; set; }
+        public PrimaryKeyAttribute(bool databaseAssigned) { DatabaseAssigned = databaseAssigned; }
+    }
+
+    /// <summary>
     /// Specifies the column in a child table that contains the reference to the primary key of its parent table
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]

@@ -29,7 +29,7 @@ namespace RetroDRY
         public static bool IsSupportedType(Type t)
         {
             return t == typeof(string) || t == typeof(DateTime) || t == typeof(DateTime?) || t == typeof(byte[]) 
-                || IsSupportedNumericType(t);
+                || t == typeof(bool) || t == typeof(bool?) || IsSupportedNumericType(t);
         }
 
         /// <summary>

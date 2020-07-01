@@ -103,6 +103,7 @@ namespace RetroDRY
         public bool MultipleMainRows { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class TableDefResponse
     {
         public string Name { get; set; }
@@ -132,9 +133,11 @@ namespace RetroDRY
         /// </summary>
         public string Prompt { get; set; }
 
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public bool IsCriteria { get; set; }
     }
 
+    [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
     public class ColDefResponse
     {
         /// <summary>
@@ -153,13 +156,15 @@ namespace RetroDRY
         public string WireType { get; set; }
 
         /// <summary>
-        /// If true, the column won't be editable on clients
+        /// If true, the column won't be editable by users (either because it's a primary key or because it's not in the storage table)
         /// </summary>
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public bool IsComputed { get; set; }
 
         /// <summary>
         /// If true, this column can be used to sort
         /// </summary>
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public bool AllowSort { get; set; }
 
         /// <summary>
@@ -180,11 +185,13 @@ namespace RetroDRY
         /// <summary>
         /// If true, this column is the readable name or description that users would see to identify the row (or in some cases it could also be the primary key)
         /// </summary>
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public bool IsMainColumn { get; set; }
 
         /// <summary>
         /// If true, this column will be shown in dropdowns along with the one marked with IsMainColumn, when selecting rows
         /// </summary>
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public bool IsVisibleInDropdown { get; set; }
 
         /// <summary>
@@ -195,11 +202,13 @@ namespace RetroDRY
         /// <summary>
         /// String minimum length
         /// </summary>
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public int MinLength { get; set; }
 
         /// <summary>
         /// String maximum length (or 0 for unlimited)
         /// </summary>
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public int MaxLength { get; set; }
 
         /// <summary>
@@ -214,8 +223,10 @@ namespace RetroDRY
         /// </summary>
         public string RegexValidationMessage { get; set; }
 
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public decimal MinNumberValue { get; set; }
 
+        [JsonProperty(DefaultValueHandling = DefaultValueHandling.Ignore)]
         public decimal MaxNumberValue { get; set; }
 
         /// <summary>
@@ -224,7 +235,7 @@ namespace RetroDRY
         public string RangeValidationMessage { get; set; }
 
         /// <summary>
-        /// Set only if this column is an image identifier (such as a file name) { get; set; } 
+        /// Set only if this column is an image identifier (such as a file name) 
         /// The column name in the same row whose value will be set to the URL of the image
         /// </summary>
         public string ImageUrlColumName { get; set; }

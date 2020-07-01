@@ -152,6 +152,7 @@ Image and attachment types
     -   The data dictionary can contain entries to denote image columns.
     -   A column can be defined as computed and you can use the feature to code on the server side the qualified URL of external images based on the value of some database field.
     -   If an image column is included in a client side layout (in view mode only), it can show the image and provide a button so the developer can implement the upload. Upon saving this would send an update to the client which might refresh the image display.
+    -   As of June 2020 these features ARE NOT FULLY CODED.
 
 Data types
 ==========

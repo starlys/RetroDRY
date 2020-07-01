@@ -27,8 +27,8 @@ drop table EmployeeContact;
 drop table Employee;
 drop table SaleStatus;
 drop table PhoneType;
-create table PhoneType (
 
+create table PhoneType (
 PhoneTypeId smallserial primary key,
 TypeOfPhone varchar(20)
 );
@@ -44,7 +44,8 @@ EmployeeId serial primary key,
 FirstName varchar(50) not null,
 LastName varchar(50) not null,
 SupervisorId int references Employee,
-HireDate date
+HireDate date,
+IsToxic boolean not null
 );
 
 create table EmployeeContact (
@@ -66,6 +67,8 @@ create table Item (
 ItemId serial primary key,
 ItemCode varchar(20) not null,
 Description varchar(200) not null,
+Weight real,
+Price numeric(6,2),
 CustomValues jsonb
 );
 
@@ -92,6 +95,7 @@ SaleId int not null references Sale,
 ItemId int not null references Item,
 ItemVariantId int references ItemVariant,
 Quantity int not null,
+ExtendedPrice numeric(6,2),
 CustomValues jsonb
 );
 

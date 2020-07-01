@@ -9,3 +9,4 @@ export * from './src/wireTypes';
 export {default as DatonKey, parseDatonKey} from './src/datonKey';
 export * from './src/utils';
 export {default as DropdownState} from './src/dropdownState';
+export {default as IdleTimer} from './src/idleTimer';

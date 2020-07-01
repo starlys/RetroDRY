@@ -15,6 +15,7 @@ namespace RetroDRY
         {
             public string Name, ParameterName;
             public object Value;
+            public string LiteralExpression; //for example "@p1"; this gets built into the SQL command text
 
             public IDbDataParameter AsParameter(IDbCommand cmd)
             {
@@ -40,17 +41,21 @@ namespace RetroDRY
         /// Add a column name/value which is not the primary key column
         /// </summary>
         /// <param name="wiretype">can be null; if not set, then nullable logic is bypassed</param>
-        public void AddNonKey(string name, string wiretype, object value)
+        public void AddNonKey(string name, string wiretype, object value, bool useJson = false)
         {
             //fix some nullable issues
             if (wiretype == Constants.TYPE_STRING && value == null) value = "";
             if (wiretype == Constants.TYPE_BLOB && value == null) value = new byte[0];
 
+            string paramName = "p" + (++LastParamNoUsed);
+            string litExpression = SqlFlavor.LiteralUpdateColumnExperession(name, paramName, useJson);
+
             Cols.Add(new Col
             {
                 Name = name,
                 Value = value,
-                ParameterName = "p" + (++LastParamNoUsed)
+                ParameterName = paramName,
+                LiteralExpression = litExpression
             });
         }
 
@@ -69,11 +74,11 @@ namespace RetroDRY
         public Task<object> Execute(IDbConnection db, string tableName, string pkColName, bool databaseAssignsKey)
         {
             string nonKeyColNames = string.Join(",", Cols.Select(c => c.Name));
-            string nonKeyParamNames = string.Join(",", Cols.Select(c => "@" + c.ParameterName));
+            string valuesList = string.Join(",", Cols.Select(c => c.LiteralExpression));
             using (var cmd = db.CreateCommand())
             {
                 foreach (var c in Cols) cmd.Parameters.Add(c.AsParameter(cmd));
-                string coreCommand = $"insert into {tableName} ({nonKeyColNames}) values ({nonKeyParamNames})";
+                string coreCommand = $"insert into {tableName} ({nonKeyColNames}) values ({valuesList})";
 
                 if (databaseAssignsKey)
                 {
@@ -100,8 +105,7 @@ namespace RetroDRY
         /// </summary>
         public Task Execute(IDbConnection db, string tableName, string pkColName, object pkValue)
         {
-            string colClauses = string.Join(",", Cols.Select(c => $"{c.Name}=@{c.ParameterName}"));
-            string nonKeyParamNames = string.Join(",", Cols.Select(c => c.ParameterName));
+            string colClauses = string.Join(",", Cols.Select(c => $"{c.Name}={c.LiteralExpression}"));
             using (var cmd = db.CreateCommand())
             {
                 foreach (var c in Cols) cmd.Parameters.Add(c.AsParameter(cmd));

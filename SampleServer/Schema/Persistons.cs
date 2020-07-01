@@ -16,7 +16,7 @@ namespace SampleServer.Schema
         [Prompt("Type")]
         public class PhoneTypeRow : Row
         {
-            [Key]
+            [PrimaryKey(true)]
             [Prompt("ID")]
             public short? PhoneTypeId;
 
@@ -37,7 +37,7 @@ namespace SampleServer.Schema
         [Prompt("Status")]
         public class SaleStatusRow : Row
         {
-            [Key]
+            [PrimaryKey(true)]
             [Prompt("ID")]
             public short? StatusId;
 
@@ -56,7 +56,7 @@ namespace SampleServer.Schema
     [SingleMainRow]
     public class Employee : Persiston
     {
-        [Key]
+        [PrimaryKey(true)]
         [Prompt("ID")]
         public int? EmployeeId;
 
@@ -77,13 +77,15 @@ namespace SampleServer.Schema
         [Prompt("Hired on")]
         public DateTime HireDate;
 
+        public bool IsToxic;
+
         public List<EContactRow> EContact;
 
         [SqlTableName("EmployeeContact"), ParentKey("EmployeeId")]
         [Prompt("Employee contact")]
         public class EContactRow : Row
         {
-            [Key]
+            [PrimaryKey(true)]
             [Prompt("ID")]
             public int? ContactId;
 
@@ -101,7 +103,7 @@ namespace SampleServer.Schema
     [SingleMainRow]
     public class Customer : Persiston
     {
-        [Key]
+        [PrimaryKey(true)]
         [Prompt("ID")]
         public int? CustomerId;
 
@@ -126,7 +128,7 @@ namespace SampleServer.Schema
     [SingleMainRow]
     public class Item : Persiston
     {
-        [Key]
+        [PrimaryKey(true)]
         [Prompt("ID")]
         public int? ItemId;
 
@@ -136,13 +138,17 @@ namespace SampleServer.Schema
         [StringLength(200, MinimumLength = 3)]
         public string Description;
 
+        public double? Weight;
+
+        public decimal? Price;
+
         public List<ItemVariantRow> ItemVariant;
 
         [ParentKey("ItemId")]
         [Prompt("Variant")]
         public class ItemVariantRow : Row
         {
-            [Key]
+            [PrimaryKey(true)]
             [Prompt("Var-ID")]
             public int? ItemVariantId;
 
@@ -160,7 +166,7 @@ namespace SampleServer.Schema
     [SingleMainRow]
     public class Sale : Persiston
     {
-        [Key, MainColumn]
+        [PrimaryKey(true), MainColumn]
         [Prompt("ID")]
         public int? SaleId;
 
@@ -184,7 +190,7 @@ namespace SampleServer.Schema
         [Prompt("Item sold")]
         public class SaleItemRow : Row
         {
-            [Key, SortColumn]
+            [PrimaryKey(true), SortColumn]
             [Prompt("ID")]
             public int? SaleItemId;
 
@@ -203,13 +209,16 @@ namespace SampleServer.Schema
             [SelectBehavior(typeof(ItemVariantList), AutoCriterionName ="ItemId", AutoCriterionValueColumnName = "ItemId", ViewonValueColumnName = "ItemVariantId", UseDropdown = true)]
             public int? ItemVariantId;
 
+            [Prompt("Ext Price")]
+            public decimal ExtendedPrice;
+
             public List<SaleItemNoteRow> SaleItemNote;
 
             [ParentKey("SaleItemId")]
             [Prompt("Sale note")]
             public class SaleItemNoteRow : Row
             {
-                [Key]
+                [PrimaryKey(true)]
                 [Prompt("ID")]
                 public int? SaleItemNoteId;
 

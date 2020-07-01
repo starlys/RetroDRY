@@ -109,37 +109,41 @@ Defining the data model using annotated classes
 
     -   DatabaseNumber - used only in multi-database situations, to indicate the table is found on database number 1, 2, etc.
     -   SingleMainRow - if present on the daton, it is built as a single-main-row daton; otherwise the daton must define exactly one List member which will be taken as the main table
+    
 -   Use these annotations on the Daton class or any nested child row classes (anything that derives from Row)
 
     -   SqlTableName(TableName) - only necessary if the SQL table name is different than the class name
     -   Prompt - defines the default natural language prompt for the daton. For whole-table persistons, it should be plural at the top level (such as "Contact types"); for row declarations within datons, it should be singular, not plural.
     -   ParentKey - used to name the colun in this table that matches the primary key of the parent table in the same daton. Required on all tables except the main table. Note that the column should not be declared in the class at all since that would be redundant.
+
 -   Use annotations on columns, from the System.ComponentModel.DataAnnotations namespace
 
     -   Annotations supported:
-
-        -   Key - used to indicate the primary key
         -   StringLength(MaxLength, MinLength, ErrorMessage)
         -   RegularExpression(Pattern, ErrorMessage)
         -   Range(Minimum, Maximum, ErrorMessage)
+
     -   RetroDRY will use the error message with substitutions are noted in the Microsoft documentation.
-    -   Only the Microsoft annotations listed above are supported. Note that RetroDRY only uses the annotations to build its internal data dictionary, and then you can change the dictionary later; the annotations are never re-examined.
+    -   Only the few Microsoft annotations listed above are supported. Note that RetroDRY only uses the annotations to build its internal data dictionary, and then you can change the dictionary later; the annotations are never re-examined.
 
 -   A note about required columns: There is no overt way to specify that a column is required. Instead, for value types, use non-nullable declarations to indicate that it is required. For strings, use the minimum length parameter in the StringLength attribute.
+
 -   Use these annotations on columns, defined by RetroDRY
 
-    -   WireType - Normally you can omit this, and the framework will use the declared field type. In two cases you need to specify the type:
+    -   Key - used to indicate the column is the primary key, and whether the database or the client supplies the value
 
+    -   WireType - Normally you can omit this, and the framework will use the declared field type. In two cases you need to specify the type:
         -   (1) If it is a DateTime, the framework will assume it is date only; if you want time to be included, specify WireType(Constants.TYPE\_DATETIME) or WireType(Constants.TYPE\_NDATETIME)
         -   (2) If it is a string or byte\[\] declaration, the framework will assume that the database column is non-nullable; to specify if it is nullable, use WireType(Constants.TYPE\_NSTRING) or WireType(Constants.TYPE\_NBLOB)
-    -   ForeignKey - used to indicate that the column is a foreign key to some persiston known in the data dictionary
 
+    -   ForeignKey - used to indicate that the column is a foreign key to some persiston known in the data dictionary
         -   If the FK points to a single-main-row persiston, or to a row in the main table of a whole-table persiston, the argument includes the type name and the framework can figure out how to manage the key value
         -   If the FK potints to any other database table/row, don't use an annotation. RetroDry will just treat it like any user-enterable value, but you can override the input control if needed.
+
     -   Prompt - used to indicate the prompt in the default natural language; if omitted, uses the field name (also see manual techniques for setting up multiple languages)
     -   MainColumn - used to indicate the main readable column which is used for lookup scenarios: when a foreign key references this table, the display value associated with that key comes from the column having the MainColumn annotation. So, use it on the principal "Name" or "Description" columns in most cases, not on the primary key.
-
         -   When this data dictionary item is inherited by a viewon column, it tells the system which viewon value to use when selecting a persiston using the viewon.
+
     -   VisibleInDropdown - used in conjuction with MainColumn, and only relevant if this is a whole-table persiston used for lookups. In that case any column adorned with VisibleInDropdown will be visible in a dropdown list from this table.
     -   ImageColumn - used to indicate the computed image URL column name
     -   ComputedColumn - used to indicate the column is not user editble and is not in the database, so it is omitted from SQL.
@@ -151,7 +155,7 @@ Defining the data model using annotated classes
 [SqlTableName("Cust"), MainTable]
 public class Customer : Persiston {
 
-    [Key]
+    [PrimaryKey(true)]
     public int? CompanyId
 
     [StringLength(200), Required, Prompt("Co. name")]
@@ -161,7 +165,7 @@ public class Customer : Persiston {
     public int SalesRepId;
 
     public class ContactRow : Row{
-        [Key]
+        [PrimaryKey(true)]
         public int? ContactId;
 
         [ParentKey]
@@ -292,7 +296,7 @@ Foreign key details
 ```c#
 public class Customer : Persiston {
 
-    [Key]
+    [PrimaryKey(true)]
     public int CompanyId;
 
     [ForeignKey(typeof(Employee))]
@@ -312,7 +316,7 @@ public class CustomerList : Viewon {
     [InheritFrom("Customer")]
     public class CustomerRow {
 
-        [Key] //viewon main table keys should be defined as Key and ForeignKey
+        [PrimaryKey(true)] //viewon main table keys should be defined as both PrimaryKey and ForeignKey
         [ForeignKey(typeof(Customer))] //this links the viewon with its associated persiston
         public int CompanyId;
 
@@ -408,7 +412,7 @@ MyGlobals.DataDictionary = dataDictionary;
     -   Example to set up a custom colum:
 
 ```c#
-var ticklerDate = dataDictionary.Daton["Customer"].Table["Customer"].AddCustomColumn("TicklerDate", typeof(DateTime));
+var ticklerDate = dataDictionary.Daton["Customer"].MainTableDef.AddCustomColumn("TicklerDate", typeof(DateTime));
 tickerDate.SetPrompt("Tickler Date"); //set up other data dictionary info here
 
 //In practice you would design storage for all your custom columns and loop through them to push them into the data dictionary, 
@@ -490,7 +494,6 @@ dataDictionary.Daton["Customer"].SqlOverride = new CustomerSql(); //CustomerSql 
 -   Overridable methods for saving:
 
     -   Save() - Override this to change the save behavior as a whole. You receive the pristine and modifed daton versions as well as the diff, so you can scan for values and call stored procedures from here. Be sure that your implementation reads database-assigned primary keys assigns them to the Modified persison's rows; this allows the framework to detect the new daton key for newly inserted persistons.
-    -   DatabaseAssignsKeysForTable() - Override this to specify that the database will not assign primary key values; the default is true for all tables.
     -   PopulateWriterColumns() - Override this to change the way column values are accumulated for a particular row. This gets called when the diff row is being examined, for both insert and updates. The default behavior appends all columns from a row (except primary key and computed columns) to a SqlWriteBuilder instance, including custom values. You might override this to append more values to the SqlWriteBuilder or change the values.
     -   DeleteRowWithCascade() - Override this to change the delete behavior for a row with cascading to child rows. The default implementation recursively calls DeleteSingleRow, but if you have a stored procedure or some other way to handle cascading, override this method.
     -   DeleteSingleRow() - Override this to change delete behavior for a single row. The framework will call this for the most nested child rows first, working up to the top level deleted row, so the implementation of this override does not need to cascade.
