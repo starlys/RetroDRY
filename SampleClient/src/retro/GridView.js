@@ -1,7 +1,7 @@
 import React, {useState, useReducer} from 'react';
 import DisplayValue from './DisplayValue';
 import CardView from './CardView';
-import {securityUtil} from 'retrodry';
+import {securityUtil} from 'retrodryclient';
 
 //Displays all rows of a daton table in grid format
 //props.session is the session for obtaining layouts

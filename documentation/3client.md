@@ -23,16 +23,18 @@ Setup
 Referencing client side code 
 -----------------------------
 
--   Client code is in two parts, both distributed as npm modules:
+Client code is in two parts, both distributed as npm modules:
 
-    -   A javascript module declares the top level "retrodry" variable, which contains all the non-visual behavior such as server communications, caching, and validation. This is compatible with any javascript framework.
+-   A nonvisual javascript module declares the typescript class library, which contains all the non-visual behavior such as server communications, caching, and validation. This is compatible with any javascript framework.
+    -   Install this in your client app as an npm module using command: npm install --save-dev retrodryclient
+    -   Alternately download it and include it using html syntax like: &lt;script src="retrodry.js"&gt;&lt;/script&gt;
+    -   (See SampleClient folder for how this is implemented as a script tag.)
 
-        -   Install this in your client app as an npm module using command: npm install --save-dev retrodry
-        -   Alternately download it and include it using html syntax like: &lt;script src="retrodry.js"&gt;&lt;/script&gt;
-        -   (See SampleClient folder for how this is implemented as a script tag.)
-    -   A collection of React components implements criteria entry, grids, form building and submission.
+-   A collection of React components implements criteria entry, grids, form building and submission.
 
-        -   Install this in your client app with \[TBD\]
+    -   Install this in your client app as an npm module using command: npm install --save-dev retrodryreact
+
+As an alternative, if you are starting a new app, you can use the client side template from here: https://github.com/starlys/RetroDRY-ClientTemplate
 
 Initialization
 --------------

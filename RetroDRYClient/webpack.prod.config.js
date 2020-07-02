@@ -16,9 +16,9 @@ module.exports = {
         extensions: [ '.tsx', '.ts', '.js']
     },
     output: {
-        filename: 'retrodry.js',
+        filename: 'retrodryclient.js',
         path: path.resolve(__dirname, 'dist'),
-        library: 'retrodry',
+        library: 'retrodryclient',
         libraryTarget: 'umd'
     }
 }

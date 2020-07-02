@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import App from './App';
 import globals from './globals';
-import { Session } from 'retrodry';
+import { Session } from 'retrodryclient';
 import { sampleLayouts } from './constants';
 
 function mainRender() {

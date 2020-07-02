@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {DropdownState, getBaseType, wireDateToReadable, wireDateTimeToReadable} from 'retrodry';
+import {DropdownState, getBaseType, wireDateToReadable, wireDateTimeToReadable} from 'retrodryclient';
 
 function textToHtml(s) {
     return (s || '').replace(/&/g, '&amp;')

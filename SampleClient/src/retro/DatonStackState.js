@@ -1,4 +1,4 @@
-import {parseDatonKey, afterSetRowValue} from 'retrodry';
+import {parseDatonKey, afterSetRowValue} from 'retrodryclient';
 
 //Nonvisual container for the state of a daton stack.
 //To use, pass new instance as props to a DatonStack, then after the stack is rendered, any

@@ -201,26 +201,37 @@ React component testing
 Distribution
 ============
 
-TBD
-
 Distribution of the server side C\# assembly
 --------------------------------------------
+
+-   Update the version number in RetroDRY.csproj.
+-   Change to Release mode (not debug).
+-   Right click RetroDRY project node and choose Pack.
+-   In terminal, go to bin subfolder where the .nupkg file was just written.
+-   (first time) Create nuget user and obtain API keys at nuget.org web site.
+-   Issue this command, replacing API key and version with the correct values:
+    -   dotnet nuget push RetroDRY.1.0.0.nupkg -k YOURAPIKEYHERE -s https://api.nuget.org/v3/index.json
 
 Distribution of the client side retrodry library
 ------------------------------------------------
 
+-   Update the version number in RetroDRYClient/package.json.
+-   In terminal, go to RetroDRYClient folder
+-   Build for production using command: npm run buildprod
+-   (first time) Create npm account using command: npm adduser
+-   Log into npm using command: npm login
+-   Publish using command: npm publish
+
 Distribution of the client React controls
 -----------------------------------------
 
--   \[will need to copy files from sampleclient to a package for export\]
+Note that the RetroDRYReact folder only contains copies of the source code. The actual development of the react components
+is done in the SampleClient folder. The copies are not in source control.
 
-    -   retrodryreact - a compnent library with no compilation - to be sent to npm as source code only
-
-        -   may have to copy files from inside sampleclient to create the library
-        -   note this in doc
-
--   to prepare for distribution: npx webpack
-
-    -   \[really?\]
--   \[add notes about pushing to npm\]
--   The dist folder is for the final bundled output, which is sent to the npm repository and used in client apps.
+-   Update the version number in RetroDRYReact/package.json.
+-   In terminal, go to RetroDRYReact folder
+-   Build for publishing using both of these commands: 
+    -   npm run prep1
+    -   npm run prep2
+-   Create npm account or login as above
+-   Publish using command: npm publish
