@@ -2,11 +2,26 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>Star Ford</Authors>
+    <Company>Divergent Labs Inc</Company>
+    <Description>RetroDRY is a multi-tier multi-language framework for handling these common aspects of database application development: Loading and saving data, replication across tiers, change subscriptions, locks, dirty-detection across tiers, and user editing</Description>
+    <Copyright />
+    <Version>1.0.1</Version>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <PackageProjectUrl>https://github.com/starlys/RetroDRY</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/starlys/RetroDRY</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="System.ComponentModel.Annotations" Version="4.7.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+    </None>
   </ItemGroup>
 
 </Project>

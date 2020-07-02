@@ -77,9 +77,10 @@ Server application plumbing
 Server side code organization
 -----------------------------
 
--   RetroDRY is a single .net standard assembly. (Other languages could also be supported later.) Add it to your project using Nuget: \[name TBD\]
+-   RetroDRY is a single .net standard 2.0 assembly. (Other languages could also be supported later.) Add it to your project using Nuget, by searching on the name RetroDRY.
 -   Because it is not an application template and does not have an entry point itself, the developer needs to wire up the behavior as noted in the "Server application plumbing" section.
 -   If you are using your models in two tiers, the models should go into their own separate assembly to be used in multiple places.
+-   If you would rather start with a template, you can get it here: https://github.com/starlys/RetroDRY-ServerTemplate - However, you should still go through these instructions in detail even if using the template.
 
 Defining the data model using annotated classes
 -----------------------------------------------
@@ -360,25 +361,20 @@ REST-style endpoints
 -   Code steps
 
     -   Add these packages
-
         -   Newtonsoft.Json
         -   Microsoft.AspNetCode.Mvc.NewtonsoftJson
     -   In Startup class, change the line services.AddControllers() to:
-
         -   services.AddControllers().AddNewtonsoftJson();
-    -   Create initialization method:
-
+    -   Create an initialization method:
         -   In Startup class, add static method InitializeRetroDRY (It doesn't have to be here and you can name it something different if needed)
         -   Call the intitialization method from Program.Main (or wherever your startup code is) - which can be done before the CreateHostBuilder line.
         -   Refer to the initialization section below for advice on what to code inside that function.
     -   Create a controller with two endpoints.
-
         -   The typical class and file name is Controllers/RetroController.cs
-        -   The typical endpoints are
-
+        -   The typical endpoints are:
             -   POST /api/retro/main
             -   POST /api/retro/long
-        -   Refer to sample code for the implementation,
+        -   Refer to sample code for the implementation.
 
 ### Get and modify persistons/viewons (optional)
 
@@ -391,7 +387,7 @@ REST-style endpoints
 Initializations
 ---------------
 
--   The following sections describe what must be in your initialization code.
+The following sections describe what must be in your initialization code.
 
 ### Prepare data dictionary
 

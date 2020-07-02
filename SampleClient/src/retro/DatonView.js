@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CardView from './CardView';
 import GridView from './GridView';
-import {TableRecurPointFromDaton, DatonKey, parseDatonKey, validateAll, validateCriteria, securityUtil, IdleTimer} from 'retrodry';
+import {TableRecurPointFromDaton, DatonKey, parseDatonKey, validateAll, validateCriteria, securityUtil, IdleTimer} from 'retrodryclient';
 import DatonBanner from './DatonBanner';
 import CardStack from './CardStack';
 

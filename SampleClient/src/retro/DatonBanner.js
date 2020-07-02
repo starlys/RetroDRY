@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {securityUtil} from 'retrodry';
+import {securityUtil} from 'retrodryclient';
 
 //displays banner in datonstack for a daton
 //props.datonDef is the metadata for the daton

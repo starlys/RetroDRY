@@ -1,0 +1,49 @@
+{
+  "name": "retrodryreact",
+  "version": "1.0.1",
+  "description": "multi-tier tool for data load/save, replication across tiers, and editing",
+  "keywords": [
+    "framework",
+    "web forms",
+    "ORM",
+    "React"
+  ],
+  "author": "Star Ford",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/starlys/RetroDRY/issues"
+  },
+  "homepage": "https://github.com/starlys/RetroDRY#readme",
+  "main": "dist/retrodryreact",
+  "files": [
+    "dist/*.js",
+    "LICENSE"
+  ],
+  "dependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/starlys/RetroDRY.git"
+  },
+  "scripts": {
+    "prep1": "copyfiles --flat ../SampleClient/src/retro/*.js src",
+    "prep2": "webpack --mode production --display-modules"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.10.4",
+    "@babel/core": "^7.10.4",
+    "@babel/plugin-proposal-class-properties": "^7.10.4",
+    "@babel/preset-env": "^7.10.4",
+    "@babel/preset-react": "^7.10.4",
+    "babel-loader": "^8.1.0",
+    "copyfiles": "^0",
+    "react": "^16.13.1",
+    "retrodryclient": "^0.0.1",
+    "webpack": "^4.43.0",
+    "webpack-cli": "^3.3.12",
+    "webpack-node-externals": "^1.7.2"
+  },
+  "peerDependencies": {
+    "react": "^16.12.0",
+    "retrodryclient": "^0.0.1"
+  }
+}

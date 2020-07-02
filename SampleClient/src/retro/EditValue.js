@@ -2,7 +2,7 @@ import React, {useState, useReducer} from 'react';
 import EditorPopupError from './EditorPopupError';
 import {DropdownState, splitOnTilde, getInvalidMemberName, processNumberEntry, processNumberRangeEntry, processStringEntry, 
     processDateTimeEntry, inputDateToWire, inputDateTimeToWire, wireDateToInput, wireDateTimeToDateTimeInputs,
-    getBaseType, isNumericBaseType} from 'retrodry';
+    getBaseType, isNumericBaseType} from 'retrodryclient';
 
 //modify row so the hi range is the same as the lo, if hi wasn't set; example: changes '6~' to '6'
 function autoPopulateHiFromLo(row, colDef) {

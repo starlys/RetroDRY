@@ -3,7 +3,7 @@ import DisplayValue from './DisplayValue';
 import CardView from './CardView';
 import GridView from './GridView';
 import EditValue from './EditValue';
-import {securityUtil} from 'retrodry';
+import {securityUtil} from 'retrodryclient';
 
 //get width in em units for a colDef
 //forcedWidth is optional string width specified in layout; if missing it uses the colun type and length
