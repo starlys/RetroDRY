@@ -217,32 +217,28 @@ Main endpoint behaviors
 -----------------------
 
 -   initializing (only if the Initialize member of the request is present)
-
     -   perform initialization and return data dictionary and permission set
--   get datons (only if the GetDatons member of the request is present)
 
+-   get datons (only if the GetDatons member of the request is present)
     -   If known version is provided, this indicates the client already has the persiston. Use this when the client did not subscribe at first but wants to get the latest version now. In this case, if the client already has the latest version, the return value for the persison will be missing, indicating no update.
     -   If daton is requested with subscription, then any diffs will be sent in the future using the long polling endpoint until it is unsubscribed
-    -   Returns consensed datons
+    -   Returns consensed datons or blank datons with error messages. The return array might be shorter than the request array, so do not assume the array position of the request and response will match.
+
 -   manage datons' status (only if the ManageDatons member of the request is present)
-
     -   Notes
-
         -   Lock must be obtained a daton can be saved. This can be immediately before saving, or at the beginning of user editing to ensure user edits are not lost.
         -   Client should call this every 55s to extend lock on every locked persiston, or else the lock will expire. This repetition is not needed to maintain subscriptions.
     -   behaviors
-
         -   Ends subscription conditonally.
         -   For lock changes, this updates the lock table immediately.
         -   If locking, the version is checked to ensure client has the current version, and fails if not
 
 -   save persistons (only if the SavePersistons member of the request is present)
-
     -   Saves all persistons (given as diffs) in a transaction; any failure will roll back all; all of them must have been previously locked
     -   Returns an array element for every element provided, or fewer elements on some error conditions. The key will be changed if the persiston was new and the key was database-assigned.
     -   Note that caller needs to unlock/unsubscribe in a separate call.
--   quit (only if DoQuit is true)
 
+-   quit (only if DoQuit is true)
     -   clean up session
 
 Long-polling endpoint behaviors

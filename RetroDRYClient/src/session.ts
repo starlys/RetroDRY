@@ -10,6 +10,7 @@ import { PanelLayout, GridLayout } from "./layout";
 import { RecurPoint } from "./recurPoint";
 import Mutex from "./mutex";
 import CacheEntry from "./cacheEntry";
+import GetInfo from "./getInfo";
 
 export default class Session {
     //delay in millis between end of long polling response and sending next long poll request
@@ -64,9 +65,6 @@ export default class Session {
 
         //start long polling
         setTimeout(() => this.longPoll(), 10000);
-
-        //support activity timers
-        //tod document.addEventListener('keydown', this.keyDownHandler);
     }
 
     //register default card layout to use with the given daton and table
@@ -103,10 +101,13 @@ export default class Session {
         return layout;
     }
 
-    //get single daton from cache or server; or undefined if not found
+    //get single daton from cache or server; or undefined if not found/errors. In order to know what errors occured,
+    //you need to call getMulti instead.
     async get(datonKey: string, options?: GetOptions): Promise<any> {
         const responses = await this.getMulti([datonKey], options);
-        return responses[0];
+        if (responses.length === 1)
+            return responses[0].daton;
+        return undefined;
     }
 
     //create a valid empty viewon locally (use this for seeding a searchable viewon for display without loading all rows)
@@ -119,7 +120,7 @@ export default class Session {
 
     //get one or more datons from cache or server; if any requested datons are not found, they will be omitted from the results
     //so it will not always return an array of the same size as the provided keys array
-    async getMulti(datonKeys: string[], options?: GetOptions): Promise<any[]> {
+    async getMulti(datonKeys: string[], options?: GetOptions): Promise<GetInfo[]> {
         this.ensureInitialized();
         if (!options) options = {};
         await this.getDatonMutex.acquire();
@@ -131,14 +132,14 @@ export default class Session {
     }
 
     //see getMulti
-    private async getMultiSingleThread(datonKeys: string[], options: GetOptions): Promise<any[]> {
+    private async getMultiSingleThread(datonKeys: string[], options: GetOptions): Promise<GetInfo[]> {
         if (options.isForEdit) options.doSubscribe = true;
         const doCache = options.doSubscribe  || options.shortCache;
 
-        //convert datonKeys to array of {datonKey, parsedKey, daton(from cache), isPersiston}
+        //convert datonKeys to array of {datonKey, parsedKey, daton(from cache), isPersiston, errors}
         let workItems = datonKeys.map(k => {
             const cacheEntry = this.datonCache[k];
-            const ce = {
+            const ce:any = {
                 datonKey: k,
                 parsedKey: parseDatonKey(k),
                 daton: cacheEntry?.daton,
@@ -175,27 +176,38 @@ export default class Session {
             if (!isOk) throw new Error('Get failed: ' + response.errorCode);
 
             //reinflate what we got back; if any daton is missing from the response, it means the known version was the most up to date
-            if (response.condensedDatons) {
-                for (let condensed of response.condensedDatons) {
-                    const daton = Retrovert.expandCondensedDaton(this, condensed);
+            if (response.getDatons) {
+                for (let getResponse of response.getDatons) {
+                    let daton: any = null;
+                    if (getResponse.condensedDaton) {
+                        daton = Retrovert.expandCondensedDaton(this, getResponse.condensedDaton);
 
-                    //stick this one in the working list
-                    const idxOfKey = workItems.findIndex(w => w.datonKey === daton.key);
-                    if (idxOfKey < 0) throw new Error('Server returned daton key that was not requested');
-                    workItems[idxOfKey].daton = daton;
+                        //stick this one in the working list
+                        const idxOfKey = workItems.findIndex(w => w.datonKey === daton.key);
+                        if (idxOfKey < 0) throw new Error('Server returned daton key that was not requested');
+                        workItems[idxOfKey].daton = daton;
 
-                    if (this.onReceiveDaton) this.onReceiveDaton(daton);
+                        if (this.onReceiveDaton) this.onReceiveDaton(daton);
+                    }
+
+                    //error
+                    else {
+                        const idxOfKey = workItems.findIndex(w => w.datonKey === getResponse.key);
+                        if (idxOfKey >= 0) 
+                            workItems[idxOfKey].errors = getResponse.errors;
+                    }
                 }
             }
         }
 
-        //eliminate empty slots in the working list (for datons that could not be loaded)
-        workItems = workItems.filter(w => !!w.daton);
+        //eliminate empty slots in the working list (for datons that were not loaded and didn't have errors)
+        workItems = workItems.filter(w => !!w.daton || !!w.errors);
 
         //cache and optionally clone if subscribing (unless is new)
         if (doCache) {
             for (let workItem of workItems) {
                 if (workItem.parsedKey.isNew()) continue;
+                if (!workItem.daton) continue;
 
                 //cache
                 let cacheEntry = this.datonCache[workItem.datonKey];
@@ -217,7 +229,9 @@ export default class Session {
             }
         }
         
-        return workItems.map(w => w.daton);
+        return workItems.map(w => {
+            return {success: !!w.daton, errors: w.errors, daton: w.daton }; //see interface GetInfo
+        });
     }
 
     //get subscription state by daton key (see changeSubscriptionState for meaning of values)
@@ -472,8 +486,4 @@ export default class Session {
         for (let datonKey of obsoleteKeys)
             delete this.datonCache[datonKey];
     }
-
-    // private keyDownHandler() { todo
-    //     this.lastActivityMillis = Date.now();
-    // }
 }

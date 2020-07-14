@@ -56,7 +56,7 @@ namespace RetroDRY
     public class MainResponse : RetroResponse
     {
         public DataDictionaryResponse DataDictionary { get; set; }
-        public CondensedDatonResponse[] CondensedDatons { get; set; }
+        public GetDatonResponse[] GetDatons { get; set; }
         public ManageDatonResponse[] ManageDatons { get; set; }
 
         /// <summary>
@@ -241,11 +241,22 @@ namespace RetroDRY
         public string ImageUrlColumName { get; set; }
     }
 
+    /// <summary>
+    /// Either CondensedDaton is set here, or Key and Errors are set (key is NOT set on success)
+    /// </summary>
+    public class GetDatonResponse
+    {
+        public CondensedDatonResponse CondensedDaton { get; set; }
+
+        public string Key { get; set; }
+        public string[] Errors { get; set; }
+    }
+
     [JsonConverter(typeof(Retrovert.CondensedDatonResponseConverter))]
     public class CondensedDatonResponse
     {
         /// <summary>
-        /// The overridden JSON serializer ensures this gets sent out as JSON with property name "daton", not as a string
+        /// The overridden JSON serializer ensures this gets sent out as JSON, not as a string
         /// </summary>
         public string CondensedDatonJson { get; set; }
     }

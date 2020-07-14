@@ -183,24 +183,32 @@ namespace RetroDRY
             //load datons
             if (req.GetDatons != null)
             {
-                var datons = new List<Daton>();
+                var getResponses = new List<GetDatonResponse>();
                 foreach (var drequest in req.GetDatons)
                 {
-                    var daton = await GetDaton(DatonKey.Parse(drequest.Key), user, forceCheckLatest: drequest.ForceLoad);
-                    if (daton == null) //not found by key, usually
-                        continue;
-                    if (daton.Version == null || drequest.KnownVersion != daton.Version) //omit if client already has the current version
-                        datons.Add(daton);
-                    if (drequest.DoSubscribe && daton is Persiston)
-                        ClientPlex.ManageSubscribe(req.SessionKey, daton.Key, daton.Version, true);
-                }
-                resp.CondensedDatons = datons.Select(daton =>
-                {
-                    return new CondensedDatonResponse
+                    var loadResult = await GetDaton(DatonKey.Parse(drequest.Key), user, forceCheckLatest: drequest.ForceLoad);
+                    var getResponse = new GetDatonResponse
                     {
-                        CondensedDatonJson = Retrovert.ToWire(DataDictionary, daton, false)
+                        Errors = loadResult.Errors
                     };
-                }).ToArray();
+                    if (loadResult.Daton != null) //null means it was not found by key, usually
+                    {
+                        bool doReturnToCaller = loadResult.Daton.Version == null || drequest.KnownVersion != loadResult.Daton.Version; //omit if client already has the current version
+                        if (doReturnToCaller)
+                        {
+                            getResponse.CondensedDaton = new CondensedDatonResponse
+                            {
+                                CondensedDatonJson = Retrovert.ToWire(DataDictionary, loadResult.Daton, false)
+                            };
+                        }
+                        if (drequest.DoSubscribe && loadResult.Daton is Persiston)
+                            ClientPlex.ManageSubscribe(req.SessionKey, loadResult.Daton.Key, loadResult.Daton.Version, true);
+                    }
+                    else
+                        getResponse.Key = drequest.Key; //only needed if daton is not returned to client
+                    getResponses.Add(getResponse);
+                }
+                resp.GetDatons = getResponses.ToArray();
             }
 
             //save datons
@@ -320,8 +328,8 @@ namespace RetroDRY
         /// <param name="user">if null, the return value is a shared guaranteed complete daton; if user is provided,
         /// the return value may be a clone with some rows removed or columns set to null</param>
         /// <param name="forceCheckLatest">if true then checks database to ensure latest version even if it was cached</param>
-        /// <returns>null if not found</returns>
-        public async Task<Daton> GetDaton(DatonKey key, IUser user, bool forceCheckLatest = false)
+        /// <returns>object with daton, or readable errors</returns>
+        public async Task<RetroSql.LoadResult> GetDaton(DatonKey key, IUser user, bool forceCheckLatest = false)
         {
             //new persiston: return now
             if (key.IsNew)
@@ -331,7 +339,7 @@ namespace RetroDRY
                 Utils.FixTopLevelDefaultsInNewPersiston(datondef2, newDaton);
                 newDaton.Key = key;
                 if (datondef2.Initializer != null) await datondef2.Initializer(newDaton);
-                return newDaton;
+                return new RetroSql.LoadResult { Daton = newDaton };
             }
 
             //get from cache if possible, and optionally ignore cached version if it is not the latest
@@ -356,9 +364,11 @@ namespace RetroDRY
             if (daton == null)
             {
                 var sql = GetSqlInstance(key);
+                RetroSql.LoadResult loadResult;
                 using (var db = GetDbConnection(datondef.DatabaseNumber))
-                    daton = await sql.Load(db, DataDictionary, key, ViewonPageSize);
-                if (daton == null) return null;
+                    loadResult = await sql.Load(db, DataDictionary, user, key, ViewonPageSize);
+                if (loadResult.Daton == null) return loadResult;
+                daton = loadResult.Daton;
                 if (verifiedVersion == null && daton is Persiston)
                     verifiedVersion = LockManager.GetVersion(key);
                 daton.Version = verifiedVersion;
@@ -374,7 +384,7 @@ namespace RetroDRY
                 guard.HidePrivateParts(daton);
             }
 
-            return daton;
+            return new RetroSql.LoadResult { Daton = daton };
         }
 
         /// <summary>
@@ -455,8 +465,9 @@ namespace RetroDRY
         {
             if (ClientPlex.IsAnyOutOfDate(key, version))
             {
-                var daton = await GetDaton(key, null, forceCheckLatest: true);
-                ClientPlex.NotifyClientsOf(DataDictionary, new[] { daton }); //this needs to take security into account
+                var daton = (await GetDaton(key, null, forceCheckLatest: true))?.Daton;
+                if (daton != null)
+                    ClientPlex.NotifyClientsOf(DataDictionary, new[] { daton }); 
             }
         }
 
@@ -497,8 +508,9 @@ namespace RetroDRY
             var datonsToPush = new List<Daton>(updatesWithSubscriptions.Length);
             foreach (var pair in updatesWithSubscriptions)
             {
-                var daton = await GetDaton(pair.Item1, null, forceCheckLatest: true);
-                datonsToPush.Add(daton);
+                var daton = (await GetDaton(pair.Item1, null, forceCheckLatest: true))?.Daton;
+                if (daton != null)
+                    datonsToPush.Add(daton);
             }
             if (datonsToPush.Any())
                 ClientPlex.NotifyClientsOf(DataDictionary, datonsToPush.ToArray());

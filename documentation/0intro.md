@@ -167,9 +167,9 @@ High level walkthough
 -   If you want to manage your persistons programmatically instead of via user forms, then you can do this in javascript:
 
 ```javascript
-let customer = await retrodry.get('customer|=123');
+let customer = await retrodryclient.get('customer|=123');
 customer.region = 'West';
-await retrodry.save(customer);
+await retrodryclient.save(customer);
 ```
 
 -   This last sample shows how you can think of having access to the database server in client code, but in reality is is going through your app server, with caching, validation and permissions. Only the changed columns get sent back to the server.

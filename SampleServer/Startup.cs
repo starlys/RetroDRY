@@ -87,6 +87,7 @@ namespace SampleServer
 
             //sample custom validation
             ddict.DatonDefs["Customer"].CustomValidator = Validators.ValidateCustomer;
+            ddict.DatonDefs["CustomerList"].CustomValidator = Validators.ValidateCustomerListCriteria;
 
             //sample default values initializer
             ddict.DatonDefs["Customer"].Initializer = Initializers.InitializeCustomer;

@@ -19,7 +19,10 @@ namespace RetroDRY
             public string SqlExpression;
         }
 
-        protected class LoadResult
+        /// <summary>
+        /// intermediate result container for each table
+        /// </summary>
+        protected class SingleLoadResult
         {
             //dict is indexed by parent key for child tables, or has a single index "" for main table
             public Dictionary<object, List<Row>> RowsByParentKey;
@@ -27,13 +30,35 @@ namespace RetroDRY
         }
 
         /// <summary>
+        /// Result container for entire daton load
+        /// </summary>
+        public class LoadResult
+        {
+            public Daton Daton;
+
+            /// <summary>
+            /// user-readable errors
+            /// </summary>
+            public string[] Errors;
+        }
+
+
+        /// <summary>
         /// Load daton from database. Caller is responsible for setting the version (this does not deal with locks or versions)
         /// </summary>
         /// <param name="pageSize">only inspected for viewons main table</param>
         /// <returns>null if not found</returns>
-        public virtual async Task<Daton> Load(IDbConnection db, DataDictionary dbdef, DatonKey key, int pageSize)
+        public virtual async Task<LoadResult> Load(IDbConnection db, DataDictionary dbdef, IUser user, DatonKey key, int pageSize)
         {
             var datondef = dbdef.FindDef(key);
+
+            //viewon validation
+            if (key is ViewonKey vkey2) 
+            {
+                var validator = new Validator(user);
+                await validator.ValidateCriteria(datondef, vkey2);
+                if (validator.Errors.Any()) return new LoadResult { Errors = validator.Errors.ToArray() };
+            }
 
             //handle viewon paging and ordering
             string sortColName = datondef.MainTableDef.DefaulSortColName;
@@ -79,7 +104,7 @@ namespace RetroDRY
 
             daton.Key = key;
             daton.Recompute(datondef);
-            return daton;
+            return new LoadResult { Daton = daton };
         }
 
         /// <summary>
@@ -133,7 +158,7 @@ namespace RetroDRY
         /// </summary>
         /// <param name="pageSize">if zero, does not do paging</param>
         /// <param name="whereClause">can be null</param>
-        protected virtual Task<LoadResult> LoadTable(IDbConnection db, DataDictionary dbdef, TableDef tabledef, SqlSelectBuilder.Where whereClause,
+        protected virtual Task<SingleLoadResult> LoadTable(IDbConnection db, DataDictionary dbdef, TableDef tabledef, SqlSelectBuilder.Where whereClause,
             string sortColName, int pageSize, int pageNo)
         {
             var colInfos = BuildColumnsToLoadList(dbdef, tabledef);
@@ -186,7 +211,12 @@ namespace RetroDRY
                         SetRowFromReader(colInfos, reader, row);
 
                         //read custom values
-                        if (tabledef.HasCustomColumns) SetRowFromCustomValues(reader.GetString(customColIndex), tabledef, row);
+                        if (tabledef.HasCustomColumns)
+                        {
+                            string json = (string)Utils.ChangeType(reader.GetValue(customColIndex), typeof(string));
+                            if (!string.IsNullOrEmpty(json))
+                                SetRowFromCustomValues(json, tabledef, row);
+                        }
 
                         //store in return dict
                         if (!rowsByParentKey.ContainsKey(pk)) rowsByParentKey[pk] = new List<Row>();
@@ -194,7 +224,7 @@ namespace RetroDRY
                     }
                 }
             }
-            var ret = new LoadResult
+            var ret = new SingleLoadResult
             {
                 RowsByParentKey = rowsByParentKey,
                 IsComplete = isComplete

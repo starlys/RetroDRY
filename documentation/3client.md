@@ -27,7 +27,7 @@ Client code is in two parts, both distributed as npm modules:
 
 -   A nonvisual javascript module declares the typescript class library, which contains all the non-visual behavior such as server communications, caching, and validation. This is compatible with any javascript framework.
     -   Install this in your client app as an npm module using command: npm install --save-dev retrodryclient
-    -   Alternately download it and include it using html syntax like: &lt;script src="retrodry.js"&gt;&lt;/script&gt;
+    -   Alternately download it and include it using html syntax like: &lt;script src="retrodryclient.js"&gt;&lt;/script&gt;
     -   (See SampleClient folder for how this is implemented as a script tag.)
 
 -   A collection of React components implements criteria entry, grids, form building and submission.
@@ -158,16 +158,15 @@ Object reference
     -   onSubscriptionUpdate: (Daton) =&gt; void - declares a function to be called whenever a different session has changed a persiston that this session is subscribed to
 -   functions in the prototype of Session
 
-    -   start() - initializes the session and normally called from retrodry.start, so you do not have to call this directly
+    -   start() - initializes the session 
     -   get(key: string, options?) =&gt; Promise&lt;Daton&gt; - get a daton by key
 
         -   If you omit options, you may get a refernced to the cached version so be careful not to change it.
         -   Options argument is an object with these members:
-
             -   doSubscribeEdit - if true, then the client will subscribe to the persiston requested, so that changes from other users will propoage to this client; also this will clone it and allow for edits
             -   forceCheckVersion - if true, the database will be checked for the latest version even if there is a cached version
 
-    -   getMulti(keys: string\[\], options) =&gt; Promise&lt;Daton\[\]&gt; - get one or more datons; see documentation for get() for details
+    -   getMulti(keys: string\[\], options) =&gt; Promise&lt;GetInfo\[\]&gt; - get one or more datons; see documentation for get() for details
     -   createEpmtyViewon(datonType: string) =&gt; any - create an empty viewon withtou loading any rows
     -   getSubscribeState(key: string) =&gt; number - get whether the daton for the given key is subcribed and/or locked, returning values:
 

@@ -425,12 +425,11 @@ tickerDate.SetPrompt("Tickler Date"); //set up other data dictionary info here
     -   Validators are async so you could potentially check with an outside system during validation.
     -   Example to set a persiston validator:
 
-        -   `dataDictionary.DatonDefs["Customer"].Validator = (cust, user) => { /* customer validation here */ };`
+        -   `dataDictionary.DatonDefs["Customer"].Validator = (cust, _, user) => { /* customer validation here */ };`
 
     -   Example to set up a viewon criteria validator (which is run before viewon loads):
 
-        -   (As of 2020 June, this has not been coded!)
-        -   `dataDictionary.DatonDefs["CustomerList"].Validator = (cri, user) => { /* customer list criteria validation here */ };`
+        -   `dataDictionary.DatonDefs["CustomerList"].Validator = (_, cri, user) => { /* customer list criteria validation here */ };`
 
 ### Default values
 

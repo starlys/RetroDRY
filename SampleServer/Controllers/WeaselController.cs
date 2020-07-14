@@ -53,10 +53,11 @@ namespace SampleServer.Controllers
 
             //get the daton, with permissions enforced (so it may be missing some rows and columns depending on the user)
             var key = DatonKey.Parse(datonKey);
-            var daton = await Globals.Retroverse.GetDaton(key, user); 
+            var loadResult = await Globals.Retroverse.GetDaton(key, user);
+            if (loadResult.Daton == null) return null; //could check loadResult.Errors here too
 
             //return as json
-            string json = Retrovert.ToWire(Globals.Retroverse.DataDictionary, daton, true);
+            string json = Retrovert.ToWire(Globals.Retroverse.DataDictionary, loadResult.Daton, true);
             return Content(json, "application/json");
         }
 
