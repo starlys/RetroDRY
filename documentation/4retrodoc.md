@@ -181,17 +181,16 @@ Running integration tests - Don't skip this step!
 
         -   npm run builddev
 
-            -   (This creates the retrodry.js bundle and also watches for changes and rebuilds the bundle every time you save a source file.)
+            -   (This creates the retrodryclient.js bundle and also watches for changes and rebuilds the bundle every time you save a source file.)
         -   npm run itest
 
     -   If you make a server side change, you only need to refresh the browser page
-    -   If you make a change in the client library, saving rebuilds retrodry.js, so you then need to refresh the browser page.
+    -   If you make a change in the client library, saving rebuilds retrodryclient.js, so you then need to refresh the browser page.
     -   If you make a change in the client integration tests, you need to refresh the browser page to reload (there is no bundling).
 
 React component testing
 -----------------------
 
--   TBD
 -   This step assumes you've built the client side library as noted above.
 -   Ensure the terminal is in SampleClient folder, then use commands:
 

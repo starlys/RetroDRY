@@ -6,7 +6,7 @@
     <Company>Divergent Labs Inc</Company>
     <Description>RetroDRY is a multi-tier multi-language framework for handling these common aspects of database application development: Loading and saving data, replication across tiers, change subscriptions, locks, dirty-detection across tiers, and user editing</Description>
     <Copyright />
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <PackageProjectUrl>https://github.com/starlys/RetroDRY</PackageProjectUrl>
     <RepositoryUrl>https://github.com/starlys/RetroDRY</RepositoryUrl>

@@ -51,7 +51,7 @@ export interface RetroResponse
 export interface MainResponse extends RetroResponse
 {
     dataDictionary?: DataDictionaryResponse;
-    condensedDatons?: CondensedDatonResponse[];
+    getDatons?: GetDatonResponse[]; 
     manageDatons?: ManageDatonResponse[];
     savedPersistons?: SavePersistonResponse[];
     savePersistonsSuccess?: boolean;
@@ -126,10 +126,16 @@ export interface SelectBehaviorResponse {
     useDropdown: boolean;
 }
 
+export interface GetDatonResponse {
+    condensedDaton: CondensedDatonResponse;
+    key?: string;
+    errors?: string[];
+}
+
 export interface CondensedDatonResponse
 {
     isComplete?: boolean;
-    condensedDatonJson: string;
+    //other members: see condensed daton spec
 }
 
 export interface ManageDatonResponse

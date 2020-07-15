@@ -169,14 +169,14 @@ namespace RetroDRY
             }
             else
             {
-                item.Pristine = await Retroverse.GetDaton(item.Diff.Key, null) as Persiston;
+                item.Pristine = (await Retroverse.GetDaton(item.Diff.Key, null))?.Daton as Persiston;
                 item.Modified = item.Pristine.Clone(item.DatonDef) as Persiston;
             }
             item.Diff.ApplyTo(item.DatonDef, item.Modified);
 
             //validate Modified
             var validator = new Validator(User);
-            await validator.Validate(item.DatonDef, item.Modified);
+            await validator.ValidatePersiston(item.DatonDef, item.Modified);
             item.Errors.AddRange(validator.Errors);
             return item.Errors.Count == 0;
         }

@@ -1,20 +1,33 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Threading.Tasks;
 using RetroDRY;
 
 namespace SampleServer.Schema
 {
+    /// <summary>
+    /// This override demonstrates 2 ways to modify saved values
+    /// </summary>
     public class CustomerSql : RetroSql
     {
-        protected override SqlSelectBuilder.Where MainTableWhereClause(TableDef tabledef, PersistonKey key)
+        public override async Task Save(IDbConnection db, Persiston pristineDaton, Persiston modifiedDaton, PersistonDiff diff)
         {
-            return base.MainTableWhereClause(tabledef, key);
+            await base.Save(db, pristineDaton, modifiedDaton, diff);
+            using var cmd = db.CreateCommand();
+
+            //change the notes value after RetroDRY saving
+            var modifiedCustomer = (Customer)modifiedDaton;
+            cmd.CommandText = "update Customer set Notes = Notes || '!' where CustomerId=" + modifiedCustomer.CustomerId;
+            cmd.ExecuteNonQuery();
         }
-        protected override SqlSelectBuilder.Where MainTableWhereClause(TableDef tabledef, ViewonKey key)
+
+        protected override void PopulateWriterColumns(SqlWriteBuilder builder, RowChangingData cdata, bool includePrimaryKey)
         {
-            return base.MainTableWhereClause(tabledef, key);
+            base.PopulateWriterColumns(builder, cdata, includePrimaryKey);
+
+            //change the Notes value during RetroDRY saving
+            if (cdata.ModifiedRow is Customer cust)
+                builder.ChangeValue("Notes", ">" + cust.Notes);
         }
     }
 }

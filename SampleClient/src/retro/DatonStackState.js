@@ -12,6 +12,7 @@ export default class DatonStackState {
 
     //each layer consists of {
     //  stackstate //reference to owning object
+    //  rerender - convenience function to increment renderCount and call changed function
     //  renderCount //integer, incremented to cause the DatonView to be rerendered
     //  mountCount //integer, incremented to cause the DatonView to be remounted
     //  datonKey
@@ -19,6 +20,7 @@ export default class DatonStackState {
     //  edit //true if edit mode 
     //  daton //noneditable daton version
     //  datonDef 
+    //  businessContext // '' for default or an app-defined context; affects layout selection
     //  lookupSelected //optional function when this layer is a viewon used for lookup; called when item selected; defined in startLookup()
     //  propagateSaveToViewon //optional function when this layer is a persiston that was opened from a viewon; reflects persison changes in the displayed viewon; defined in gridKeyClicked
     //}
@@ -27,14 +29,35 @@ export default class DatonStackState {
     //if set by host app, DatonView will call this after a successful save, passing args: (datonkey string)
     onLayerSaved;
 
+    //if set by host app, the lookup button will call this function; the function should return the viewon key to use for lookup
+    //or null to prevent lookup. The injected function gets passed parameters (editingLayer, editingTableDef, editingRow, editingColDef)
+    onCustomLookup;
+
     //called only by DatonStack in its initialization
     initialize(session, onChanged) { 
         this.session = session;
         this.onChanged = onChanged; 
     }
 
-    //add a layer by daton key, optionally in initial edit mode; return layer
-    async add(key, edit) {
+    //create layer object; caller should add this to layers array
+    createLayer(datonDef, datonKey, parsedDatonKey, daton) {
+        return {
+            stackstate: this,
+            renderCount: 0,
+            mountCount: 0,
+            edit: false,
+            datonKey: datonKey,
+            parsedDatonKey: parsedDatonKey,
+            daton: daton,
+            datonDef: datonDef,
+            businessContext: '',
+            rerender: function() { ++this.renderCount; this.stackstate.callOnChanged(); }
+        };
+    }
+
+    //add a layer by daton key, optionally in initial edit mode; return layer;
+    //businessContext will be set to default ('') if missing
+    async add(key, edit, businessContext) {
         //if already there, exit
         const existingIdx = this.layers.findIndex(x => x.datonKey === key);
         if (existingIdx >= 0) return this.layers[existingIdx];
@@ -46,39 +69,26 @@ export default class DatonStackState {
         if (!daton) return;
 
         //add layer
-        const layer = {
-            stackstate: this,
-            renderCount: 0,
-            mountCount: 0,
-            datonKey: key,
-            parsedDatonKey: parsedKey,
-            edit: edit,
-            daton: daton,
-            datonDef: datonDef
-        };
+        const layer = this.createLayer(datonDef, key, parsedKey, daton);
+        layer.edit = edit;
+        layer.businessContext = businessContext || '';
         this.layers.push(layer);
         this.callOnChanged();
         return layer;
     }
 
     //add a layer by viewon type name (having no initial rows); return layer
-    addEmptyViewon(datonType) {
+    //businessContext will be set to default ('') if missing
+    addEmptyViewon(datonType, businessContext) {
         //if already there, exit
         const existingIdx = this.layers.findIndex(x => x.datonKey === datonType);
         if (existingIdx >= 0) return this.layers[existingIdx];
         const datonDef = this.session.getDatonDef(datonType);
 
         //add layer
-        const layer = {
-            stackstate: this,
-            renderCount: 0,
-            mountCount: 0,
-            datonKey: datonType,
-            edit: false,
-            daton: this.session.createEmptyViewon(datonType),
-            datonDef: datonDef
-        };
-        layer.parsedDatonKey = parseDatonKey(layer.daton.key);
+        const viewon = this.session.createEmptyViewon(datonType);
+        const layer = this.createLayer(datonDef, datonType, parseDatonKey(viewon.key), viewon);
+        layer.businessContext = businessContext || '';
         this.layers.push(layer);
         this.callOnChanged();
         return layer;
@@ -97,14 +107,19 @@ export default class DatonStackState {
     }
 
     //replace a viewon key, which performs a search on the new criteria;
-    //OR replace a new persiston key with the actual key; cannot be used to change the type!
+    //OR replace a new persiston key with the actual key
     async replaceKey(oldKey, newKey, forceLoad) {
+        const daton = await this.session.get(newKey, {forceCheckVersion: forceLoad});
+        this.replaceDaton(oldKey, daton);
+    }
+
+    //replace a daton in the stack with a different, already-loaded daton
+    replaceDaton(oldKey, daton) {
+        if (!daton) return;
         const idx = this.layers.findIndex(x => x.datonKey === oldKey);
         if (idx < 0) return;
-        const daton = await this.session.get(newKey, {forceCheckVersion: forceLoad});
-        if (!daton) return;
         const layer = this.layers[idx];
-        layer.datonKey = newKey;
+        layer.datonKey = daton.key;
         layer.daton = daton;
         layer.edit = false;
         ++layer.renderCount;
@@ -118,8 +133,7 @@ export default class DatonStackState {
         if (layer.daton.isComplete) {
             const rows = layer.daton[layer.datonDef.mainTableDef.name];
             rows.sort((a, b) => a[colName] === b[colName] ? 0 : (a[colName] < b[colName] ? -1 : +1));
-            ++layer.renderCount;
-            this.callOnChanged();
+            layer.rerender();
         }
 
         //incompletely loaded viewons must sort on server
@@ -156,7 +170,7 @@ export default class DatonStackState {
 
         //fall through to here, so open the persiston referred to by the clicked key value
         const targetDatonKey = gridColDef.foreignKeyDatonTypeName + '|=' + gridRow[gridColDef.name];
-        const editLayer = await this.add(targetDatonKey, false);
+        const editLayer = await this.add(targetDatonKey, false, gridLayer.businessContext);
         if (!editLayer) return;
 
         //set up behavior for changes saved on edit layer to show up in the calling viewon
@@ -174,17 +188,24 @@ export default class DatonStackState {
                 const sourceColDef = editLayer.datonDef.mainTableDef.cols.find(c => c.name === targetColDef.name);
                 if (sourceColDef) gridRow[targetColDef.name] = persiston[sourceColDef.name];
             }
-            ++gridLayer.renderCount;
-            this.callOnChanged();
+            gridLayer.rerender();
         };
     }
 
     //called from click event on a lookup button to open a viewon for lookup
     async startLookup(editingLayer, editingTableDef, editingRow, editingColDef) {
-        //add layer for viewon lookup
-        const viewonDef = this.session.getDatonDef(editingColDef.selectBehavior.viewonTypeName);
-        if (!viewonDef) return;
-        const lookupLayer = await this.addEmptyViewon(editingColDef.selectBehavior.viewonTypeName);
+        //add layer for viewon lookup using custom behavior
+        let lookupLayer;
+        if (this.onCustomLookup) {
+            const key = this.onCustomLookup(editingLayer, editingTableDef, editingRow, editingColDef);
+            if (!key) return;
+            lookupLayer = await this.add(key, false, editingLayer.businessContext);
+        } else {
+            //or standard behavior
+            const viewonDef = this.session.getDatonDef(editingColDef.selectBehavior.viewonTypeName);
+            if (!viewonDef) return;
+            lookupLayer = await this.addEmptyViewon(editingColDef.selectBehavior.viewonTypeName, editingLayer.businessContext);
+        }
 
         //define callback when user clicks on a key in the viewon result row;
         //the function is called in gridKeyClicked and returns true on success

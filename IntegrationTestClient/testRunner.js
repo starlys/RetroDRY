@@ -77,7 +77,7 @@ const integrationTestContainer = {
 
     //start a session and return Session
     startSession: async function(serverList, sessionKey) {
-        const ses = new retrodry.Session();
+        const ses = new retrodryclient.Session();
         ses.sessionKey = sessionKey;
         ses.serverList = serverList;
         ses.timeZoneOffset = -5 * 60;
@@ -130,6 +130,7 @@ const integrationTestContainer = {
             firstName: 'Sammy',
             lastName: 'Snead',
             hireDate: '20081225',
+            isToxic: false,
             eContact: [
                 {
                     contactId: -1,
@@ -147,6 +148,7 @@ const integrationTestContainer = {
             customerId: -1,
             company: 'The company that starts with THE',
             salesRepId: 1, //sammy
+            isToxic: false,
             notes: 'Customer has great holliday parties'
         };
         saveResult = await this.session1.save([widgetCo]);
@@ -160,6 +162,7 @@ const integrationTestContainer = {
             customerId: -1,
             company: 'Widget, Inc.',
             salesRepId: 1, //sammy
+            isToxic: false,
             notes: 'Customer has great holliday parties'
         };
         let saveResult = await this.session1.save([widgetCo]);
@@ -280,6 +283,7 @@ const integrationTestContainer = {
             firstName: 'Sammy',
             lastName: 'Snead',
             hireDate: '20081225',
+            isToxic: false
         };
         const saveResult = await session.save([saleStatusses, item, sammy]);
         if (!saveResult.success) this.fail('Expected to save sale status, item');
@@ -309,13 +313,13 @@ const integrationTestContainer = {
             let saveResult = await session.save([customer]);
             if (!saveResult.details.length) 
                 this.fail('Could not save customer');
-            const customerKey = retrodry.parseDatonKey(saveResult.details[0].newKey);
+            const customerKey = retrodryclient.parseDatonKey(saveResult.details[0].newKey);
             const customerId = customerKey.persistonKeyAsInt();
             if (!customerId) this.fail('Expected server to return valid customer ID on insert');
             const sales = [];
             for (let i = 0; i < 40; ++i) {
                 //avoid timezone problems on server which may not be in UTC
-                const packedDate = '2020' + retrodry.pad2(this.randomInt(12) + 1) + retrodry.pad2(this.randomInt(24) + 2);
+                const packedDate = '2020' + retrodryclient.pad2(this.randomInt(12) + 1) + retrodryclient.pad2(this.randomInt(24) + 2);
                 sales.push({
                     key: 'Sale|=-1',
                     customerId: customerId, 
@@ -357,7 +361,7 @@ const integrationTestContainer = {
             const datonKeys = this.mdata[sesNo].saleRows.map(r => 'Sale|=' + r.saleId);
             const sales = await session.getMulti(datonKeys, { isForEdit: true });
             if (!sales || sales.length !== datonKeys.length) this.fail('Got wrong number of sales back');
-            this.mdata[sesNo].sales = sales;
+            this.mdata[sesNo].sales = sales.map (s => s.daton);
         });
 
         //try to lock all the sales that we subscribed to; since another client will also try to lock the same ones,

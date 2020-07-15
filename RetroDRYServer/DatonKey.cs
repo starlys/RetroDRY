@@ -138,6 +138,9 @@ namespace RetroDRY
         /// </summary>
         private readonly Criterion[] _Criteria;
 
+        /// <summary>
+        /// May be null
+        /// </summary>
         public IEnumerable<Criterion> Criteria => _Criteria;
 
         public readonly string SortColumnName;

@@ -87,6 +87,7 @@ namespace SampleServer
 
             //sample custom validation
             ddict.DatonDefs["Customer"].CustomValidator = Validators.ValidateCustomer;
+            ddict.DatonDefs["CustomerList"].CustomValidator = Validators.ValidateCustomerListCriteria;
 
             //sample default values initializer
             ddict.DatonDefs["Customer"].Initializer = Initializers.InitializeCustomer;
@@ -101,6 +102,9 @@ namespace SampleServer
 
             //error reporting; In a real app you would send this to your logging destinations
             Globals.Retroverse.Diagnostics.ReportClientCallError = msg => Console.WriteLine(msg);
+
+            //sample SQL overide
+            Globals.Retroverse.OverrideSql("Customer", new CustomerSql());
 
             //sample exception text rewriter
             Globals.Retroverse.CleanUpSaveException = (user, ex) =>

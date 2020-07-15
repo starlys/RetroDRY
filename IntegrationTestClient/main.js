@@ -10,7 +10,7 @@ sampleClient = {
         const sessionKey = (await newSessionResponse.json()).sessionKey;
 
         //start client side retrodry framework
-        this.session = new retrodry.Session();
+        this.session = new retrodryclient.Session();
         this.session.sessionKey = sessionKey;
         this.session.serverList = ['https://localhost:5001/api/'];
         this.session.timeZoneOffset = -5 * 60;

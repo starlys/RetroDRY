@@ -20,7 +20,8 @@ export default props => {
     //get layout
     let localGridLayout = gridLayout;
     if (!gridLayout) {
-        localGridLayout = session.getGridLayout(datonDef.name, tableDef.name);
+        let businessContext = layer ? layer.businessContext : '';
+        localGridLayout = session.layouts.getGrid(datonDef.name, tableDef.name, businessContext);
         setGridLayout(localGridLayout);
     }
 

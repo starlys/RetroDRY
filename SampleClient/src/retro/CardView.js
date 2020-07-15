@@ -39,7 +39,8 @@ export default props => {
     if (!card) {
         card = cardLayout;
         if (!card) {
-            card = session.getCardLayout(datonDef.name, tableDef.name);
+            let businessContext = layer ? layer.businessContext : '';
+            card = session.layouts.getCard(datonDef.name, tableDef.name, businessContext);
             setCardLayout(card);
         }
         if (!card) return null;
@@ -85,6 +86,11 @@ export default props => {
                 </>;
             }
         } 
+
+        //if item is an injected function...
+        else if (typeof item === 'function') {
+            child = item(row || criset, edit, layer);
+        }
         
         //if item is a nested panel, recur
         else if (item.content) {

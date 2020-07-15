@@ -10,7 +10,7 @@ namespace UnitTest
     [SingleMainRow]
     class Ogre : Persiston
     {
-        [Key]
+        [PrimaryKey(true)]
         public int OgreId;
         public string Name;
         public decimal? Money;
@@ -28,7 +28,7 @@ namespace UnitTest
         [ParentKey("OgreId")]
         public class PaymentMethodRow : Row
         {
-            [Key]
+            [PrimaryKey(true)]
             public int PaymentMethodId;
             public string Method;
             public string Notes;
@@ -46,7 +46,7 @@ namespace UnitTest
     [SingleMainRow, DatabaseNumber(6)]
     class Customer : Persiston
     {
-        [Key]
+        [PrimaryKey(true)]
         public int CustomerId;
 
         [Required, StringLength(200, MinimumLength = 1)]
@@ -71,7 +71,7 @@ namespace UnitTest
 
         public class ExtRow : Row
         {
-            [Key]
+            [PrimaryKey(true)]
             public string Info;
 
             [RetroHide]
@@ -82,7 +82,7 @@ namespace UnitTest
     [SingleMainRow]
     class Employee : Persiston
     {
-        [Key]
+        [PrimaryKey(true)]
         public int EmpId;
 
         [StringLength(50, MinimumLength = 3), Prompt("DEFAULTLANG")]
@@ -113,7 +113,7 @@ namespace UnitTest
         [Criteria]
         public abstract class Criteria
         {
-            [Prompt("Last name starts with")]
+            [Prompt("Last name starts with"), StringLength(5)]
             public string LastName;
         }
     }
