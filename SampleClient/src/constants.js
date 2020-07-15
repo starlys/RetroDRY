@@ -1,3 +1,15 @@
+import React from 'react';
+
+//custom button behaviors
+const resetCustomerNotesButton = (row, edit, layer) => {
+    if (!edit) return null;
+    const handler = () => {
+        row.notes = 'No notes';
+        layer.rerender();
+    }
+    return <button onClick={handler}>Reset Notes</button>;
+};
+
 export const sampleLayouts = {
     customerListCard: {
         label: 'Customer',
@@ -37,7 +49,8 @@ export const sampleLayouts = {
                 label: 'Details',
                 border: true,
                 content: [
-                    'notes'                    
+                    'notes',
+                    resetCustomerNotesButton
                 ]
             }
         ]

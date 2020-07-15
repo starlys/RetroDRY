@@ -15,7 +15,8 @@ export default props => {
     //initialize
     let localLayout = cardLayout;
     if (!localLayout) {
-        localLayout = session.getCardLayout(datonDef.name, tableDef.name);
+        let businessContext = layer ? layer.businessContext : '';
+        localLayout = session.layouts.getCard(datonDef.name, tableDef.name, businessContext);
         setCardLayout(localLayout);
     }
 

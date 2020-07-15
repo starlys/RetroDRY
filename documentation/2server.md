@@ -476,7 +476,7 @@ Load and save overrides
 
 ```c#
 //Example to override load and save:
-dataDictionary.Daton["Customer"].SqlOverride = new CustomerSql(); //CustomerSql is a class that overrides some or all SQL behavior
+retroverse.OverrideSql("Customer", new CustomerSql()); //CustomerSql is a class that overrides some or all SQL behavior
 ```
 
 -   Overridable methods for loading:

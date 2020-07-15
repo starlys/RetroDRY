@@ -1,7 +1,7 @@
 export {default as Session} from './src/session';
 export {DataDictionaryResponse, DatonDefResponse, TableDefResponse, ColDefResponse, 
     DetailPermisionResponse, CondensedDatonResponse, ManageDatonResponse, SavePersistonResponse} from './src/wireTypes';
-export {PanelLayout, GridLayout, GridColumnLayout} from './src/layout';
+export {PanelLayout, GridLayout, GridColumnLayout} from './src/layouts';
 export {TableRecurPoint, TableRecurPointFromDaton, RowRecurPoint} from './src/recurPoint';
 export {DiffTool} from './src/diffTool';
 export {securityUtil} from './src/securityUtil';

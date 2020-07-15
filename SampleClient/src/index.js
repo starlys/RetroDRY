@@ -35,11 +35,11 @@ so you might code the initialization sequence somewhere else besides in index.js
     else
         console.log('Could not start retrodry session');
 
-    //register layouts
-    ses.registerCardLayout('Customer', 'customer', sampleLayouts.customerCard);
-    ses.registerCardLayout('CustomerList', 'customer', sampleLayouts.customerListCard);
-    ses.registerCardLayout('CustomerList', 'criteria', sampleLayouts.customerListCriteriaCard);
-    ses.registerGridLayout('CustomerList', 'customer', sampleLayouts.customerListGrid);
+    //register layouts (for POS business context)
+    ses.layouts.registerCard('Customer', 'customer', 'POS', sampleLayouts.customerCard);
+    ses.layouts.registerCard('CustomerList', 'customer', 'POS', sampleLayouts.customerListCard);
+    ses.layouts.registerCard('CustomerList', 'criteria', 'POS', sampleLayouts.customerListCriteriaCard);
+    ses.layouts.registerGrid('CustomerList', 'customer', 'POS', sampleLayouts.customerListGrid);
     mainRender();
 })();
 

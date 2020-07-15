@@ -103,6 +103,9 @@ namespace SampleServer
             //error reporting; In a real app you would send this to your logging destinations
             Globals.Retroverse.Diagnostics.ReportClientCallError = msg => Console.WriteLine(msg);
 
+            //sample SQL overide
+            Globals.Retroverse.OverrideSql("Customer", new CustomerSql());
+
             //sample exception text rewriter
             Globals.Retroverse.CleanUpSaveException = (user, ex) =>
             {

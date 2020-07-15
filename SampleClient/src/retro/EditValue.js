@@ -97,8 +97,7 @@ export default (props) => {
     const afterEntryProcessed = ([msg, anyCascades]) => {
         setInvalidMessage(msg);
         if (anyCascades && layer) {
-            ++layer.renderCount;
-            layer.stackstate.callOnChanged(); 
+            layer.rerender();
         }
     };
     const ctrlBlurred = async (isLoOfRange) => {

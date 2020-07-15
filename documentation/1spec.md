@@ -99,19 +99,15 @@ Character casing
 
     -   Database table and column name: Employee.FirstName
     -   C\# code:
-
         -   class name: Employee
         -   field name within Employee class: FirstName
         -   field value: FirstName = "Thelma";
     -   JSON wire representation:
-
         -   in data dictionary: employee, firstName
         -   data objects: "employee": \[{ "firstName": "Thelma", ... }\]
     -   Javascript code:
-
         -   data objects: { employee: \[{ firstName: 'Thelma', ... }\] }
     -   Daton keys - the same in all tiers!
-
         -   persiston key: Employee|=123
         -   viewon key: EmployeeList|\_sort=FirstName|LastName=Singh
 

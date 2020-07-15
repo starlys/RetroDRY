@@ -112,7 +112,7 @@ namespace SampleServer.Schema
             [Prompt("I-code starts with")]
             public string ItemCode;
 
-            [Prompt("Item description")] 
+            [Prompt("Item description"), RegularExpression("^[^0-9]*$", ErrorMessage = "May not search on digits")] 
             public string Description;
 
             public double? Weight;
