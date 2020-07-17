@@ -7,7 +7,12 @@ namespace RetroDRY
     /// </summary>
     public interface IUser
     {
+        /// <summary>
+        /// The user ID. This should be set to an email address or login credential to identify when different user sessions are the same user; it is only
+        /// used by RetroDRY in rare cases when user permissions change during a session.
+        /// </summary>
         string Id { get; }
+
         RetroRole[] Roles { get; }
 
         /// <summary>

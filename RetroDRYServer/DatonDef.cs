@@ -30,11 +30,6 @@ namespace RetroDRY
         public int DatabaseNumber;
 
         /// <summary>
-        /// Injectable custom validator, accepting either a persiston or a viewon key and returning user-readable errors
-        /// </summary>
-        public Func<Persiston, ViewonKey, IUser, Task<IEnumerable<string>>> CustomValidator;
-
-        /// <summary>
         /// Injectable initializer of new datons
         /// </summary>
         public Func<Daton, Task> Initializer;

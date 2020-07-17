@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
 using RetroDRY;
 
 namespace SampleServer.Schema
@@ -79,6 +81,14 @@ namespace SampleServer.Schema
 
             [InheritFrom("Customer.SalesRepLastName")]
             public string SalesRepLastName;
+        }
+
+        public override Task ValidateCriteria(IUser user, ViewonKey key, Action<string> fail)
+        {
+            var companyCri = key.Criteria.FirstOrDefault(c => c.Name == "Company");
+            if (companyCri != null && companyCri.PackedValue.StartsWith("The", StringComparison.InvariantCultureIgnoreCase))
+                fail("Cannot search for companies starting with 'the'");
+            return Task.CompletedTask;
         }
     }
 

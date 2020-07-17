@@ -31,11 +31,7 @@ namespace RetroDRY
             else if (r is TableRecurPoint rt) Validate(rt);
 
             //custom validation
-            if (datondef.CustomValidator != null)
-            {
-                var errs = await datondef.CustomValidator(daton, null, User);
-                if (errs != null) Errors.AddRange(errs);
-            }
+            await daton.Validate(User, message => Errors.Add(message));
         }
 
         /// <summary>
@@ -58,10 +54,10 @@ namespace RetroDRY
             }
 
             //custom validation
-            if (datondef.CustomValidator != null)
+            var tempViewon0 = Utils.Construct(datondef.Type);
+            if (tempViewon0 is Viewon tempViewon)
             {
-                var errs = await datondef.CustomValidator(null, viewonKey, User);
-                if (errs != null) Errors.AddRange(errs);
+                await tempViewon.ValidateCriteria(User, viewonKey, message => Errors.Add(message));
             }
         }
 

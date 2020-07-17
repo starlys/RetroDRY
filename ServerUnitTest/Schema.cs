@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Threading.Tasks;
 using RetroDRY;
 
 namespace UnitTest
@@ -63,6 +65,12 @@ namespace UnitTest
 
         [Range(-2, +2, ErrorMessage = "VALUERANGE")]
         public decimal Money;
+
+        public override Task Validate(IUser user, Action<string> fail)
+        {
+            if (Company != null && Company.StartsWith("THE")) fail("THE");
+            return Task.CompletedTask;
+        }
     }
 
     class ExtCustomer : Persiston
@@ -115,6 +123,13 @@ namespace UnitTest
         {
             [Prompt("Last name starts with"), StringLength(5)]
             public string LastName;
+        }
+
+        public override Task ValidateCriteria(IUser user, ViewonKey key, Action<string> fail)
+        {
+            var companyCri = key.Criteria.FirstOrDefault(c => c.Name == "LastName"); //assume this exists for the tests
+            if (companyCri.PackedValue.StartsWith("THE")) fail("THE");
+            return Task.CompletedTask;
         }
     }
 }

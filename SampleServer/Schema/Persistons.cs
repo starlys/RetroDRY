@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.Threading.Tasks;
 using RetroDRY;
 
 namespace SampleServer.Schema
@@ -120,6 +121,16 @@ namespace SampleServer.Schema
 
         [StringLength(4000), WireType(Constants.TYPE_NSTRING)]
         public string Notes;
+
+        public override Task Validate(IUser user, Action<string> fail)
+        {
+            //silly rule to demonstrate custom validation:
+            if (Company.StartsWith("The", StringComparison.InvariantCultureIgnoreCase))
+                fail("Companies cannot start with 'the' ");
+            //note that you can use language-dependent strings here by checking user.LangCode
+
+            return Task.CompletedTask;
+        }
     }
 
     /// <summary>
