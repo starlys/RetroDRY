@@ -10,9 +10,9 @@ namespace SampleServer.Schema
     /// </summary>
     public class CustomerSql : RetroSql
     {
-        public override async Task Save(IDbConnection db, Persiston pristineDaton, Persiston modifiedDaton, PersistonDiff diff)
+        public override async Task Save(IDbConnection db, IUser user, Persiston pristineDaton, Persiston modifiedDaton, PersistonDiff diff)
         {
-            await base.Save(db, pristineDaton, modifiedDaton, diff);
+            await base.Save(db, user, pristineDaton, modifiedDaton, diff);
             using var cmd = db.CreateCommand();
 
             //change the notes value after RetroDRY saving

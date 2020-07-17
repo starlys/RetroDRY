@@ -144,7 +144,8 @@ namespace RetroDRY
         }
 
         /// <summary>
-        /// Notify RetroDRY that the host app has changed permissions for a user; this causes the permission set to be sent to connected sessions for the user
+        /// Notify RetroDRY that the host app has changed permissions for a user; this causes the permission set to be sent to connected sessions for the user.
+        /// Note that this bases the change on IUser.Id
         /// </summary>
         /// <param name="user"></param>
         public void NotifyPermissionsChanged(IUser user)

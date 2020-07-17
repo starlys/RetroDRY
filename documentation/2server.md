@@ -419,17 +419,35 @@ tickerDate.SetPrompt("Tickler Date"); //set up other data dictionary info here
 
 ### Validations
 
--   The data dictionary also stores function references for validation.
+-   There are a few aspects to validation:
+    -   Use nullable types to allow nulls and non-nullable types to prevent nulls. (Also see notes on preventing empty strings above.) 
+    -   Use StringLength and the other annotations to control lengths, patterns, and ranges (discussed above).
+    -   Define a custom validation function.
 
-    -   Validation functions can return a list of error messages, or null if the item is ok.
+-   Custom validation details
+    -   Validation functions can exit on the first failure, or register multiple fail messages.
+    -   The messages should be in the user's language.
     -   Validators are async so you could potentially check with an outside system during validation.
-    -   Example to set a persiston validator:
+    -   Here is an example to set a persiston validator, by overriding Persiston.Validate:
 
-        -   `dataDictionary.DatonDefs["Customer"].Validator = (cust, _, user) => { /* customer validation here */ };`
+````c#
+public override Task Validate(IUser user, Action<string> fail)
+{
+    if (Company != null && Company.StartsWith("THE")) fail("Companies can't start with THE");
+    return Task.CompletedTask;
+}
+````
 
-    -   Example to set up a viewon criteria validator (which is run before viewon loads):
+    -   Below is an example to set up a viewon criteria validator. This is run before viewon loads on a temporary instance of your viewon class.
 
-        -   `dataDictionary.DatonDefs["CustomerList"].Validator = (_, cri, user) => { /* customer list criteria validation here */ };`
+````c#
+public override Task ValidateCriteria(IUser user, ViewonKey key, Action<string> fail)
+{
+    var companyCri = key.Criteria.FirstOrDefault(c => c.Name == "LastName"); 
+    if (companyCri.PackedValue.StartsWith("THE")) fail("Companies can't start with THE");
+    return Task.CompletedTask;
+}
+````
 
 ### Default values
 

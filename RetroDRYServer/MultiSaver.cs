@@ -192,7 +192,7 @@ namespace RetroDRY
             var sql = Retroverse.GetSqlInstance(item.Modified.Key);
             try
             {
-                await sql.Save(trx.Connection, item.Pristine, item.Modified, item.Diff);
+                await sql.Save(trx.Connection, User, item.Pristine, item.Modified, item.Diff);
             }
             catch (Exception ex)
             {

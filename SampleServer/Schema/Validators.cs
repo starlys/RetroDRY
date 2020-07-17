@@ -29,16 +29,5 @@ namespace SampleServer.Schema
             //return errors; //async return
         }
 
-        /// <summary>
-        /// Another example for validating viewon requests
-        /// </summary>
-        public static Task<IEnumerable<string>> ValidateCustomerListCriteria(Persiston _, ViewonKey key, IUser user)
-        {
-            var errors = new List<string>();
-            var companyCri = key.Criteria.FirstOrDefault(c => c.Name == "Company");
-            if (companyCri != null && companyCri.PackedValue.StartsWith("The", StringComparison.InvariantCultureIgnoreCase))
-                errors.Add("Cannot search for companies starting with 'the'");
-            return Task.FromResult(errors as IEnumerable<string>); //sync return
-        }
     }
 }

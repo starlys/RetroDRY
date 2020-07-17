@@ -1,8 +1,13 @@
 {
   "name": "retrodryclient",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "multi-tier tool for data load/save, replication across tiers, and editing",
-  "keywords": ["framework", "web forms", "ORM", "React"],
+  "keywords": [
+    "framework",
+    "web forms",
+    "ORM",
+    "React"
+  ],
   "author": "Star Ford",
   "license": "GPL-3.0",
   "bugs": {

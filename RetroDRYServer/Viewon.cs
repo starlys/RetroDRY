@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace RetroDRY
 {
@@ -15,5 +16,11 @@ namespace RetroDRY
             c.IsCompleteLoad = IsCompleteLoad;
             return c;
         }
+
+        /// <summary>
+        /// Validate a viewon key; called on a temporary instance of the class, so the implementation should not expect any class members should be set. 
+        /// Implementations should call fail one or more times to register failures, passing user-readable messages
+        /// </summary>
+        public virtual Task ValidateCriteria(IUser user, ViewonKey key, Action<string> fail) { return Task.CompletedTask; }
     }
 }

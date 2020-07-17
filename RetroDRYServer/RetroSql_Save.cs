@@ -67,7 +67,7 @@ namespace RetroDRY
         /// <param name="pristineDaton">null or the version before the diff was applied</param>
         /// <param name="modifiedDaton">the validated final version</param>
         /// <param name="diff">the difference between pristine and modified, which is what this method inspects to make the changes</param>
-        public virtual async Task Save(IDbConnection db, Persiston pristineDaton, Persiston modifiedDaton, PersistonDiff diff)
+        public virtual async Task Save(IDbConnection db, IUser user, Persiston pristineDaton, Persiston modifiedDaton, PersistonDiff diff)
         {
             //called for each row in traversal; return true to recurse over children
             async Task<(object, bool)> rowCallback(RowChangingData cdata)
