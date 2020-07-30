@@ -23,19 +23,19 @@ function widthByType(colDef, forcedWidth) {
 //props.session is the session for obtaining layouts
 //props.row is the row in the daton to display (null/missing for criteria)
 //props.criset is the criteria set to display (null/missing for rows)
-//props.nestCard is the PanelLayout to use (only when nested; omit this from the top level call)
+//props.overrideCard is the PanelLayout to use (if omitted, uses the default defined by the session)
 //props.datonDef is the DatonDefResponse (metadata for whole daton)
 //props.tableDef is the TableDefResponse which is the metadata for props.row
 //props.edit is true to display with editors; false for read only (ignored for criteria)
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
+//props.isNested is true for nested CardViews; should be omitted from user code
 export default props => {
-    const {session, nestCard, row, criset, datonDef, tableDef, edit, layer} = props;
+    const {session, overrideCard, row, criset, datonDef, tableDef, edit, layer, isNested} = props;
     const [cardLayout, setCardLayout] = useState(null);
     const [, incrementCardRenderCount] = useReducer(x => x + 1, 0); 
 
-    //determine if top level or nested, and get top layout
-    let card = nestCard;
-    const isTopLevel = !nestCard;
+    //determine layout
+    let card = overrideCard;
     if (!card) {
         card = cardLayout;
         if (!card) {
@@ -94,8 +94,8 @@ export default props => {
         
         //if item is a nested panel, recur
         else if (item.content) {
-            child = <CardView session={session} edit={edit} row={row} criset={criset} nestCard={item} datonDef={datonDef} tableDef={tableDef} 
-                layer={layer} />
+            child = <CardView session={session} edit={edit} row={row} criset={criset} overrideCard={item} datonDef={datonDef} tableDef={tableDef} 
+                layer={layer} isNested={true} />
         }
 
         maxWidth = Math.max(maxWidth, totalWidth);
@@ -108,8 +108,9 @@ export default props => {
         return <div key={idx1} className={divClass} style={divStyle}>{child}</div>;
     });
 
+    //add GridView elements for each child table
     let childGridElements = null;
-    if (isTopLevel && !isCriteria && tableDef.children) {
+    if (!isNested && !isCriteria && tableDef.children) {
         childGridElements = [];
         for (let i = 0; i < tableDef.children.length; ++i) {
             const childTableDef = tableDef.children[i];

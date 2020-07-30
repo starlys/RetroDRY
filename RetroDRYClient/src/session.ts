@@ -394,7 +394,7 @@ export default class Session {
     }
 
     private async callInitialize() {
-        const request = { sessionKey: this.sessionKey, initialze: { languageCode: this.languageCode}};
+        const request = { sessionKey: this.sessionKey, initialize: { languageCode: this.languageCode}};
         const response = await NetUtils.httpMain(this.baseServerUrl(), request);
         if (response?.dataDictionary)
             this.dataDictionary = response.dataDictionary;

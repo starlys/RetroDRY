@@ -162,19 +162,22 @@ namespace RetroDRY
         {
             //inherit storage, entry and display related properties
             targetColdef.IsCustom = sourceColdef.IsCustom;
-            targetColdef.Image = sourceColdef.Image;
+            if (targetColdef.Image == null) targetColdef.Image = sourceColdef.Image; //don't overwrite
             targetColdef.IsComputed = sourceColdef.IsComputed;
             targetColdef.IsMainColumn |= sourceColdef.IsMainColumn; //true if defined or inherited
             targetColdef.IsVisibleInDropdown |= sourceColdef.IsVisibleInDropdown; //true if defined or inherited
 
-            //inherit validation related properies
+            //inherit validation related properties that make sense for viewon criteria.
+            //Example: if a persiston column requires 2-5 characters, then the corresponding criterion should allow 0-5 characters
+            //So, this omits MinLength, Regex
+            targetColdef.MaxLength = sourceColdef.MaxLength; 
             targetColdef.LengthValidationMessage = sourceColdef.LengthValidationMessage;
-            targetColdef.MaxLength = sourceColdef.MaxLength;
+            targetColdef.MinNumberValue = sourceColdef.MinNumberValue;
             targetColdef.MaxNumberValue = sourceColdef.MaxNumberValue;
-            targetColdef.MinLength = sourceColdef.MinLength;
-            targetColdef.Prompt = sourceColdef.Prompt;
             targetColdef.RangeValidationMessage = sourceColdef.RangeValidationMessage;
-            targetColdef.Regex = sourceColdef.Regex;
+
+            //inherit other UI things
+            if (targetColdef.Prompt == null) targetColdef.Prompt = sourceColdef.Prompt; //don't overwrite
 
             //omit per rule in guide saying db load properties are not inherited: 
             //targetColdef.ForeignKeyDatonTypeName = sourceColdef.ForeignKeyDatonTypeName;
@@ -350,7 +353,7 @@ namespace RetroDRY
             bool hasChildTables = tabledef.Children != null && tabledef.Children.Count > 0;
             bool canOmitPK = isViewon && !hasChildTables;
             if (!canOmitPK && tabledef.PrimaryKeyColName == null) 
-                throw new Exception($"Key attribute must be set on a field member of {tabledef.Name}");
+                throw new Exception($"PrimaryKey attribute must be set on a field member of {tabledef.Name}");
             if (tabledef.DefaulSortColName == null) 
                 tabledef.DefaulSortColName = tabledef.PrimaryKeyColName;
         }

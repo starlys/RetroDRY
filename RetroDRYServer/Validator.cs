@@ -49,7 +49,7 @@ namespace RetroDRY
                     if (coldef == null)
                         Errors.Add("Unknown parameter: " + cri.Name);
                     else
-                        ValidateCol(coldef, cri.PackedValue);
+                        ValidateCol(coldef, cri.PackedValue, true);
                 }
             }
 
@@ -67,7 +67,7 @@ namespace RetroDRY
             {
                 if (coldef.IsComputed) continue;
                 object value = rr.Row.GetValue(coldef);
-                ValidateCol(coldef, value);
+                ValidateCol(coldef, value, false);
             }
 
             foreach (var rt in rr.GetChildren())
@@ -80,7 +80,7 @@ namespace RetroDRY
                 Validate(rr);
         }
 
-        private void ValidateCol(ColDef coldef, object value)
+        private void ValidateCol(ColDef coldef, object value, bool isCriterion)
         {
             string valueS = value == null ? "" : value.ToString();
             string prompt = DataDictionary.ResolvePrompt(coldef.Prompt, User, coldef.Name);
@@ -96,7 +96,7 @@ namespace RetroDRY
             }
 
             //numeric range
-            if (Utils.IsSupportedNumericType(coldef.CSType) && coldef.MaxNumberValue != 0 && coldef.MinNumberValue != 0)
+            if (!isCriterion && Utils.IsSupportedNumericType(coldef.CSType) && (coldef.MaxNumberValue != 0 || coldef.MinNumberValue != 0))
             {
                 bool isOK;
                 if (value == null)

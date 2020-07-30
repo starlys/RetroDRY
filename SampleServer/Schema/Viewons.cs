@@ -33,16 +33,20 @@ namespace SampleServer.Schema
             public string SupervisorLastName;
 
             public bool IsToxic;
+
+            public int NeatDeskRating;
         }
 
-        [Criteria]
+        [Criteria, InheritFrom("Employee")]
         public abstract class Criteria
         {
-            [Prompt("Last name starts with")]
+            [InheritFrom("Employee.LastName"), Prompt("Last name starts with")]
             public string LastName;
 
             [Prompt("Toxic human?")]
             public bool IsToxic;
+
+            public int NeatDeskRating;
         }
     }
 

@@ -145,7 +145,7 @@ namespace RetroDRY
         public SortedList<string, string> RegexValidationMessage;
 
         /// <summary>
-        /// The minimum numberic value; if MinNumberValue and MaxNumberValue are both 0, then range is not enforced
+        /// The minimum numeric value; if MinNumberValue and MaxNumberValue are both 0, then range is not enforced
         /// </summary>
         public decimal MinNumberValue;
 

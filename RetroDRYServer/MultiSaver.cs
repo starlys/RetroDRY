@@ -164,7 +164,7 @@ namespace RetroDRY
             //get pristine, diff, and modified versions
             if (item.Diff.Key.IsNew)
             {
-                item.Modified = Utils.Construct(item.DatonDef.Type) as Persiston;
+                item.Modified = Utils.ConstructDaton(item.DatonDef.Type, item.DatonDef) as Persiston; 
                 item.Modified.Key = item.Diff.Key;
             }
             else

@@ -156,7 +156,7 @@ export function validateString(colDef: ColDefResponse, value: string): string|nu
 //returns 2-element array with error message and corrected value for storage
 export function validateNumber(colDef: ColDefResponse, baseType: string, value: any): [string|null, any] {
     let minOfType = 0, maxOfType = 0, isInt = true;
-    const stringValue = (value || '').toString();
+    const stringValue = value === 0 ? '0' : (value || '').toString();
     if (baseType === 'byte') { maxOfType = 255; }
     else if (baseType === 'int16') { minOfType = -32768; maxOfType = 32767; }
     else if (baseType === 'int32') { minOfType = -2147483648; maxOfType = 2147483647; }
@@ -173,17 +173,17 @@ export function validateNumber(colDef: ColDefResponse, baseType: string, value: 
 
     //check numeric range
     const n = isInt ? parseInt(stringValue, 10) : parseFloat(stringValue);
-    const useRange = colDef.minNumberValue && colDef.maxNumberValue;
+    const useRange = colDef.minNumberValue || colDef.maxNumberValue;
     let min = 0, max = 0, ok: boolean;
     if (isInt) {
-        min = useRange ? Math.max(minOfType, colDef.minNumberValue) : minOfType;
-        max = useRange ? Math.min(maxOfType, colDef.maxNumberValue) : maxOfType;
+        min = useRange ? Math.max(minOfType, colDef.minNumberValue || 0) : minOfType;
+        max = useRange ? Math.min(maxOfType, colDef.maxNumberValue || 0) : maxOfType;
         ok = !isNaN(n) && n >= min && n <= max;
     } else {
         ok = !isNaN(n);
-        if (ok && useRange) ok = n >= colDef.minNumberValue && n <= colDef.maxNumberValue;
-        min = useRange ? colDef.minNumberValue : -99999; //these 99999s affect validation message only
-        max = useRange ? colDef.maxNumberValue : 99999;
+        if (ok && useRange) ok = n >= (colDef.minNumberValue || 0) && n <= (colDef.maxNumberValue || 0);
+        min = useRange && colDef.minNumberValue ? colDef.minNumberValue : -99999; //these 99999s affect validation message only
+        max = useRange && colDef.maxNumberValue ? colDef.maxNumberValue : 99999;
     }
 
     //format error message

@@ -11,6 +11,7 @@ import {securityUtil} from 'retrodryclient';
 //props.edit is true to allow editing of child cards and deleting rows
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
 //props.sortClicked is falsy if sorting is not allowed here, or a function taking the column name
+//props.overrideGrid is the GridLayout to use (if omitted, uses the default defined by the session)
 export default props => {
     const {rows, datonDef, tableDef, edit, session, layer} = props;
     const [expandRowIdx, setExpandRowIdx] = useState(-1);
@@ -20,8 +21,11 @@ export default props => {
     //get layout
     let localGridLayout = gridLayout;
     if (!gridLayout) {
-        let businessContext = layer ? layer.businessContext : '';
-        localGridLayout = session.layouts.getGrid(datonDef.name, tableDef.name, businessContext);
+        localGridLayout = props.overrideGrid;
+        if (!localGridLayout) {
+            let businessContext = layer ? layer.businessContext : '';
+            localGridLayout = session.layouts.getGrid(datonDef.name, tableDef.name, businessContext);
+        }
         setGridLayout(localGridLayout);
     }
 

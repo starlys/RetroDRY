@@ -64,8 +64,8 @@ Declaring layouts and layout rendering details
 -   The developer may register a card and grid layout for each table where appropriate; if not registered, it will autogenerate. Grid layouts are read only. Card layouts can be used for display or edit.
 -   To register, call Session.layouts.registerCard or registerGrid with arguments (datonName, tableName, businessContext, layout).
 -   The "business context" is an empty string by default but can be set to something else if your app requires different layouts to be used for different situations. A daton that opens another daton will look for layouts using the calling daton's context.
--   Overall multi-table layout rules, in processing order:
 
+-   Overall multi-table layout rules, in processing order:
     -   For the main table of a single-main-row datons, the card is always used.
     -   If a grid is explicitly registered, or a card is NOT explicitly registered, then it will display the grid, allowing a row to be selected. When a row is selected, the card for that row shows under the row. Only one card is visible at a time.
     -   If the above test fails, it will show a vertical list of cards.
@@ -94,6 +94,7 @@ Declaring layouts and layout rendering details
         -   strings use 0.8 times the max length in em units, with 8em minimum and 30em maximum
         -   dates, numbers, checkboxes use fixed width
     -   Once the tentative widths are available for an immediate group, the max width of that group determines group width. All members of the group are rendered as 100% of the group box width.
+    -   In a card layout, you can also append the width to the column name like "firstName:20" (in em units)
 
 Layout examples
 ---------------
@@ -116,7 +117,7 @@ const customerCard = {
             border: true,
             content: [
                 { horizontal: true, content: ['customerId', 'company'] },
-                'salesRepId salesRepLastName'        
+                'salesRepId salesRepLastName:30'
             ]
         },
         {

@@ -16,7 +16,7 @@ namespace RetroDRY
 
     public class MainRequest : RetroRequest
     {
-        public InitializeRequest Initialze { get; set; }
+        public InitializeRequest Initialize { get; set; }
         public GetDatonRequest[] GetDatons { get; set; }
         public ManageDatonRequest[] ManageDatons { get; set; }
         public JObject[] SaveDatons { get; set; }
