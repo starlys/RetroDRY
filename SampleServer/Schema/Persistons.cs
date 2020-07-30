@@ -80,6 +80,9 @@ namespace SampleServer.Schema
 
         public bool IsToxic;
 
+        [Range(0, 10), Prompt("Neatness of desk (0-10)")]
+        public int NeatDeskRating;
+
         public List<EContactRow> EContact;
 
         [SqlTableName("EmployeeContact"), ParentKey("EmployeeId")]

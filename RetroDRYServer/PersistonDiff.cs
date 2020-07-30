@@ -113,7 +113,7 @@ namespace RetroDRY
                 Row target;
                 if (source.Kind == DiffKind.NewRow)
                 {
-                    target = Utils.Construct(itemType) as Row;
+                    target = Utils.ConstructRow(itemType, tabledef);
                     targetList.Add(target);
                     anyChanges = true;
                 }

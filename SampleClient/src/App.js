@@ -5,6 +5,7 @@ import DatonStackState from './retro/DatonStackState';
 
 import './App.css';
 import PointOfSaleEntry from './PointOfSaleEntry';
+import GridView from './retro/GridView';
 
 export default function App() {
   const [stackstate, setStackState] = useState(null);

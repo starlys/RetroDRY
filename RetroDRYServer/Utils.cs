@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Data;
+using System.Linq;
 using System.Reflection;
 
 #pragma warning disable IDE0019
@@ -50,6 +51,31 @@ namespace RetroDRY
             var ctor = t.GetConstructor(new Type[0]);
             if (ctor == null) throw new Exception($"{t.Name} must have a parameterless constructor");
             return ctor.Invoke(new object[0]);
+        }
+
+        /// <summary>
+        /// Construct a row object and set any custom non-nullable properties to their defaults
+        /// </summary>
+        /// <param name="tabledef">if null, this behaves like Construct(t)</param>
+        public static Row ConstructRow(Type t, TableDef tabledef) 
+        {
+            if (!typeof(Row).IsAssignableFrom(t)) throw new Exception("Requires Row type");
+            var row = Construct(t) as Row;
+            if (tabledef != null)
+            {
+                foreach (var coldef in tabledef.Cols.Where(c => c.IsCustom))
+                    if (coldef.CSType.IsValueType && Nullable.GetUnderlyingType(coldef.CSType) == null)
+                        row.SetCustom(coldef.Name, Activator.CreateInstance(coldef.CSType));
+            }
+            return row;
+        }
+
+        /// <summary>
+        /// Construct a daton object using ConstructRow if it is a single main row style daton, else just construct the type
+        /// </summary>
+        public static Daton ConstructDaton(Type t, DatonDef datondef)
+        {
+            return ConstructRow(t, datondef.MultipleMainRows ? null : datondef.MainTableDef) as Daton;
         }
 
         /// <summary>

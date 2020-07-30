@@ -179,6 +179,7 @@ namespace RetroDRY
         /// If true, custom columns are copied from a source persiston into a viewon
         /// </summary>
         public bool IncludeCustom { get; set; }
+
         public InheritFromAttribute(string source) { SourceName = source; }
     }
 

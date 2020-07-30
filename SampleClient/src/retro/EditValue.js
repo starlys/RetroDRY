@@ -35,7 +35,7 @@ function getFormattedNumber(row, colName, baseType) {
 //props.tableDef is the TableDefResponse which is the metadata for props.row
 //props.colDef is the ColDefResponse (metadata for the column)
 //props.row is the row object being edited (persiston row or criset)
-//props.width is the css width string
+//props.width is the css width string (ignored for some control types)
 //props.isCriterion is true for criterion, false for persiston value
 //props.session is the retrodry Session 
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
@@ -174,8 +174,10 @@ export default (props) => {
                 <option key="1" value="1">Yes</option>
                 <option key="0" value="0">No</option>
             </select>;
-        else
+        else {
             inputCtrl = <input type="checkbox" checked={row[colDef.name]} onChange={boolChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>;
+            wrapStyle.width = '40px';
+        }
     }
     else if (isNumericBaseType(baseType)) {
         if (isCriterion) {

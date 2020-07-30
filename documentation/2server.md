@@ -199,7 +199,7 @@ Viewon declarations
     -   Inheritance is live in the sense that if you modify any part of the persiston's data dictionary (such as natural language prompts), the viewon column will inherit the change when calling DataDictionary.FinalizeInheritance. The inheritance is not live after that point in time.
     -   By default viewons do not inherit the custom columns of the persiston when using InheritFrom on the row class. To make it inherit custom columns, use an optional argument in the annotation like this: InheritFrom("Customer", includeCustom: true)
     -   Since inheritance is ultimately a copy operation, if you define multi step or circular inheritances (C inherits B which inherts A, or D and E inherit fom each other), the result will not be well defined because the order of copying metadata is not defined.
-    -   Inheritance copies prompts, all validation related properties, all data entry related properties. It does NOT copy the type (including WireType annotation), sorting and left joins or other things affecting database load and save.
+    -   Inheritance copies prompts, some validation related properties, and some other data entry related properties. It does NOT copy the type (including WireType annotation), sorting and left joins or other things affecting database load and save. Because you can inherit from a persiston into editable viewon criteria, it is important to note that validation properties are inherited based on that use-case. So, maximum string length and numeric range are inherited, while minimum length and regex are not inherited. This allows the user to search using a string that wouldn't be an allowed field value.
 
 -   Viewons also define criteria, a concept not present in persistons.
 
@@ -481,6 +481,7 @@ There are multiple places where you can inject messages by language:
 ### Other potential init steps
 
 -   CORS might be required depending on your deployment model.
+-   To debug internal server errors, hook up a function to Retroverse.Diagnostics.ReportClientCallError. Within this function, you can log the error to help you debug invalid client calls.
 
 Load and save overrides
 -----------------------

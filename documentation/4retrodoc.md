@@ -45,7 +45,8 @@ FirstName varchar(50) not null,
 LastName varchar(50) not null,
 SupervisorId int references Employee,
 HireDate date,
-IsToxic boolean not null
+IsToxic boolean not null,
+NeatDeskRating int not null
 );
 
 create table EmployeeContact (

@@ -11,7 +11,7 @@ export interface LongRequest extends RetroRequest
 
 export interface MainRequest extends RetroRequest
 {
-    initialze?: InitializeRequest;
+    initialize?: InitializeRequest;
     getDatons?: GetDatonRequest[];
     manageDatons?: ManageDatonRequest[];
     saveDatons?: SaveDatonRequest[];
@@ -102,13 +102,13 @@ export interface ColDefResponse
     isMainColumn: boolean;
     isVisibleInDropdown: boolean;
     prompt?: string;
-    minLength: number;
-    maxLength: number;
+    minLength?: number; 
+    maxLength?: number;
     lengthValidationMessage?: string; 
     regex?: string;
     regexValidationMessage?: string;
-    minNumberValue: number;
-    maxNumberValue: number;
+    minNumberValue?: number;
+    maxNumberValue?: number;
     rangeValidationMessage?: string;
     imageUrlColumName?: string;
 }

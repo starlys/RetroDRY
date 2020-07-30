@@ -176,7 +176,7 @@ namespace RetroDRY
         private async Task HandleHttpMain(MainRequest req, IUser user, MainResponse resp)
         {
             //initialize
-            if (req.Initialze != null)
+            if (req.Initialize != null)
             {
                 resp.DataDictionary = Retrovert.DataDictionaryToWire(DataDictionary, user, LanguageMessages);
             }
@@ -336,7 +336,7 @@ namespace RetroDRY
             if (key.IsNew)
             {
                 var datondef2 = DataDictionary.FindDef(key);
-                Daton newDaton = Utils.Construct(datondef2.Type) as Daton;
+                Daton newDaton = Utils.ConstructDaton(datondef2.Type, datondef2);
                 Utils.FixTopLevelDefaultsInNewPersiston(datondef2, newDaton);
                 newDaton.Key = key;
                 if (datondef2.Initializer != null) await datondef2.Initializer(newDaton);

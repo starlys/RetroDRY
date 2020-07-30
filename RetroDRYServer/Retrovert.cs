@@ -101,7 +101,7 @@ namespace RetroDRY
         {
             var datonKey = DatonKey.Parse(jroot.Value<string>("key"));
             var datondef = dbdef.FindDef(datonKey);
-            var daton = Utils.Construct(datondef.Type) as Daton;
+            var daton = Utils.ConstructDaton(datondef.Type, datondef);
             daton.Key = datonKey;
             daton.Version = jroot.Value<string>("version");
             if (daton is Viewon viewon && jroot.Value<bool>("isComplete") == false)
@@ -308,7 +308,7 @@ namespace RetroDRY
             foreach (var childNode in node)
             {
                 if (!(childNode is JObject childObject)) throw new Exception("Array members must be row objects, not values or arrays");
-                var newRow = Utils.Construct(tableDef.RowType) as Row; 
+                var newRow = Utils.ConstructRow(tableDef.RowType, tableDef);
                 ReadCompatibleJsonRow(childObject, tableDef, newRow);
                 target.Add(newRow);
             }
@@ -358,7 +358,7 @@ namespace RetroDRY
                     foreach (var node2 in jarray)
                     {
                         if (!(node2 is JObject node3)) throw new Exception("Array elements must be JSON objects");
-                        var row = Utils.Construct(childTableDef.RowType) as Row;
+                        var row = Utils.ConstructRow(childTableDef.RowType, childTableDef);
                         list.Add(row);
                         ReadCompatibleJsonRow(node3, childTableDef, row);
                     }

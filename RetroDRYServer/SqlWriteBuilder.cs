@@ -62,10 +62,13 @@ namespace RetroDRY
         /// <summary>
         /// Change a column value (meant to be used by custom overrides, not used in framework)
         /// </summary>
-        public void ChangeValue(string name, object value)
+        /// <returns>true if found</returns>
+        public bool ChangeValue(string name, object value)
         {
             var col = Cols.FirstOrDefault(c => c.Name == name);
-            if (col != null) col.Value = value;
+            if (col == null) return false;
+            col.Value = value;
+            return true;
         }
 
         public int NonKeyCount => Cols.Count;
