@@ -28,7 +28,11 @@ namespace RetroDRY
     /// </summary>
     public class TablePermission
     {
+        /// <summary>
+        /// The name matching the field name in the daton class (which may be different than the SQL table name)
+        /// </summary>
         public string TableName;
+
         public PermissionLevel BaseLevel;
 
         /// <summary>

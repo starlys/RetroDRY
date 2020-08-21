@@ -1,6 +1,6 @@
 {
   "name": "retrodryreact",
-  "version": "1.3.0",
+  "version": "1.3.3",
   "description": "multi-tier tool for data load/save, replication across tiers, and editing",
   "keywords": [
     "framework",

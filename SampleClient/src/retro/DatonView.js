@@ -41,10 +41,10 @@ function buildTopPagingButtons(layer, currentPageNo, allowNext) {
     const buttons = [];
     const lang = layer.stackstate.session.dataDictionary.messageConstants;
     for (let i = 0; i < currentPageNo; ++i) buttons.push(
-        <button onClick={() => layer.stackstate.goToPage(layer, i)}> {i + 1} </button>
+        <button key={i} onClick={() => layer.stackstate.goToPage(layer, i)}> {i + 1} </button>
     );
-    buttons.push(<button disabled={true} className="current"> {currentPageNo + 1} </button>);
-    if (allowNext) buttons.push(<button onClick={() => layer.stackstate.goToPage(layer, currentPageNo + 1)}> &gt;&gt; </button>);
+    buttons.push(<button key={currentPageNo} disabled={true} className="current"> {currentPageNo + 1} </button>);
+    if (allowNext) buttons.push(<button key="next" onClick={() => layer.stackstate.goToPage(layer, currentPageNo + 1)}> &gt;&gt; </button>);
     return <div className="page-select-panel">{lang.NAVPAGE} {buttons}</div>;
 }
 
@@ -265,7 +265,7 @@ export default React.memo(props => {
             topContent = <CardStack session={session} rows={rt.table} datonDef={datonDef} tableDef={datonDef.mainTableDef} edit={isEditing} layer={layer}/>;
         } else {
             topContent = <CardView session={session} row={daton} datonDef={datonDef} tableDef={datonDef.mainTableDef} edit={isEditing} 
-                layer={layer} validationCount={validationCount.current} />;
+                layer={layer} validationCount={validationCount.current} showChildTables={true} />;
         }
     } else { //grid
         if (datonDef.multipleMainRows) {

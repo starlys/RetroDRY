@@ -44,6 +44,7 @@ namespace RetroDRY
         /// <summary>
         /// Set a standard or custom value in this row
         /// </summary>
+        /// <param name="value">may be null even for value types (oddly this actually works)</param>
         public void SetValue(ColDef coldef, object value)
         {
             if (coldef.IsCustom) SetCustom(coldef.Name, value);

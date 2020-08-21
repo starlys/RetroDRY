@@ -1,7 +1,7 @@
 import React, {useState, useReducer} from 'react';
 import DisplayValue from './DisplayValue';
 import CardView from './CardView';
-import {securityUtil} from 'retrodryclient';
+import {securityUtil, seedNewRow} from 'retrodryclient';
 
 //Displays all rows of a daton table in grid format
 //props.session is the session for obtaining layouts
@@ -41,7 +41,10 @@ export default props => {
         setExpandRowIdx(idx);
     };
     const addRow = () => {
-        rows.push({});
+        let row = {};
+        seedNewRow(row, tableDef);
+        securityUtil.markRowCreatedOnClient(row);
+        rows.push(row);
         setExpandRowIdx(rows.length - 1);
     };
     const deleteRow = (ev, idx) => {
@@ -53,10 +56,11 @@ export default props => {
 
     //build data rows
     const children = [];
-    const allowDelete = edit && securityUtil.canDeleteRow(tableDef);
-    const colSpan = colInfos.length + (allowDelete ? 2 : 1);
+    const includeSpaceForDeleteButton = edit;
+    const colSpan = colInfos.length + (includeSpaceForDeleteButton ? 2 : 1);
     for (let idx = 0; idx < rows.length; ++idx) {
         const row = rows[idx];
+        const allowDelete = edit && (securityUtil.isRowCreatedOnClient(row) || securityUtil.canDeleteRow(tableDef));
         if (expandRowIdx === idx) {
             children.push(
                 <tr key={idx} style={{height: '12px'}} onClick={() => clickRow(idx)}>
@@ -66,14 +70,17 @@ export default props => {
             );
             children.push(
                 <tr key={'expand' + idx}>
-                    <td className="card-in-grid" colSpan={colSpan}><CardView session={session} edit={edit} row={row} 
-                    datonDef={datonDef} tableDef={tableDef} layer={layer}/></td>
+                    <td className="card-in-grid" colSpan={colSpan}>
+                        <CardView session={session} edit={edit} row={row} datonDef={datonDef} tableDef={tableDef} layer={layer} showChildTables={true}/>
+                    </td>
                 </tr>
             );
         } else
             children.push(
                 <tr key={idx} onClick={() => clickRow(idx)}>
-                    {allowDelete && <td style={{width: '1em'}} key="del"><button className="btn-delete-row" onClick={(ev) => deleteRow(ev, idx)}>X</button></td>}
+                    {includeSpaceForDeleteButton && <td style={{width: '1em'}} key="del">
+                        {allowDelete && <button className="btn-delete-row" onClick={(ev) => deleteRow(ev, idx)}>X</button>}
+                    </td>}
                     {colInfos.map((ci, idx2) => {
                         const outValue = <DisplayValue session={session} colDef={ci.colDef} row={row} />;
                         let cellContent = outValue;
@@ -106,7 +113,7 @@ export default props => {
                         <table className="grid">
                             <thead>
                                 <tr>
-                                    {edit && <th></th>}
+                                    {includeSpaceForDeleteButton && <th></th>}
                                     {colHeaders}
                                 </tr>
                             </thead>

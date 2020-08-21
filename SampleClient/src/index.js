@@ -20,7 +20,7 @@ so you might code the initialization sequence somewhere else besides in index.js
 
     //start session on server
     const apiUrl = 'https://localhost:5001/api/';
-    const userId = 'buffy'; //change this to 'buffy' for admin permissions, or 'spot', 'public' or 'nate' for reduced permissions
+    const userId = 'public'; //change this to 'buffy' for admin permissions, or 'spot', 'public' or 'nate' for reduced permissions
     const newSessionResponse = await fetch(apiUrl + 'test/newsession/0,' + userId);
     const sessionKey = (await newSessionResponse.json()).sessionKey;
 
@@ -35,6 +35,9 @@ so you might code the initialization sequence somewhere else besides in index.js
     else
         console.log('Could not start retrodry session');
 
+    //register general layouts
+    ses.layouts.registerCard('Employee', 'employee', '', sampleLayouts.employeeCard);
+    
     //register layouts (for POS business context)
     ses.layouts.registerCard('Customer', 'customer', 'POS', sampleLayouts.customerCard);
     ses.layouts.registerCard('CustomerList', 'customer', 'POS', sampleLayouts.customerListCard);

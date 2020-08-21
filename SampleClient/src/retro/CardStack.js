@@ -22,7 +22,7 @@ export default props => {
 
     return rows.map(row =>
         <>
-            <CardView session={session} row={row} nestCard={localLayout} datonDef={datonDef} tableDef={tableDef} edit={edit} layer={layer}/>
+            <CardView session={session} row={row} overrideCard={localLayout} datonDef={datonDef} tableDef={tableDef} edit={edit} layer={layer} showChildTables={true}/>
             <hr/>
         </>
     );

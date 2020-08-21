@@ -227,6 +227,7 @@ public class CustomerList : Viewon {
     [InheritFrom("Customer"), MainTable]
     public class CustomerRow {
 
+        [PrimaryKey(true), ForeignKey(typeof(Customer))] //this links the viewon with its associated persiston
         public int CompanyId;
 
         public string Company;
@@ -459,6 +460,9 @@ public override Task ValidateCriteria(IUser user, ViewonKey key, Action<string> 
 -   Some simple systems have only 2 or 3 hardcoded roles (public user, manager, and admin, for example), while others have a completely customizable role system with potentially hundreds of roles.
 -   For a simple role system, see UserCache class in the sample app.
 -   For a complex role system, you would read permission data from the database and create the roles, storing them in global variables.
+-   Notes and warnings:
+    -   Permissions' data structures are not nested as trees like the daton definitions. They do not include the daton level at all. Instead it is a flat structure based on tables and columns.
+    -   When a daton definition uses a different field name than the SQL table name, the TableName in the TablePermission class must correspond to the field name in your daton class definition.
 
 ### Override language messages
 

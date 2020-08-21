@@ -13,10 +13,16 @@ function widthByType(colDef, forcedWidth) {
         if (w2 && !isNaN(w2)) return w2;
     } 
     if (colDef.wireType === 'string' || colDef.wireType === 'nstring') return Math.max(8, Math.min(50, 0.8 * (colDef.maxLength || 50)))
-    if (colDef.wireType === 'bool' || colDef.wireType === 'nbool') return 3;
     if (colDef.wireType.indexOf('datetime') >= 0) return 20;
-    if (colDef.wireType.indexOf('date') >= 0) return 12;
-    return 6;
+    return 12;
+}
+
+//determine if column is editable in this row (row can be falsy if criteria editing)
+function isEditable(row, colDef) {
+    if (colDef.isComputed || colDef.leftJoin) return false;
+    if (row && securityUtil.isRowCreatedOnClient(row))
+        return securityUtil.canEditColDefInNewRow(colDef);
+    return securityUtil.canEditColDef(colDef);
 }
 
 //Displays one row of a daton table in card format, or one criteria set
@@ -28,9 +34,10 @@ function widthByType(colDef, forcedWidth) {
 //props.tableDef is the TableDefResponse which is the metadata for props.row
 //props.edit is true to display with editors; false for read only (ignored for criteria)
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
+//props.showChildTables is true if you want to show child tables (the default when shown in a stack)
 //props.isNested is true for nested CardViews; should be omitted from user code
 export default props => {
-    const {session, overrideCard, row, criset, datonDef, tableDef, edit, layer, isNested} = props;
+    const {session, overrideCard, row, criset, datonDef, tableDef, edit, layer, isNested, showChildTables} = props;
     const [cardLayout, setCardLayout] = useState(null);
     const [, incrementCardRenderCount] = useReducer(x => x + 1, 0); 
 
@@ -73,7 +80,7 @@ export default props => {
                 let cells = [];
                 for (let idx2 = 0; idx2 < colInfos.length; ++idx2) {
                     const c = colInfos[idx2];
-                    const editableCol = securityUtil.canEditColDef(c.colDef) && !c.colDef.isComputed && !c.colDef.leftJoin;
+                    const editableCol = isEditable(row, c.colDef);
                     if (isCriteria || (edit && editableCol))
                         cells.push(<EditValue key={idx2} tableDef={tableDef} colDef={c.colDef} isCriterion={isCriteria}
                             row={row || criset} width={c.width} session={session} layer={layer} onChanged={incrementCardRenderCount}/>);
@@ -110,7 +117,7 @@ export default props => {
 
     //add GridView elements for each child table
     let childGridElements = null;
-    if (!isNested && !isCriteria && tableDef.children) {
+    if (showChildTables && !isNested && !isCriteria && tableDef.children) {
         childGridElements = [];
         for (let i = 0; i < tableDef.children.length; ++i) {
             const childTableDef = tableDef.children[i];

@@ -77,9 +77,9 @@ export default (props) => {
         <div style={{color:'red'}}>
             {messages.map(s => <div>{s}</div>)}
         </div>
-        <CardView session={session} row={sale} datonDef={datonDef} tableDef={datonDef.mainTableDef} edit={true} nestCard={saleCard} />
+        <CardView session={session} row={sale} datonDef={datonDef} tableDef={datonDef.mainTableDef} edit={true} overrideCard={saleCard} />
         <hr/>
-        <CardView session={session} row={sale.saleItem[0]} datonDef={datonDef} tableDef={datonDef.mainTableDef.children[0]} edit={true} nestCard={saleItemCard} />
+        <CardView session={session} row={sale.saleItem[0]} datonDef={datonDef} tableDef={datonDef.mainTableDef.children[0]} edit={true} overrideCard={saleItemCard} />
         <button onClick={saveClicked}>Save New Sale</button>
     </>;
 };

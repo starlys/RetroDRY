@@ -368,6 +368,8 @@ namespace RetroDRY
                 RetroSql.LoadResult loadResult;
                 using (var db = GetDbConnection(datondef.DatabaseNumber))
                     loadResult = await sql.Load(db, DataDictionary, user, key, ViewonPageSize);
+                if (loadResult == null)
+                    return new RetroSql.LoadResult { Errors = new[] { Constants.ERRCODE_NOTFOUND } };
                 if (loadResult.Daton == null) return loadResult;
                 daton = loadResult.Daton;
                 if (verifiedVersion == null && daton is Persiston)

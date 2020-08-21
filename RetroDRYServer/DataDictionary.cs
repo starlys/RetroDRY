@@ -102,10 +102,14 @@ namespace RetroDRY
             foreach ((var targetTabledef, var inherit) in TableInheritances)
             {
                 (var sourceTabledef, var _) = FindInheritanceSource(inherit.SourceName, false);
-                targetTabledef.ParentKeyColumnName = sourceTabledef.ParentKeyColumnName;
-                targetTabledef.PrimaryKeyColName = sourceTabledef.PrimaryKeyColName;
-                targetTabledef.Prompt = sourceTabledef.Prompt;
-                targetTabledef.SqlTableName = sourceTabledef.SqlTableName;
+                if (targetTabledef.ParentKeyColumnName == null)
+                    targetTabledef.ParentKeyColumnName = sourceTabledef.ParentKeyColumnName;
+                if (targetTabledef.PrimaryKeyColName == null)
+                    targetTabledef.PrimaryKeyColName = sourceTabledef.PrimaryKeyColName;
+                if (targetTabledef.Prompt == null)
+                    targetTabledef.Prompt = sourceTabledef.Prompt;
+                if (targetTabledef.SqlTableName == null)
+                    targetTabledef.SqlTableName = sourceTabledef.SqlTableName;
                 foreach (var targetColdef in targetTabledef.Cols)
                 {
                     var sourceColdef = sourceTabledef.FindCol(targetColdef.Name);

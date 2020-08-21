@@ -407,3 +407,9 @@ export function splitOnTilde(s: string) {
     return [lo, hi];
 }
 
+//seed values in a newly created row; only sets non-nullable bools to false
+export function seedNewRow(row: any, tableDef: TableDefResponse) {
+    for (let colDef of tableDef.cols) {
+        if (colDef.wireType === 'bool') row[colDef.name] = false;
+    }
+}

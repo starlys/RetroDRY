@@ -11,6 +11,15 @@ const resetCustomerNotesButton = (row, edit, layer) => {
 };
 
 export const sampleLayouts = {
+    employeeCard: {
+        content: ['employeeId', 'firstName', 'lastName', 'supervisorId', 'supervisorLastName', 'hireDate', 'neatDeskRating',
+            {
+                label: 'Red flags',
+                border: true,
+                content: ['isToxic'] 
+            }
+        ]
+    },
     customerListCard: {
         label: 'Customer',
         border: true,

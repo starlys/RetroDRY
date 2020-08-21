@@ -248,6 +248,9 @@ namespace RetroDRY
     {
         public CondensedDatonResponse CondensedDaton { get; set; }
 
+        /// <summary>
+        /// Only set if daton is not returned in CondensedDaton so the client can correlate the errors; null if there are no errors and CondensedDaton is set
+        /// </summary>
         public string Key { get; set; }
         public string[] Errors { get; set; }
     }

@@ -33,23 +33,6 @@ namespace RetroDRY
             }
         }
 
-        //todo
-        /// <summary>
-        /// JSON serializing conversion for removing null and blank values
-        /// </summary>
-        //public class DataDictionaryResponseConverter : JsonConverter<DataDictionaryResponse>
-        //{
-        //    public override DataDictionaryResponse ReadJson(JsonReader reader, Type objectType, DataDictionaryResponse existingValue, bool hasExistingValue, JsonSerializer serializer)
-        //    {
-        //        throw new NotImplementedException();
-        //    }
-
-        //    public override void WriteJson(JsonWriter writer, DataDictionaryResponse value, JsonSerializer serializer)
-        //    {
-        //        throw new NotImplementedException();
-        //    }
-        //}
-
         /// <summary>
         /// Convert daton to JSON wire format
         /// </summary>

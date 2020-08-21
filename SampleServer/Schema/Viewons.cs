@@ -80,11 +80,8 @@ namespace SampleServer.Schema
             [Prompt("Company starts with")]
             public string Company;
 
-            [InheritFrom("Customer.SalesRepId")]
+            [InheritFrom("Customer.SalesRepId"), ForeignKey(typeof(Customer))]
             public int SalesRepId;
-
-            [InheritFrom("Customer.SalesRepLastName")]
-            public string SalesRepLastName;
         }
 
         public override Task ValidateCriteria(IUser user, ViewonKey key, Action<string> fail)
