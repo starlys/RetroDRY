@@ -11,6 +11,7 @@ import Mutex from "./mutex";
 import CacheEntry from "./cacheEntry";
 import GetInfo from "./getInfo";
 import LayoutCollection from "./layoutCollection";
+import { securityUtil } from "./securityUtil";
 
 export default class Session {
     //delay in millis between end of long polling response and sending next long poll request
@@ -151,6 +152,8 @@ export default class Session {
                         const idxOfKey = workItems.findIndex(w => w.datonKey === daton.key);
                         if (idxOfKey < 0) throw new Error('Server returned daton key that was not requested');
                         workItems[idxOfKey].daton = daton;
+                        if (workItems[idxOfKey].parsedKey.isNew())
+                            securityUtil.markRowCreatedOnClient(daton);
 
                         if (this.onReceiveDaton) this.onReceiveDaton(daton);
                     }

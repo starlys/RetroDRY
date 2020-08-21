@@ -2,10 +2,9 @@ import React, {useState} from 'react';
 import globals from './globals';
 import DatonStack from './retro/DatonStack';
 import DatonStackState from './retro/DatonStackState';
+import PointOfSaleEntry from './PointOfSaleEntry';
 
 import './App.css';
-import PointOfSaleEntry from './PointOfSaleEntry';
-import GridView from './retro/GridView';
 
 export default function App() {
   const [stackstate, setStackState] = useState(null);
@@ -52,6 +51,7 @@ export default function App() {
           <button onClick={() => addToStack('CustomerList', true, 'POS')}>Customers (POS context)</button>
           <button onClick={() => addToStack('ItemList', true)}>Items</button>
           <button onClick={() => addToStack('SaleList', true)}>Sales</button>
+          <button onClick={() => addToStack('SaleList|SaleDate=20200801~20200901', false)}>August Sales</button>
           <h3>Create new..</h3>
           <button onClick={() => addToStack('Employee|=-1')}>Employee</button>
           <button onClick={() => addToStack('Customer|=-1')}>Customer</button>

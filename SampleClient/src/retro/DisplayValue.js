@@ -30,12 +30,12 @@ export default (props) => {
     if (!displayAs && mightUseDDState) {
         const ddstate = new DropdownState(session, row, colDef);
         ddstate.getDisplayValue(value).then((d) => {
-            if (d !== null) setDisplayAs(d);
+            if (d !== null) setDisplayAs(d); 
         });
     }
 
     if (baseType === 'bool')
-        return <input className="card-value" type="checkbox" readOnly checked={value}/>;
+        return <input className="card-value" type="checkbox" readOnly disabled={true} checked={value}/>;
     else if (baseType === 'string') {
         let html = textToHtml(value);
         return <span className="card-value" style={wrapStyle} dangerouslySetInnerHTML={{__html: html}}></span>;

@@ -86,9 +86,10 @@ export default (props) => {
     const selectChanged = (ev) => { 
         if (baseType === 'string') 
             stringChanged(ev);
-        else if (baseType === 'bool') { //critiron values -1,0,1
+        else if (baseType === 'bool') { //criterion values -1,0,1
             if (ev.target.value === '-1') delete row[colDef.name];
             else row[colDef.name] = ev.target.value;
+            props.onChanged();
         } else if (isCriterion) //date or number ranges
             rangeChanged(ev.target.value, ev.target.value);
         else 
@@ -175,8 +176,8 @@ export default (props) => {
                 <option key="0" value="0">No</option>
             </select>;
         else {
-            inputCtrl = <input type="checkbox" checked={row[colDef.name]} onChange={boolChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>;
-            wrapStyle.width = '40px';
+            let isChecked = row[colDef.name] === true; //allow undefined value in row
+            inputCtrl = <input type="checkbox" checked={isChecked} onChange={boolChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>;
         }
     }
     else if (isNumericBaseType(baseType)) {

@@ -27,14 +27,14 @@ namespace SampleServer
         };
         private static readonly RetroRole PublicRole = new RetroRole
         {
-            BaseLevel = PermissionLevel.None,
+            BaseLevel = PermissionLevel.None, 
             TableOverrides = new List<TablePermission>
             {
                 new TablePermission { TableName = "Item", BaseLevel = PermissionLevel.View } ,
                 new TablePermission { TableName = "ItemVariant", BaseLevel = PermissionLevel.View } ,
                 new TablePermission { TableName = "PhoneType", BaseLevel = PermissionLevel.View } ,
                 new TablePermission { TableName = "SaleStatus", BaseLevel = PermissionLevel.View } ,
-                new TablePermission { TableName = "Sale", BaseLevel = PermissionLevel.Create } ,
+                new TablePermission { TableName = "Sale", BaseLevel = PermissionLevel.Create } , 
                 new TablePermission { TableName = "SaleItem", BaseLevel = PermissionLevel.Create }
             }
         };

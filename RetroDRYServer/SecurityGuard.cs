@@ -57,9 +57,6 @@ namespace RetroDRY
                     }
                 }
 
-                //force modify for columns that inhert create permission from table level
-                if (colname !=  null && lev == PermissionLevel.Create) lev = PermissionLevel.Create | PermissionLevel.Modify;
-
                 max |= lev;
             }
             return max;
@@ -89,8 +86,8 @@ namespace RetroDRY
             else if (recur is RowRecurPoint rr)
             {
                 //clear out the invisible cols in the single main row 
-                var invisibleFields = GetInvisibleFields(daton, rr);
-                ClearInvisibleFields(invisibleFields, rr.Row);
+                var invisibleCols = GetInvisibleCols(daton, rr);
+                ClearInvisibleCols(invisibleCols, rr.Row);
 
                 HidePrivateParts(daton, rr);
             }
@@ -105,10 +102,10 @@ namespace RetroDRY
         private void HidePrivateParts(Daton daton, TableRecurPoint rt) 
         {
             //clear out the invisible cols in each row and recur
-            var invisibleFields = GetInvisibleFields(daton, rt);
+            var invisibleCols = GetInvisibleCols(daton, rt);
             foreach (var rr in rt.GetRows())
             {
-                ClearInvisibleFields(invisibleFields, rr.Row);
+                ClearInvisibleCols(invisibleCols, rr.Row);
                 HidePrivateParts(daton, rr);
             }
         }
@@ -152,24 +149,24 @@ namespace RetroDRY
         /// <summary>
         /// determine which cols are not visible
         /// </summary>
-        private List<FieldInfo> GetInvisibleFields(Daton daton, RecurPoint r)
+        private List<ColDef> GetInvisibleCols(Daton daton, RecurPoint r)
         {
-            var invisibleFields = new List<FieldInfo>();
+            var invisibles = new List<ColDef>();
             foreach (var coldef in r.TableDef.Cols)
             {
                 var colLev = FinalLevel(daton, r.TableDef.Name, coldef.Name);
-                if (!CanView(colLev)) invisibleFields.Add(r.TableDef.RowType.GetField(coldef.Name));
+                if (!CanView(colLev)) invisibles.Add(coldef);
             }
-            return invisibleFields;
+            return invisibles;
         }
 
         /// <summary>
         /// Set fields in row to null (or default for the type) for each field in invisibleFields
         /// </summary>
-        private void ClearInvisibleFields(List<FieldInfo> invisibleFields, Row row)
+        private void ClearInvisibleCols(List<ColDef> invisibleCols, Row row)
         {
-            foreach (var invisibleField in invisibleFields)
-                invisibleField.SetValue(row, null); //oddly this works on value types
+            foreach (var invisibleCol in invisibleCols)
+                row.SetValue(invisibleCol, null);
         }
 
         /// <summary>
@@ -182,7 +179,10 @@ namespace RetroDRY
             {
                 if (coldef.Name == tabledef.PrimaryKeyColName) continue;
                 var colLev = FinalLevel(pristineDaton, tabledef.Name, coldef.Name);
-                if (!CanUpdate(colLev)) unwritableCols.Add(coldef.Name);
+                bool canUpdateExisting = CanUpdate(colLev);
+                bool canUpdateNew = pristineDaton == null && CanCreate(colLev); //new row doesn't require edit permission, only create
+                bool canUpdate = canUpdateExisting || canUpdateNew;
+                if (!canUpdate) unwritableCols.Add(coldef.Name);
             }
             return unwritableCols;
         }

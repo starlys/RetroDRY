@@ -100,7 +100,6 @@ select {
   display:block;
   font-weight: bold;
   color:silver;
-  min-width: 300px;
 }
 .daton .card-value {
   display: inline-block;
@@ -158,6 +157,9 @@ select {
 }
 .daton .inputwrap.has-btn input, .daton .inputwrap.has-btn textarea, .daton .inputwrap.has-btn select {
   width: calc(100% - 32px);
+}
+.daton .inputwrap input[type=checkbox] {
+  width: 20px;
 }
 .daton .inputwrap textarea {
   height: 3.5em;

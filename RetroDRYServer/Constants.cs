@@ -17,6 +17,7 @@ namespace RetroDRY
 
         //error codes returned to http clients
         public const string 
+            ERRCODE_NOTFOUND = "NOTFOUND", //daton not found
             ERRCODE_INTERNAL = "INTERNAL", //internal error, unplanned for
             ERRCODE_BADUSER = "BADUSER", //unknown user
             ERRCODE_LOCK = "LOCKED", //cannot complete request because daton is locked by other user

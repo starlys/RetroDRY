@@ -16,8 +16,15 @@ const securityUtil = {
     canDeletePersiston: (datonDef: DatonDefResponse): boolean => (datonDef.mainTableDef.permissionLevel & securityUtil.level_delete) !== 0,
     canViewColDef: (colDef: ColDefResponse): boolean  => (colDef.permissionLevel & securityUtil.level_view) !== 0,
     canEditColDef: (colDef: ColDefResponse): boolean  => (colDef.permissionLevel & securityUtil.level_modify) !== 0,
+    canEditColDefInNewRow: (colDef: ColDefResponse): boolean  => (colDef.permissionLevel & securityUtil.level_create) !== 0,
     canCreateRow: (tableDef: TableDefResponse): boolean  => (tableDef.permissionLevel & securityUtil.level_create) !== 0,
     canDeleteRow: (tableDef: TableDefResponse): boolean  => (tableDef.permissionLevel & securityUtil.level_delete) !== 0,
+
+    //mark row as created client side (this affects permissions since any created row is editable)
+    markRowCreatedOnClient: (row: any) => row['$new'] = true,
+
+    //get whether row created client side
+    isRowCreatedOnClient: (row: any): boolean => row['$new'] === true
 };
 
 export {securityUtil};

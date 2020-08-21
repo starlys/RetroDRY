@@ -78,6 +78,7 @@ namespace SampleServer.Schema
         [Prompt("Hired on")]
         public DateTime HireDate;
 
+        [Prompt("Employee is toxic to work environment")]
         public bool IsToxic;
 
         [Range(0, 10), Prompt("Neatness of desk (0-10)")]
