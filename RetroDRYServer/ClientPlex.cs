@@ -105,7 +105,7 @@ namespace RetroDRY
         /// Clean sessions that have not been accessed in 2 minutes
         /// </summary>
         /// <param name="callback">if provided, this is called with each session key removed</param>
-        public void Clean(Action<string> callback, int secondsOld = 120)
+        public async Task Clean(Func<string, Task> callback, int secondsOld = 120)
         {
             DateTime cutoff = DateTime.UtcNow.AddSeconds(0 - secondsOld);
             foreach (var client in Sessions.Values)
@@ -113,7 +113,7 @@ namespace RetroDRY
                 if (client.LastAccessed < cutoff)
                 {
                     Sessions.TryRemove(client.SessionKey, out _);
-                    callback?.Invoke(client.SessionKey);
+                    await callback?.Invoke(client.SessionKey);
                 }
             }
         }

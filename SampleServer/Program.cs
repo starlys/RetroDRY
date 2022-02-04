@@ -1,11 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace SampleServer
 {
@@ -13,8 +8,15 @@ namespace SampleServer
     {
         public static void Main(string[] args)
         {
-            Startup.InitializeRetroDRY();
-            CreateHostBuilder(args).Build().Run();
+            try
+            {
+                Startup.InitializeRetroDRY();
+                CreateHostBuilder(args).Build().Run();
+            }
+            finally
+            {
+                Globals.Retroverse?.Dispose();
+            }
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>

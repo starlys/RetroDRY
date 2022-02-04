@@ -439,7 +439,7 @@ public override Task Validate(IUser user, Action<string> fail)
 }
 ````
 
-    -   Below is an example to set up a viewon criteria validator. This is run before viewon loads on a temporary instance of your viewon class.
+    -   Below is an example to set up a viewon criteria validator. This is run using a temporary instance of your viewon class, before the viewon loads.
 
 ````c#
 public override Task ValidateCriteria(IUser user, ViewonKey key, Action<string> fail)

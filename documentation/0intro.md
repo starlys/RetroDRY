@@ -12,7 +12,9 @@ What it is
     -   Replication across tiers
     -   Change subscriptions, locks, and dirty-detection across tiers
     -   User editing
+
 -   We define "database applications" to be almost anything, but the core audience for the framework is business web applications that deal with large numbers of record types (clients, vendors, inventory, and so on). RetroDRY is used in the microservice tiers and the client tier.
+-   Its most relevant use case is backoffice functions for ad-hoc query and editing records in a way that's close to the database structure, but can be used as a data handling layer with other means for building UI forms.
 -   The framework is defined by API semantics, meaning the code on either side can change, but the the URL endpoints and format of data going across the wire is what defines RetroDRY. However the only languages supported initially are C\# back end and javascript client side, with visual components in React.
 -   It can also handle these scenarios:
 
@@ -39,7 +41,8 @@ Why did we make this?
 
     -   "Retro" indicates going back to the old systems that supported centralized data dictionary and automated editing (like FoxPro and Visual Basic)
     -   "DRY" means "Don't repeat yourself".
--   Database editing apps can be really repetitive to write these days, so to take DRY to the next level, here's what drops out of your code base:
+
+-   Database editing apps can be really repetitive to write these days, so to take DRY to the next level, here's what's NOT needed in your code base:
 
     -   Defining API REST endpoints for GET, PUT, POST of each data type.
     -   Coding the load and save behavior of each type separately.
@@ -62,9 +65,9 @@ RetroDRY is opinionated about these things in particular:
 
 -   Databases should mostly be relational (rather than schemaless) because you can plan for and optimize indexes and stored procedures; you can force integrity; you can control access at a detailed level within your organization; and you can connect a reporting app to the database more cleanly.
 -   Generic handling of data sets is important, because we should not have to write the same code over and over to handle each type, and because this facilitates custom columns not known at design time.
--   Persistence should be in well-defined units that are often larger than one table row. (The term "entity"' is avoided here beause it is often assumed to mean a single row.) As an example, a customer row with its child contact rows should be loaded, cached, edited and communicated as a unit throughout all layers of an application. Those units (persistons) should be the way we think about the application on the business side, for users, and for developers.
+-   Persistence should be in well-defined units that are often larger than one table row. (The term "entity" is avoided here beause it is often assumed to mean a single row.) As an example, a customer row with its child contact rows should be loaded, cached, edited and communicated as a unit throughout all layers of an application. Those units (persistons) should be the way we think about the application on the business side, for users, and for developers.
 -   We side with "data first" approaches (instead of "code first") because databases last longer than code, and they should be documented separately. Your code should never put things in a database that are not human readable unless they are clearly documented in a way that can be produced and parsed in any language. So for example if you have a mechanism to serialize some C\# class and dump that into a database field, then you've created a dependency from the datbase into your code implementation, which is backwards.
--   User edits should not collide, and locking should be managed and pessimistic, at least when it comes to the main user-facing business data like customers and sales. So, if one user is editing something (a customer, say) then another user should not be able to even start editing that same customer. This avoids a lot of problems, most notably the consistency you get when you can validate customer objects as a whole.
+-   User edits should not collide, and locking should be managed and pessimistic, at least when it comes to the main user-facing business data like customers and sales. So, if one user is editing something (a customer, say) then another user should not be able to even start editing that same customer. This avoids a lot of problems, and gives you consistency by validating customer objects as a whole.
 
 Should I use it?
 ----------------
@@ -88,6 +91,7 @@ Definitions
     -   *Whole table* - For example a lookup table is edited as a whole, so it is one persiston.
     -   *Single main row* - For example a sale always has exactly one row in the sale table; it may also have zero or more rows in other child tables (such as line items). This kind of persiston distinguishes between new and existing flavors, and uses the main row's key as its persiston key.
     -   *Multiple children* - For example a persiston defined as "all supporting documents for a single customer" uses the customer key as its key, but it might have no rows. Even when it has no rows, it is still defined to exist if the customer exists. This typs is less common.
+
 -   Foreign keys can point to either the main row of a "single main row" persiston, or to a row within a "whole table" persiston. These two ways are the same in the data model, and are only distinguished in the data dictionary.
 -   A "viewon" is the unit of non-persistable views, meaning the result of an arbitrary SQL load that might join across various persistons and include parts of many persistons. The structure is normally equivalent to "multiple children" but they can be single-main-row as well.
 -   A "daton" is any unit of data, and is the parent class comprising persistons and viewons. Datons define tables and columns, have a data dictionary, and can be loaded from a database.
@@ -119,6 +123,7 @@ Sample data model
         -   Customer
         -   Employee, wich contains the contact records for the employee
         -   Sale, which contains the line items and notes
+
     -   Each persiston is noted as a shaded box. Consider that when a sale is loaded, all its line items are loaded too - this is reasonable because each sale will have a reasonable number of items. On the other hand, loading sales when you load the customer is unreasonable, so they are designed as separate persistons. It might be reasonable to consider Item as a "lookup table" meaning it is small and loaded as a unit (a whole-table persiston) but perhaps this hypothetical company has thousands of frequently changing items, so it's more reasonable to load them each as separate persistons.
 
 ![sample persistons](sample_schema_persistons.png)
@@ -127,7 +132,7 @@ Sample data model
 The "big idea"
 --------------
 
-The big idea from the data model above is that **each value in the database is a member of exactly one persiston.** This rule is the basis for ensuring data integrity at the semantic level. To understand why, consider this scenario that leads to a data integrity violation: One user is in the process of updating a customer's address since they moved to a new state, and simultaneously another user is updating that customer's tax status, which is stored in a different table. If both edits are accepted, the result would be irrational.
+The big idea from the data model above is that **each value in the database is a member of exactly one persiston.** This rule is the basis for ensuring data integrity at the semantic level. To understand why, consider this scenario that leads to a data integrity violation: One user is in the process of updating a customer's address since they moved to a new state, and simultaneously another user is updating that customer's tax status, which is stored in a different table. If both edits are accepted, the result could be irrational.
 
 In the RetroDRY philosophy, the customer is a persiston containing multiple rows and the persiston is versioned and locked, and is validated as a whole. So the user who first gets the lock can save changes (say, updated the address). The other user has a lock conflict (even though they are editing a different table) and their cached version is out of date. They have to get the new saved version then apply the tax change and validate. Validation will fail at that point, preventing the problem.
 
@@ -155,6 +160,7 @@ High level walkthough
     -   Either accept the default loading/saving behavior, which the framework can determine from your data dictionary, or override the behavior if needed. This completes the ability to load and save individual customers.
     -   Define the data dictionary for loading *lists* of customers, also called the viewon. Viewons usually inherit many of the same columns as defined in the related persiston, but usually have fewer columns. This step includes defining the critieria that you want to allow searching by (such as name, region, or last sale date). Again, accept default load/save behavior or override it.
     -   Declare security roles and users (either hardcoded or loaded from a database) which allow a particular user to view and/or edit customers.
+
 -   Client side steps:
 
     -   Define client-side layouts for display and editing of the customer persiston and customer viewon. The layouts are defined by ordering and grouping entry columns, with size-responsive indications (for example 2 groups could be shown side by side on large screens).

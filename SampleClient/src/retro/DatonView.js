@@ -93,7 +93,7 @@ export default React.memo(props => {
     const editingTimedOut = () => {
         cancelClicked(); 
     };
-    const cancelClicked = () => {
+    const cancelClicked = async () => {
         setIsEditing(false);
         cancelIdleTimer();
         setErrorItems([]);
@@ -102,14 +102,18 @@ export default React.memo(props => {
         if (isNew)
             layer.stackstate.removeByKey(daton.key, false);
         else {
-            session.changeSubscribeState([daton], 1).then(() => {
-                session.get(daton.key, {forceCheckVersion:true}).then(d => {
-                    setDaton(d);
-                });    
-            })
+            try {
+                await session.changeSubscribeState([daton], 1);
+                const d = await session.get(daton.key, {forceCheckVersion:true});
+                setDaton(d);
+            }
+            catch {
+                const lang = session.dataDictionary.messageConstants;
+                setErrorItems([lang.ERRNET]);
+            }
         }
     };
-    const editClicked = () => {
+    const editClicked = async () => {
         //note this can be called before a real render happened
         const isNew = parseDatonKey(daton.key).isNew();
         const lang = session.dataDictionary.messageConstants;
@@ -121,26 +125,30 @@ export default React.memo(props => {
         
         //get latest version if existing persiston
         setIsWorking(true);
-        session.get(daton.key, {isForEdit:true, forceCheckVersion:true}).then(d => {
+        try {
+            const d = await session.get(daton.key, {isForEdit:true, forceCheckVersion:true});
             setDaton(d);
-            session.changeSubscribeState([d], 2).then(errors => {
-                setIsWorking(false);
-                const myerrors = errors[d.key];
-                if (myerrors) {
-                    setErrorItems([lang.ERRLOCK]); 
-                    setIsEditing(false);
-                    if (layer) layer.edit = false;
-                } else {
-                    setIsEditing(true);
-                    if (!idleTimer.current) idleTimer.current = new IdleTimer();
-                    idleTimer.current.start(5 * 60, 6 * 60, editingNearingTimeout, editingNotNearingTimeout, editingTimedOut);
-                    if (layer) layer.edit = true;
-                    setErrorItems([]);
-                }
-            })
-        });
+            const errors = await session.changeSubscribeState([d], 2);
+            setIsWorking(false);
+            const myerrors = errors[d.key];
+            if (myerrors) {
+                setErrorItems([lang.ERRLOCK]); 
+                setIsEditing(false);
+                if (layer) layer.edit = false;
+            } else {
+                setIsEditing(true);
+                if (!idleTimer.current) idleTimer.current = new IdleTimer();
+                idleTimer.current.start(5 * 60, 6 * 60, editingNearingTimeout, editingNotNearingTimeout, editingTimedOut);
+                if (layer) layer.edit = true;
+                setErrorItems([]);
+            }
+        }
+        catch {
+            const lang = session.dataDictionary.messageConstants;
+            setErrorItems([lang.ERRNET]);
+        }
     };
-    const saveClicked = () => {
+    const saveClicked = async () => {
         const isNew = parsedDatonKey.isNew();
         const lang = session.dataDictionary.messageConstants;
         validationCount.current = validationCount.current + 1;
@@ -154,7 +162,8 @@ export default React.memo(props => {
 
         //server attempt save and get errors
         setIsWorking(true);
-        session.save([daton]).then(saveInfo => {
+        try {
+            const saveInfo = await session.save([daton]);
             setIsWorking(false);
             if (saveInfo.success) {
                 setIsEditing(false);
@@ -164,38 +173,40 @@ export default React.memo(props => {
                 if (isNew) {
                     const newKey = saveInfo.details[0].newKey;
                     if (newKey) {
-                        layer.stackstate.replaceKey(daton.key, newKey).then(() => {
-                            //note that here, this DatonView instance is no longer mounted
-                            if (layer.stackstate.onLayerSaved) layer.stackstate.onLayerSaved(newKey);
-                        });
+                        await layer.stackstate.replaceKey(daton.key, newKey);
+                        //note that here, this DatonView instance is no longer mounted
+                        if (layer.stackstate.onLayerSaved) layer.stackstate.onLayerSaved(newKey);
                     } else
                         layer.stackstate.removeByKey(daton.key, false);
                 } else {
-                    session.changeSubscribeState([daton], 1).then(errors => {
-                        const myerrors = errors[daton.key];
-                        if (myerrors) {
-                            setErrorItems([lang.ERRUNLOCK]);
-                        } else {
-                            setErrorItems([]);
-                        }
-                        if (layer.stackstate.onLayerSaved) layer.stackstate.onLayerSaved(daton.key);
-                    });
+                    const errors = await session.changeSubscribeState([daton], 1);
+                    const myerrors = errors[daton.key];
+                    if (myerrors) {
+                        setErrorItems([lang.ERRUNLOCK]);
+                    } else {
+                        setErrorItems([]);
+                    }
+                    if (layer.stackstate.onLayerSaved) layer.stackstate.onLayerSaved(daton.key);
                 }
             } else {
                 let errors = [];
                 if (saveInfo && saveInfo.details && saveInfo.details[0]) errors = saveInfo.details[0].errors;
-                else errors.push(lang.ERRINTERNAL); 
+                else errors.push(lang.ERRNET); 
                 setErrorItems(errors);
             }
-        });
+        }
+        catch {
+            setErrorItems([lang.ERRNET]);
+        }
     };
     const removeClicked = () => {
         if (isEditing || !layer) return;
         layer.stackstate.removeByKey(daton.key, true);
     };
-    const deleteClicked = () => {
+    const deleteClicked = async () => {
         setIsWorking(true);
-        session.deletePersiston(daton).then(saveInfo => {
+        try {
+            const saveInfo = await session.deletePersiston(daton);
             setIsWorking(false);
             if (saveInfo.success) {
                 cancelIdleTimer();
@@ -204,9 +215,13 @@ export default React.memo(props => {
                 const result = saveInfo.details[0];
                 setErrorItems(result.errors || []);
             }
-        });
+        }
+        catch {
+            const lang = session.dataDictionary.messageConstants;
+            setErrorItems([lang.ERRNET]);
+        }
     };
-    const doSearch = () => {
+    const doSearch = async () => {
         if (!layer) return;
 
         //local errors
@@ -217,8 +232,9 @@ export default React.memo(props => {
         }
 
         //load new viewon
-        const newKey = buildViewonKey(daton.key, datonDef.criteriaDef, criset.current);
-        session.getMulti([newKey], {forceCheckVersion: true}).then(loadResults => {
+        try {
+            const newKey = buildViewonKey(daton.key, datonDef.criteriaDef, criset.current);
+            const loadResults = await session.getMulti([newKey], {forceCheckVersion: true});
             const loadResult = loadResults[0];
             if (loadResult.daton) {
                 //tell stack to replace this instance with a new daton view
@@ -228,7 +244,10 @@ export default React.memo(props => {
                 //show errors if server validation failed
                 setErrorItems(loadResult.errors);
             }
-        });
+        } catch (e) {
+            const lang = session.dataDictionary.messageConstants;
+            setErrorItems([lang.ERRNET]);
+        }
     };
 
     //first render: set some other state variables and return null

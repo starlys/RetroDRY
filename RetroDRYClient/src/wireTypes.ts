@@ -3,6 +3,7 @@
 export interface RetroRequest
 {
     sessionKey: string;
+    environment: string;
 }
 
 export interface LongRequest extends RetroRequest

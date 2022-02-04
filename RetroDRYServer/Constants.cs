@@ -77,6 +77,7 @@ namespace RetroDRY
             ("ERRLOCK", "Cannot lock: another user is editing this"),
             ("ERRUNLOCK", "Cannot unlock"),
             ("ERRINTERNAL", "Internal server error"),
+            ("ERRNET", "Network error - cannot reach server"),
 
             //buttons
             ("BTNRDELETE", "Really delete"),

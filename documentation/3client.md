@@ -178,7 +178,7 @@ Using the daton stack
 
 -   Integrating the stack into an app
     -   This can work with a page oriented site, although transferring the data dictionary and initiating signalR is an overhead that would take place on every page load. Therefore it should be designed when possible on a single-page app.
-    -   For "lite" uses the stack should be able to be embedded on a page in virutally any host, even as a wordpress page. An example of embedding this is to place a survey or data lookup functionality on a blog post. Provide documented example of embedding.
+    -   For "lite" uses the stack should be able to be embedded on a page in virutally any host, even as a wordpress page. An example of embedding this is to place a survey or data lookup functionality on a blog post. 
     -   Best results will be possible if the stack is a top level component that stays mounted on the page regardless of tabbed navigation or any other page features. If you intend to show the stack inside tab pages or dialogs then it will unmount when those things are done, and it will be more complex to track abandoned editing. But you can hide it with CSS and re-show to make it play nicely with other features.
     -   Navigation away from the page should be designed to prevent accidental abandonment of a locked editing session. That means any links should open a new tab, or be connected to javascript to check if navigation is permitted before proceeding.
     -   The width of the stack's container should be limited to some reasonable maximum, but its height should be unlimited.

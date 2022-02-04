@@ -8,6 +8,11 @@ namespace RetroDRY
     public class RetroRequest
     {
         public string SessionKey { get; set; }
+
+        /// <summary>
+        /// Arbitrary string provided by client and can be used to route among multiple retroverses
+        /// </summary>
+        public string Environment { get; set; }
     }
 
     public class LongRequest : RetroRequest

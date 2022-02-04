@@ -5,7 +5,7 @@ using RetroDRY;
 namespace SampleServer
 {
     /// <summary>
-    /// Hardcoded cache of users for a sample app. A real app would store users and roles in a databse and cache information on recent
+    /// Hardcoded cache of users for a sample app. A real app would store users and roles in a databsae and cache information on recent
     /// requests
     /// </summary>
     public static class UserCache

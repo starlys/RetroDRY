@@ -8,8 +8,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-#pragma warning disable IDE0019
-
 namespace RetroDRY
 {
     /// <summary>
@@ -440,8 +438,7 @@ namespace RetroDRY
             foreach ((string code, string englishMessage) in Constants.EnglishMessages)
             {
                 messages[code] = englishMessage;
-                string overrideMessage = null;
-                if (dictByLanguage?.TryGetValue(code, out overrideMessage) == true) messages[code] = overrideMessage;
+                if (dictByLanguage?.TryGetValue(code, out string overrideMessage) == true) messages[code] = overrideMessage;
             }
 
             return new DataDictionaryResponse
