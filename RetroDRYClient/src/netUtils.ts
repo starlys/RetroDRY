@@ -1,9 +1,9 @@
-import { MainRequest, MainResponse } from "./wireTypes";
+import { MainRequest, MainResponse, RetroResponse } from "./wireTypes";
 
 export default class NetUtils {
     //typed http post with json-decoded response
     //example consuming code: const response = await httpPost<MyReturnType>("https://...", body);
-    static async httpPost<T>(request: RequestInfo, body: any): Promise<T> { 
+    static async httpPost<T extends RetroResponse>(request: RequestInfo, body: any): Promise<T> { 
         const args: RequestInit = { 
             method: "post", 
             body: JSON.stringify(body),
@@ -12,11 +12,17 @@ export default class NetUtils {
                 'Content-Type': 'application/json'
             }
         };
-        const response: HttpResponse<T> = await fetch(request, args);
-        if (!response.ok) throw new Error(response.statusText);
-        response.parsedBody = await response.json();
-        if (!response.parsedBody) throw new Error('JSON parse error');
-        return response.parsedBody;
+        try {
+            const response: HttpResponse<T> = await fetch(request, args);
+            if (!response.ok) throw new Error(response.statusText);
+            response.parsedBody = await response.json();
+            if (!response.parsedBody) throw new Error('JSON parse error');
+            return response.parsedBody;
+        } catch {
+            //network failure
+            const errorRet: MainResponse = {errorCode: 'NET'};
+            return errorRet as any;
+        }
     }
 
     //shorthand for calling httpPost for MainRequest/MainResponse

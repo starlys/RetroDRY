@@ -16,7 +16,7 @@ describe('mutex', () => {
         const startedAt = new Date().getTime();
         await wait(4);
         const duration = new Date().getTime() - startedAt;
-        ok(duration >= 4 && duration < 8); 
+        ok(duration >= 4 && duration < 12); 
     });
 
     it('should allow multiple executions of critical code', async () => {
@@ -26,7 +26,7 @@ describe('mutex', () => {
         }
         await Promise.all([criticalWork(), criticalWork(), criticalWork(), criticalWork(), criticalWork()]);
         const duration = new Date().getTime() - startedAt;
-        ok(duration < 20); 
+        ok(duration < 40); 
     });
 
     it('should prevent multiple executions of critical code', async () => {

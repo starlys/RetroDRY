@@ -115,7 +115,7 @@ Server side setup
 
     -   Open solution RetroDRY.sln
     -   Set startup project to SampleServer.
-    -   Create file SampleServer/appsettings/_dev.json by copying the content of appsettings/_sample.json and modifying it to suit your local database server.
+    -   Create file SampleServer/appsettings_dev.json by copying the content of appsettings_sample.json and modifying it to suit your local database server.
     -   Run server. This opens a window noting that it is listening on port 5001 (https)
 
 Client RetroDRY library setup
@@ -127,7 +127,7 @@ Client RetroDRY library setup
     -   In terminal, go to RetroDRYClient folder.
     -   Install typescript with npm install -g typescript
     -   Install dependencies with this command: npm install
-    -   Possibly usefule diagnostic commands
+    -   Possibly useful diagnostic commands
 
         -   ensuring Typescript is installed: npm run tsc --version
 
@@ -181,8 +181,6 @@ Running integration tests - Don't skip this step!
     -   If you need to make changes and don't want to stop and rebuild each time, then you can use the watcher mode from webpack that rebuilds automatically. To do this, open two terminal windows and run these commands, one in each window:
 
         -   npm run builddev
-
-            -   (This creates the retrodryclient.js bundle and also watches for changes and rebuilds the bundle every time you save a source file.)
         -   npm run itest
 
     -   If you make a server side change, you only need to refresh the browser page
@@ -197,6 +195,7 @@ React component testing
 
     -   Install dependencies including the local dependency on retrodry: npm i
     -   Run react app and watch for changes: npm start
+    -   Or you can try this if https isn't working for you locally: npm start-http
 
 Distribution
 ============

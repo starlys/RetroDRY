@@ -24,6 +24,9 @@ export default class Session {
     //server URLs to which this class will append 'retro/...'; caller should set this
     serverList: string[] = [];
 
+    //optional environment string, which can be used to distinguish test and production environments, or other uses; caller may set this
+    environment: string = 'prod';
+
     //server assigned key that must be fetched outside of RetroDRY and set here;
     //the code that sets this value should have already authenticated the user
     sessionKey: string = '';
@@ -135,6 +138,7 @@ export default class Session {
         if (datonRequests.length) {
             const request = { 
                 sessionKey: this.sessionKey, 
+                environment: this.environment,
                 getDatons: datonRequests
             };
             const response = await NetUtils.httpMain(this.baseServerUrl(), request);
@@ -230,6 +234,7 @@ export default class Session {
         if (!requestDetails.length) return {};
         const request = {
             sessionKey: this.sessionKey,
+            environment: this.environment,
             manageDatons: requestDetails
         };
         const response = await NetUtils.httpMain(this.baseServerUrl(), request);
@@ -293,11 +298,13 @@ export default class Session {
         try {
             const request = {
                 sessionKey: this.sessionKey,
+                environment: this.environment,
                 saveDatons: diffs
             };
             saveResponse = await NetUtils.httpMain(this.baseServerUrl(), request);
         } catch (e) {
-            if (e.message === 'INTERNAL')
+            const isError = (x: any): x is Error => !!x.message;
+            if (isError(e) && e.message === 'INTERNAL')
                 saveResponse = {savePersistonsSuccess: false};
             else
                 throw e;
@@ -351,6 +358,7 @@ export default class Session {
         //save on server
         const request = {
             sessionKey: this.sessionKey,
+            environment: this.environment,
             saveDatons: [diff]
         };
         const saveResponse = await NetUtils.httpMain(this.baseServerUrl(), request);
@@ -392,12 +400,20 @@ export default class Session {
         this.dataDictionary = undefined;
         //todo document.removeEventListener('keydown', this.keyDownHandler);
 
-        const request = { sessionKey: this.sessionKey, doQuit: true };
+        const request = { 
+            sessionKey: this.sessionKey, 
+            environment: this.environment,
+            doQuit: true 
+        };
         await NetUtils.httpMain(this.baseServerUrl(), request);
     }
 
     private async callInitialize() {
-        const request = { sessionKey: this.sessionKey, initialize: { languageCode: this.languageCode}};
+        const request = { 
+            sessionKey: this.sessionKey, 
+            environment: this.environment,
+            initialize: { languageCode: this.languageCode}
+        };
         const response = await NetUtils.httpMain(this.baseServerUrl(), request);
         if (response?.dataDictionary)
             this.dataDictionary = response.dataDictionary;

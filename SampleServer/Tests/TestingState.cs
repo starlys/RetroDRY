@@ -315,7 +315,7 @@ namespace SampleServer.Tests
                 {
                     await Task.Delay(15000);
                     foreach (var r in Globals.TestingRetroverse) 
-                        r.DiagnosticCleanup();
+                        await r.DiagnosticCleanup();
                     var diags = TestUtils.AllDiagnostics;
                     int numClients = diags.Sum(d => d.NumSessions);
                     if (numClients != 20) throw new Exception($"Sessions timed out unexpectedly; there are {numClients} sessions");
@@ -333,7 +333,7 @@ namespace SampleServer.Tests
                 {
                     await Task.Delay(15000);
                     foreach (var r in Globals.TestingRetroverse)
-                        r.DiagnosticCleanup();
+                        await r.DiagnosticCleanup();
                     var diags = TestUtils.AllDiagnostics;
                     int cacheCount = diags.Sum(d => d.NumCachedDatons);
                     if (cacheCount > 0) throw new Exception("Expected cache to be empty");

@@ -99,7 +99,7 @@ namespace RetroDRY
             var databaseNumbers = SaveItems.Select(i => i.DatonDef.DatabaseNumber).Distinct().ToArray();
             foreach (var dbno in databaseNumbers)
             {
-                var db = Retroverse.GetDbConnection(dbno);
+                var db = await Retroverse.GetDbConnection(dbno);
                 var trx = new Trx { DatabaseNumber = dbno, Connection = db };
                 Trxs.Add(trx); //being careful to add disposable objects to the class-level data in a way that allows it to be disposed if this method fails
                 var dbtrx = db.BeginTransaction();

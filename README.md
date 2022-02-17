@@ -28,3 +28,8 @@ Multi-tier framework in C#/React for handling load/save data, replication across
   * Preparing workspace
   * Change/rebuild/test cycle (running unit tests, integration tests)
   * Distribution
+
+
+## Version notes
+
+* Version 1.4.1 contains a few breaking changes server side. Most importanly the database resolver is async, which makes many other things async and changes the initialization sequence. It also supports multiple environments (test, production, etc).
