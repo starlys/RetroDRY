@@ -23,7 +23,7 @@ namespace UnitTest
         public void Construct()
         {
             Assert.IsTrue(RetroDRY.Utils.Construct(typeof(UtilsTests)).GetType() == typeof(UtilsTests));
-            Assert.ThrowsException<Exception>(() => RetroDRY.Utils.Construct(typeof(Retroverse))); //no parameterless ctor
+            Assert.IsTrue(RetroDRY.Utils.Construct(typeof(Retroverse)).GetType() == typeof(Retroverse)); 
         }
 
         [TestMethod]
