@@ -236,7 +236,7 @@ async function setLookupDescription(session: Session, editingTableDef: TableDefR
     //if viewon row not given, get main row of persiston
     let sourceIsValid = !!sourceRow;
     if (!sourceIsValid && session) {
-        const sourcePersiston = await session.get(editingColDef.foreignKeyDatonTypeName + '|=' + editingRow[editingColDef.name]);
+        const sourcePersiston = await session.get(editingColDef.foreignKeyDatonTypeName + '|=' + editingRow[editingColDef.name]); 
         sourceIsValid = !!sourcePersiston;
         sourceRow = sourcePersiston || {}; //might be missing
     }

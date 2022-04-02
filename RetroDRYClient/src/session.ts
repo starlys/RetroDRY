@@ -88,7 +88,8 @@ export default class Session {
     }
 
     //get one or more datons from cache or server; if any requested datons are not found, they will be omitted from the results
-    //so it will not always return an array of the same size as the provided keys array
+    //so it will not always return an array of the same size as the provided keys array.
+    //Will throw errors on client programming bugs, but will return an object containing errors if there are server errors
     async getMulti(datonKeys: string[], options?: GetOptions): Promise<GetInfo[]> {
         this.ensureInitialized();
         if (!options) options = {};
@@ -142,8 +143,7 @@ export default class Session {
                 getDatons: datonRequests
             };
             const response = await NetUtils.httpMain(this.baseServerUrl(), request);
-            const isOk = response && !response.errorCode;
-            if (!isOk) throw new Error('Get failed: ' + response.errorCode);
+            if (!response) throw new Error('Get failed');
 
             //reinflate what we got back; if any daton is missing from the response, it means the known version was the most up to date
             if (response.getDatons) {

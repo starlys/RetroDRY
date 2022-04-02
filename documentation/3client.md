@@ -280,6 +280,7 @@ Object reference
 //sample custom lookup behavior: changes the default way to look up customers to one where it pre-searches on customers beginning with 'customer 1'
 mystackstate.onCustomLookup = (editingLayer, editingTableDef, editingRow, editingColDef) => {
     if (editingColDef.name === 'customerId') return 'CustomerList|Company=Customer 1';
+    return false; //false means use standard behavior; null means to cancel lookup
 };
 ````
     -   onLayerSaved - allows your app to do something after a persiston is saved. Function accepts key of saved persiston. Example:

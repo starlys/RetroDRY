@@ -30,7 +30,8 @@ export default class DatonStackState {
     onLayerSaved;
 
     //if set by host app, the lookup button will call this function; the function should return the viewon key to use for lookup
-    //or null to prevent lookup. The injected function gets passed parameters (editingLayer, editingTableDef, editingRow, editingColDef)
+    //or null to prevent lookup, or false to revert to noncustom behavior. 
+    //The injected function gets passed parameters (editingLayer, editingTableDef, editingRow, editingColDef)
     onCustomLookup;
 
     //called only by DatonStack in its initialization
@@ -196,11 +197,16 @@ export default class DatonStackState {
     async startLookup(editingLayer, editingTableDef, editingRow, editingColDef) {
         //add layer for viewon lookup using custom behavior
         let lookupLayer;
+        let useStandard = true;
         if (this.onCustomLookup) {
             const key = this.onCustomLookup(editingLayer, editingTableDef, editingRow, editingColDef);
-            if (!key) return;
-            lookupLayer = await this.add(key, false, editingLayer.businessContext);
-        } else {
+            useStandard = key === false;
+            if (!useStandard) {
+                if (!key) return; //custom behavior is explicitly canceled
+                lookupLayer = await this.add(key, false, editingLayer.businessContext);
+            }
+        } 
+        if (useStandard) {
             //or standard behavior
             const viewonDef = this.session.getDatonDef(editingColDef.selectBehavior.viewonTypeName);
             if (!viewonDef) return;

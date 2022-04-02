@@ -113,7 +113,7 @@ namespace RetroDRY
                 if (client.LastAccessed < cutoff)
                 {
                     Sessions.TryRemove(client.SessionKey, out _);
-                    await callback?.Invoke(client.SessionKey);
+                    if (callback != null) await callback(client.SessionKey);
                 }
             }
         }

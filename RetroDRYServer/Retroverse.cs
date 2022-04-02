@@ -77,6 +77,8 @@ namespace RetroDRY
         /// </summary>
         private bool IntegrationTestMode;
 
+        private bool IsInitialized;
+
         internal SqlFlavorizer.VendorKind DatabaseVendor;
 
         /// <summary>
@@ -86,6 +88,8 @@ namespace RetroDRY
         public virtual void Initialize(SqlFlavorizer.VendorKind dbVendor, DataDictionary ddict, Func<int, Task<DbConnection>> connectionResolver,
             int lockDatabaseNumber = 0, bool integrationTestMode = false)
         {
+            if (IsInitialized) throw new Exception("Already initialized");
+            IsInitialized = true;
             if (!ddict.IsFinalized) throw new Exception("DataDictionary must be finalized first");
             DatabaseVendor = dbVendor;
             DataDictionary = ddict;
