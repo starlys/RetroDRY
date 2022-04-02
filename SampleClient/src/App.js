@@ -22,6 +22,7 @@ export default function App() {
       //sample custom lookup behavior
       dss.onCustomLookup = (editingLayer, editingTableDef, editingRow, editingColDef) => {
         if (editingColDef.name === 'customerId') return 'CustomerList|Company=Customer 1';
+        return false;
       };
 
       return null;

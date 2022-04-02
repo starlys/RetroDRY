@@ -298,7 +298,7 @@ namespace RetroDRY
             var ret = new List<LoadColInfo>();
             foreach (var coldef in tabledef.Cols)
             {
-                if (coldef.IsCustom) continue; 
+                if (coldef.IsCustom || coldef.IsComputed) continue; 
                 ret.Add(new LoadColInfo
                 {
                     Index = ++colIdx,

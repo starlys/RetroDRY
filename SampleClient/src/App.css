@@ -127,6 +127,8 @@ select {
   border: solid silver 1px;
   background-color: #eef;
   cursor: pointer;
+  word-break: break-all;
+  min-width: 60px;
 }
 .daton .grid-fk:hover {
   text-decoration: underline;

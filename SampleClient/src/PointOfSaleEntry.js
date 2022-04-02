@@ -75,7 +75,7 @@ export default (props) => {
 
     return <>
         <div style={{color:'red'}}>
-            {messages.map(s => <div>{s}</div>)}
+            {messages.map((s, idx) => <div key={idx}>{s}</div>)}
         </div>
         <CardView session={session} row={sale} datonDef={datonDef} tableDef={datonDef.mainTableDef} edit={true} overrideCard={saleCard} />
         <hr/>
