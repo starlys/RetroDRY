@@ -20,11 +20,27 @@ namespace RetroDRY
         /// </summary>
         public class CondensedDatonResponseConverter : JsonConverter<CondensedDatonResponse>
         {
+            /// <summary>
+            /// Not implemented
+            /// </summary>
+            /// <param name="reader"></param>
+            /// <param name="objectType"></param>
+            /// <param name="existingValue"></param>
+            /// <param name="hasExistingValue"></param>
+            /// <param name="serializer"></param>
+            /// <returns></returns>
+            /// <exception cref="NotImplementedException"></exception>
             public override CondensedDatonResponse ReadJson(JsonReader reader, Type objectType, CondensedDatonResponse existingValue, bool hasExistingValue, JsonSerializer serializer)
             {
                 throw new NotImplementedException();
             }
 
+            /// <summary>
+            /// write one daton
+            /// </summary>
+            /// <param name="writer"></param>
+            /// <param name="value"></param>
+            /// <param name="serializer"></param>
             public override void WriteJson(JsonWriter writer, CondensedDatonResponse value, JsonSerializer serializer)
             {
                 writer.WriteRawValue(value.CondensedDatonJson);
@@ -164,6 +180,7 @@ namespace RetroDRY
         /// Given a packed date (8 chars) or datetime (12 chars), convert to a UTC DateTime instance or throw exception
         /// </summary>
         /// <param name="isDateOnly">if false, it will interpret 8- or 12-char inputs; if true it will ignore any time portion</param>
+        /// <param name="s">the packed date/time</param>
         public static DateTime ParseRetroDateTime(string s, bool isDateOnly)
         {
             try
@@ -186,6 +203,7 @@ namespace RetroDRY
         /// Format a value for json raw output, or for creating a persiston key as a string
         /// </summary>
         /// <param name="value">any supported value or null</param>
+        /// <param name="coldef">definition of column</param>
         public static string FormatRawJsonValue(ColDef coldef, object value) 
         {
             string jsonQuote(string s) => JsonConvert.ToString(s);
@@ -415,6 +433,8 @@ namespace RetroDRY
         /// Convert the serializable portions of a data dictionary to a wire-ready structure.
         /// </summary>
         /// <param name="languageMessages">may be null; see Retroverse.LanguageMessages</param>
+        /// <param name="user"></param>
+        /// <param name="ddict"></param>
         public static DataDictionaryResponse DataDictionaryToWire(DataDictionary ddict, IUser user, Dictionary<string, Dictionary<string, string>> languageMessages)
         {
             var guard = new SecurityGuard(ddict, user);

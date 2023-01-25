@@ -16,11 +16,30 @@ namespace RetroDRY
         /// </summary>
         protected class TraversalData
         {
+            /// <summary>
+            /// Key value of parent row
+            /// </summary>
             public object ParentKey;
+
+            /// <summary>
+            /// defintion of the table
+            /// </summary>
             public TableDef TableDef;
+
+            /// <summary>
+            /// List of changes for each row
+            /// </summary>
             public List<PersistonDiff.DiffRow> DiffRowList;
-            public IList PristineList; //null if single main row or there was no old row
-            public IList ModifiedList; //null if single main row or there is no new row
+
+            /// <summary>
+            /// List of unchanged rows; null if single main row or there was no old row
+            /// </summary>
+            public IList PristineList;
+
+            /// <summary>
+            /// List of rows after change; null if single main row or there is no new row
+            /// </summary>
+            public IList ModifiedList;
 
             /// <summary>
             /// return values are object (newly assigned key for the row) and bool (true to process child tables)
@@ -38,6 +57,9 @@ namespace RetroDRY
             /// </summary>
             public object ParentKey;
 
+            /// <summary>
+            /// table being saved
+            /// </summary>
             public TableDef TableDef;
 
             /// <summary>
@@ -67,6 +89,8 @@ namespace RetroDRY
         /// <param name="pristineDaton">null or the version before the diff was applied</param>
         /// <param name="modifiedDaton">the validated final version</param>
         /// <param name="diff">the difference between pristine and modified, which is what this method inspects to make the changes</param>
+        /// <param name="db"></param>
+        /// <param name="user"></param>
         public virtual async Task Save(IDbConnection db, IUser user, Persiston pristineDaton, Persiston modifiedDaton, PersistonDiff diff)
         {
             //called for each row in traversal; return true to recurse over children
@@ -108,6 +132,7 @@ namespace RetroDRY
         /// </summary>
         /// <param name="singleMainPristineRow">only set for top level call if there is a single main row</param>
         /// <param name="singleMainModifiedRow">only set for top level call if there is a single main row</param>
+        /// <param name="tdata"></param>
         protected async Task TraverseDiffList(TraversalData tdata, Row singleMainPristineRow, Row singleMainModifiedRow)
         {
             var pkField = tdata.TableDef.RowType.GetField(tdata.TableDef.PrimaryKeyColName);

@@ -4,8 +4,14 @@ using System.Collections.Generic;
 
 namespace RetroDRY
 {
+    /// <summary>
+    /// A defintion of one table column
+    /// </summary>
     public class ColDef
     {
+        /// <summary>
+        /// Information about how images are handled
+        /// </summary>
         public class ImageInfo
         {
             /// <summary>
@@ -14,6 +20,9 @@ namespace RetroDRY
             public string UrlColumName;
         }
 
+        /// <summary>
+        /// Information about left-join for one column; for example, how to look up the name associated with the value of a foreign key
+        /// </summary>
         [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
         public class LeftJoinInfo
         {
@@ -28,6 +37,9 @@ namespace RetroDRY
             public string RemoteDisplayColumnName;
         }
 
+        /// <summary>
+        /// Behavior when editing the column (used when the column references another type)
+        /// </summary>
         [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
         public class SelectBehaviorInfo
         {
@@ -136,6 +148,9 @@ namespace RetroDRY
         /// </summary>
         public SortedList<string, string> LengthValidationMessage; 
 
+        /// <summary>
+        /// Regular expression for validating values for this column
+        /// </summary>
         public string Regex;
 
         /// <summary>
@@ -149,6 +164,9 @@ namespace RetroDRY
         /// </summary>
         public decimal MinNumberValue;
 
+        /// <summary>
+        /// Seee MinNumberValue
+        /// </summary>
         public decimal MaxNumberValue;
 
         /// <summary>

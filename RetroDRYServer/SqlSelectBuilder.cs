@@ -12,6 +12,9 @@ namespace RetroDRY
     /// </summary>
     public class SqlSelectBuilder
     {
+        /// <summary>
+        /// Where clause of a SQL selement statment
+        /// </summary>
         public class Where
         {
             private int LastParamNoUsed = -1;
@@ -22,8 +25,15 @@ namespace RetroDRY
             /// </summary>
             private readonly List<string> Parts = new List<string>();
 
+            /// <summary>
+            /// Returns a unique name starting with '@' over the lifetime of thie Where instance
+            /// </summary>
             public string NextParameterName() => "@p" + (++LastParamNoUsed);
 
+            /// <summary>
+            /// Add a caller-defined where clause
+            /// </summary>
+            /// <param name="clause"></param>
             public void AddWhere(string clause)
             {
                 Parts.Add(clause);
@@ -38,6 +48,9 @@ namespace RetroDRY
                 Parameters.AddRange(_params);
             }
 
+            /// <summary>
+            /// get the complete where clause such as "where ... and ... and ...", or empty string if no parts are defined
+            /// </summary>
             public override string ToString()
             {
                 if (Parts.Any()) return "where " + string.Join(" and ", Parts);
@@ -64,6 +77,9 @@ namespace RetroDRY
         /// </summary>
         public Where WhereClause = new Where();
 
+        /// <summary>
+        /// Column name for order-by clause
+        /// </summary>
         public string SortColumnName;
 
         /// <summary>
@@ -85,6 +101,9 @@ namespace RetroDRY
         /// Initialize
         /// </summary>
         /// <param name="returnColumnNames">if null or empty, will select all columns</param>
+        /// <param name="mainTable">main table name</param>
+        /// <param name="sortColName">column to use for order by clause</param>
+        /// <param name="sqlFlavor">identifies vendor syntax exceptions</param>
         public SqlSelectBuilder(SqlFlavorizer sqlFlavor, string mainTable, string sortColName, List<string> returnColumnNames)
         {
             SqlFlavor = sqlFlavor;

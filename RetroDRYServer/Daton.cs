@@ -10,6 +10,9 @@ namespace RetroDRY
     /// </summary>
     public abstract class Daton : Row
     {
+        /// <summary>
+        /// Key identifying daton
+        /// </summary>
         public DatonKey Key { get; set; }
 
         /// <summary>

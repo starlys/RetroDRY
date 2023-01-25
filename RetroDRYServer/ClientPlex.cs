@@ -45,7 +45,14 @@ namespace RetroDRY
         /// </summary>
         public class PushGroup
         {
+            /// <summary>
+            /// Dateons being pushed
+            /// </summary>
             public Daton[] Datons;
+
+            /// <summary>
+            /// True to include a new data dictionary version; false if there were no changes
+            /// </summary>
             public bool IncludeDataDictionary;
         }
 
@@ -54,6 +61,9 @@ namespace RetroDRY
         /// </summary>
         private readonly ConcurrentDictionary<string, SessionInfo> Sessions = new ConcurrentDictionary<string, SessionInfo>();
 
+        /// <summary>
+        /// Number of active sessions
+        /// </summary>
         public int SessionCount => Sessions.Count;
 
         /// <summary>
@@ -105,6 +115,7 @@ namespace RetroDRY
         /// Clean sessions that have not been accessed in 2 minutes
         /// </summary>
         /// <param name="callback">if provided, this is called with each session key removed</param>
+        /// <param name="secondsOld">override this to specify a different timeframe</param>
         public async Task Clean(Func<string, Task> callback, int secondsOld = 120)
         {
             DateTime cutoff = DateTime.UtcNow.AddSeconds(0 - secondsOld);

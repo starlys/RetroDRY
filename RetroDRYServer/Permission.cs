@@ -8,6 +8,9 @@ namespace RetroDRY
     /// </summary>
     public class RetroRole
     {
+        /// <summary>
+        /// level to use for all tables, unless overriden in TableOverrides
+        /// </summary>
         public PermissionLevel BaseLevel;
 
         /// <summary>
@@ -33,6 +36,9 @@ namespace RetroDRY
         /// </summary>
         public string TableName;
 
+        /// <summary>
+        /// level to use for all columns, unless overriden in ColumnOverrides
+        /// </summary>
         public PermissionLevel BaseLevel;
 
         /// <summary>
@@ -52,7 +58,14 @@ namespace RetroDRY
     /// </summary>
     public class ColumnPermission
     {
+        /// <summary>
+        /// Column name
+        /// </summary>
         public string ColumnName;
+
+        /// <summary>
+        /// Persmission override for the column
+        /// </summary>
         public PermissionLevel BaseLevel;
 
         /// <summary>

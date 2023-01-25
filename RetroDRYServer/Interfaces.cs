@@ -13,6 +13,9 @@ namespace RetroDRY
         /// </summary>
         string Id { get; }
 
+        /// <summary>
+        /// Collection of roles the user has, which define permissions
+        /// </summary>
         RetroRole[] Roles { get; }
 
         /// <summary>

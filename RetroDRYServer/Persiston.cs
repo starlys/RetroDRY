@@ -3,6 +3,9 @@ using System.Threading.Tasks;
 
 namespace RetroDRY
 {
+    /// <summary>
+    /// A daton that can be edited and persisted to a database
+    /// </summary>
     public class Persiston : Daton
     {
         /// <summary>

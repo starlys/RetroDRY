@@ -3,6 +3,9 @@ using System.Threading.Tasks;
 
 namespace RetroDRY
 {
+    /// <summary>
+    /// A read-only daton with optional parameters, used for queries
+    /// </summary>
     public class Viewon : Daton
     {
         /// <summary>
@@ -10,6 +13,10 @@ namespace RetroDRY
         /// </summary>
         public bool IsCompleteLoad { get; set; } = true;
 
+        /// <summary>
+        /// Clone
+        /// </summary>
+        /// <param name="datondef"></param>
         public override Daton Clone(DatonDef datondef)
         {
             var c = base.Clone(datondef) as Viewon;

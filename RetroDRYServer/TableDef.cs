@@ -5,6 +5,9 @@ using System.Linq;
 
 namespace RetroDRY
 {
+    /// <summary>
+    /// Defintion of one table within a DatonDef
+    /// </summary>
     public class TableDef
     {
         /// <summary>
@@ -59,6 +62,9 @@ namespace RetroDRY
         /// </summary>
         public SortedList<string, string> Prompt;
 
+        /// <summary>
+        /// True when the table contains a column called CustomValues, which stores any number of name-value pairs
+        /// </summary>
         public bool HasCustomColumns { get; private set; }
 
         /// <summary>

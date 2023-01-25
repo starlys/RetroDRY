@@ -10,19 +10,56 @@ namespace RetroDRY
     /// </summary>
     public class PersistonDiff
     {
-        public enum ApplyAction { NoChanges, Changes, PersistonDeleted }
+        /// <summary>
+        /// The type of action discovered by ApplyTo
+        /// </summary>
+        public enum ApplyAction
+        {
+            /// <summary>
+            /// no changes
+            /// </summary>
+            NoChanges, 
+            
+            /// <summary>
+            /// Some changes (adds/edits/deletes)
+            /// </summary>
+            Changes, 
+            
+            /// <summary>
+            /// Whole persiston deleted
+            /// </summary>
+            PersistonDeleted
+        }
 
         /// <summary>
         /// Storage for changes to a single row
         /// </summary>
         public class DiffRow
         {
+            /// <summary>
+            /// Type of change
+            /// </summary>
             public DiffKind Kind;
+
+            /// <summary>
+            /// Changed column values (documentation may be misleading)
+            /// </summary>
             public Dictionary<string, object> Columns = new Dictionary<string, object>();
-            public Dictionary<TableDef, List<DiffRow>> ChildTables; //may be null
+
+            /// <summary>
+            /// Changed child rows collection, or null
+            /// </summary>
+            public Dictionary<TableDef, List<DiffRow>> ChildTables; 
         }
 
+        /// <summary>
+        /// Key of daton being changed
+        /// </summary>
         public DatonKey Key { get; protected set; }
+
+        /// <summary>
+        /// Defintion of daton being changed
+        /// </summary>
         public DatonDef DatonDef { get; protected set; }
 
         /// <summary>
@@ -35,6 +72,12 @@ namespace RetroDRY
         /// </summary>
         public List<DiffRow> MainTable = new List<DiffRow>();
 
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="datondef">definition of daton being diffed</param>
+        /// <param name="key">key of daton being diffed</param>
+        /// <param name="version">original version before changes</param>
         public PersistonDiff(DatonDef datondef, DatonKey key, string version)
         {
             DatonDef = datondef;

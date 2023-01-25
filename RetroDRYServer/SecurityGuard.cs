@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 
 namespace RetroDRY
 {
@@ -13,11 +12,35 @@ namespace RetroDRY
         private readonly IUser User;
         private readonly DataDictionary Dbdef;
 
+        /// <summary>
+        /// Convenience shortener to test PermissionLevel.View
+        /// </summary>
+        /// <param name="lev"></param>
         public static bool CanView(PermissionLevel lev) => (lev & PermissionLevel.View) != 0;
+
+        /// <summary>
+        /// Convenience shortener to test PermissionLevel.Modify
+        /// </summary>
+        /// <param name="lev"></param>
         public static bool CanUpdate(PermissionLevel lev) => (lev & PermissionLevel.Modify) != 0;
+
+        /// <summary>
+        /// Convenience shortener to test PermissionLevel.Create
+        /// </summary>
+        /// <param name="lev"></param>
         public static bool CanCreate(PermissionLevel lev) => (lev & PermissionLevel.Create) != 0;
+
+        /// <summary>
+        /// Convenience shortener to test PermissionLevel.Delete
+        /// </summary>
+        /// <param name="lev"></param>
         public static bool CanDelete(PermissionLevel lev) => (lev & PermissionLevel.Delete) != 0;
 
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="dbdef"></param>
+        /// <param name="user"></param>
         public SecurityGuard(DataDictionary dbdef, IUser user)
         {
             User = user;
@@ -66,6 +89,8 @@ namespace RetroDRY
         /// Return readable strings describing any disallowed writes for this user
         /// </summary>
         /// <param name="pristineDaton">null for new unsaved persistons, else the pristine version being edited</param>
+        /// <param name="datondef">definition of pristineDaton</param>
+        /// <param name="diff">the proposed changeset, some of which may be disallowed</param>
         public IEnumerable<string> GetDisallowedWrites(Daton pristineDaton, DatonDef datondef, PersistonDiff diff)
         {
             var errors = new List<string>();

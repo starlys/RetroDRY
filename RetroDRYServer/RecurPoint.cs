@@ -10,6 +10,9 @@ namespace RetroDRY
     /// </summary>
     public class RecurPoint
     {
+        /// <summary>
+        /// Definition of table being traveled
+        /// </summary>
         public TableDef TableDef;
 
         /// <summary>
@@ -23,6 +26,9 @@ namespace RetroDRY
                 return new RowRecurPoint { TableDef = datondef.MainTableDef, Row = daton };
         }
 
+        /// <summary>
+        /// Get the main table (IList) of a daton
+        /// </summary>
         public static IList GetMainTable(DatonDef datondef, Daton daton, bool createIfMissing = false)
         {
             var f = daton.GetType().GetField(datondef.MainTableDef.Name);
@@ -60,8 +66,14 @@ namespace RetroDRY
     /// </summary>
     public class TableRecurPoint : RecurPoint
     {
+        /// <summary>
+        /// table rows
+        /// </summary>
         public IList Table;
     
+        /// <summary>
+        /// Convert table rows into RowRecurPoints
+        /// </summary>
         public IEnumerable<RowRecurPoint> GetRows()
         {
             foreach (Row row in Table)
@@ -78,8 +90,14 @@ namespace RetroDRY
     /// </summary>
     public class RowRecurPoint : RecurPoint
     {
+        /// <summary>
+        /// The row this relates to
+        /// </summary>
         public Row Row;
 
+        /// <summary>
+        /// Get the primary key value for the row
+        /// </summary>
         public object GetPrimaryKey()
         {
             var pkField = GetPrimaryKeyField();
@@ -87,6 +105,9 @@ namespace RetroDRY
             return pkValue;
         }
 
+        /// <summary>
+        /// Set the primary key value for the row
+        /// </summary>
         public void SetPrimaryKey(object value)
         {
             var pkField = GetPrimaryKeyField();
@@ -100,6 +121,9 @@ namespace RetroDRY
             return pkField;
         }
 
+        /// <summary>
+        /// Get the collection of TableRecurPoints for the child-row collections of this row
+        /// </summary>
         public IEnumerable<TableRecurPoint> GetChildren()
         {
             if (TableDef.Children != null)

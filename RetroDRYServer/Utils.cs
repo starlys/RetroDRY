@@ -57,6 +57,7 @@ namespace RetroDRY
         /// Construct a row object and set any custom non-nullable properties to their defaults
         /// </summary>
         /// <param name="tabledef">if null, this behaves like Construct(t)</param>
+        /// <param name="t">type to construct</param>
         public static Row ConstructRow(Type t, TableDef tabledef) 
         {
             if (!typeof(Row).IsAssignableFrom(t)) throw new Exception("Requires Row type");
@@ -81,7 +82,8 @@ namespace RetroDRY
         /// <summary>
         /// Change the value of certain defaults to be more user friendly (namely, non-nullable dates and times)
         /// </summary>
-        /// <param name="d">a newly created persisto</param>
+        /// <param name="d">a newly created persiston</param>
+        /// <param name="datondef">definition of d</param>
         public static void FixTopLevelDefaultsInNewPersiston(DatonDef datondef, Daton d)
         {
             if (datondef.MultipleMainRows) return;
@@ -128,6 +130,8 @@ namespace RetroDRY
         /// Find the element in the targetList whose value of pkField is pk, and return the index, or -1 if not found
         /// </summary>
         /// <param name="pkField">must be a field defined within the type of the elements of targetList</param>
+        /// <param name="pk">value to look for</param>
+        /// <param name="targetList">list to look in</param>
         public static int IndexOfPrimaryKeyMatch(IList targetList, FieldInfo pkField, object pk)
         {
             int idx = -1;
@@ -140,6 +144,12 @@ namespace RetroDRY
             return -1;
         }
 
+        /// <summary>
+        /// Add a parameter and value to a DbCommand
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <param name="name"></param>
+        /// <param name="value"></param>
         public static void AddParameterWithValue(IDbCommand cmd, string name, object value)
         {
             var p = cmd.CreateParameter();

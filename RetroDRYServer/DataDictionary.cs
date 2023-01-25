@@ -7,6 +7,9 @@ using System.Reflection;
 
 namespace RetroDRY
 {
+    /// <summary>
+    /// Container for all DatonDefs in the database(s)
+    /// </summary>
     public class DataDictionary
     {
         //these lists are populated during AddDatonUsingClassAnnotation (they can't be filled any other way) and then cleared out in Finalize
@@ -19,6 +22,9 @@ namespace RetroDRY
         /// </summary>
         public Dictionary<string, DatonDef> DatonDefs = new Dictionary<string, DatonDef>();
 
+        /// <summary>
+        /// True after finalization (see FinalizeInheritance)
+        /// </summary>
         public bool IsFinalized { get; private set; }
 
         /// <summary>
@@ -215,6 +221,8 @@ namespace RetroDRY
         /// <param name="datondef">set for top level only, else null</param>
         /// <param name="isTopLevel">true only when the daton class itself is the type argument</param>
         /// <param name="tabledef">null if top level</param>
+        /// <param name="isViewon"></param>
+        /// <param name="type">row type</param>
         private void PopulateFieldAnnotations(bool isViewon, DatonDef datondef, Type type, TableDef tabledef, bool isTopLevel)
         {
             foreach (var field in type.GetFields())

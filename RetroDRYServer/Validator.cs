@@ -10,9 +10,17 @@ namespace RetroDRY
     /// </summary>
     public class Validator
     {
+        /// <summary>
+        /// Collection of error messages
+        /// </summary>
         public List<string> Errors;
+
         private readonly IUser User;
 
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="user"></param>
         public Validator(IUser user)
         {
             User = user;

@@ -12,10 +12,24 @@ namespace RetroDRY
 {
     public partial class RetroSql
     {
+        /// <summary>
+        /// Information on how to load a single column
+        /// </summary>
         protected class LoadColInfo
         {
+            /// <summary>
+            /// index in list of select-clause columns
+            /// </summary>
             public int Index;
+
+            /// <summary>
+            /// reflection info used to set the field value in the daton row
+            /// </summary>
             public FieldInfo Field;
+
+            /// <summary>
+            /// the string to use in the select clause
+            /// </summary>
             public string SqlExpression;
         }
 
@@ -24,8 +38,14 @@ namespace RetroDRY
         /// </summary>
         protected class SingleLoadResult
         {
-            //dict is indexed by parent key for child tables, or has a single index "" for main table
+            /// <summary>
+            /// rows loaded; dict is indexed by parent key for child tables, or has a single index "" for main table
+            /// </summary>
             public Dictionary<object, List<Row>> RowsByParentKey;
+
+            /// <summary>
+            /// true if viewon was loaded to completion; false if there may be more rows
+            /// </summary>
             public bool IsComplete;
         }
 
@@ -34,6 +54,9 @@ namespace RetroDRY
         /// </summary>
         public class LoadResult
         {
+            /// <summary>
+            /// Daton being set
+            /// </summary>
             public Daton Daton;
 
             /// <summary>
@@ -47,6 +70,10 @@ namespace RetroDRY
         /// Load daton from database. Caller is responsible for setting the version (this does not deal with locks or versions)
         /// </summary>
         /// <param name="pageSize">only inspected for viewons main table</param>
+        /// <param name="db"></param>
+        /// <param name="key">identifies daton to load</param>
+        /// <param name="dbdef"></param>
+        /// <param name="user"></param>
         /// <returns>null if not found</returns>
         public virtual async Task<LoadResult> Load(IDbConnection db, DataDictionary dbdef, IUser user, DatonKey key, int pageSize)
         {
@@ -157,7 +184,12 @@ namespace RetroDRY
         /// The implementation loads one additional row to determine whether the load was complete, if pageSize is nonzero.
         /// </summary>
         /// <param name="pageSize">if zero, does not do paging</param>
+        /// <param name="pageNo">page number to load, 0 for first page</param>
         /// <param name="whereClause">can be null</param>
+        /// <param name="dbdef"></param>
+        /// <param name="db"></param>
+        /// <param name="sortColName">name of column for order-by clause</param>
+        /// <param name="tabledef"></param>
         protected virtual Task<SingleLoadResult> LoadTable(IDbConnection db, DataDictionary dbdef, TableDef tabledef, SqlSelectBuilder.Where whereClause,
             string sortColName, int pageSize, int pageNo)
         {
@@ -240,6 +272,9 @@ namespace RetroDRY
         /// table.)
         /// </summary>
         /// <param name="parentRows">parent Row objects indexed by primary key value</param>
+        /// <param name="db"></param>
+        /// <param name="dbdef"></param>
+        /// <param name="parentdef">definition of parent table, which has been loaded already</param>
         protected async Task LoadChildTablesRecursive(Dictionary<object, Row> parentRows, IDbConnection db, DataDictionary dbdef, TableDef parentdef)
         {
             if (!parentRows.Any()) return;

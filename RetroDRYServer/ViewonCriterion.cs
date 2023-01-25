@@ -7,6 +7,9 @@ namespace RetroDRY
     /// </summary>
     public class ViewonCriterion
     {
+        /// <summary>
+        /// Definition of criterion
+        /// </summary>
         public readonly ColDef ColDef;
 
         /// <summary>
@@ -14,11 +17,21 @@ namespace RetroDRY
         /// </summary>
         public readonly string PackedValue;
 
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="c">criteron definition </param>
+        /// <param name="packedValue">round tripped value format</param>
         public ViewonCriterion(ColDef c, string packedValue)
         {
             ColDef = c; PackedValue = packedValue;
         }
 
+        /// <summary>
+        /// Modify where clause to add conditions for each criterion
+        /// </summary>
+        /// <param name="w"></param>
+        /// <param name="sqlFlavor"></param>
         public void ExportWhereClause(SqlSelectBuilder.Where w, SqlFlavorizer sqlFlavor)
         {
             //numeric ranges

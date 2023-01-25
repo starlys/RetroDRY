@@ -1,5 +1,7 @@
 ﻿using System;
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member 
+
 namespace RetroDRY
 {
     /// <summary>
@@ -16,7 +18,7 @@ namespace RetroDRY
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public class SqlTableNameAttribute : Attribute
     {
-         public string Name { get; set; }
+        public string Name { get; set; }
         public SqlTableNameAttribute(string name) { Name = name; }
     }
 

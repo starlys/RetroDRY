@@ -17,8 +17,14 @@ namespace RetroDRY
     /// </remarks>
     public class MultiSaver : IDisposable
     {
+        /// <summary>
+        /// Result data from a save operation
+        /// </summary>
         public class Result
         {
+            /// <summary>
+            /// The original key, which may indicate a new unsaved persiston
+            /// </summary>
             public DatonKey OldKey;
 
             /// <summary>
@@ -26,8 +32,14 @@ namespace RetroDRY
             /// </summary>
             public DatonKey NewKey;
 
+            /// <summary>
+            /// Collection of error messages if save was not successful
+            /// </summary>
             public string[] Errors;
 
+            /// <summary>
+            /// True if save was successful
+            /// </summary>
             public bool IsSuccess;
 
             /// <summary>
@@ -62,6 +74,12 @@ namespace RetroDRY
         private readonly SaveItem[] SaveItems;
         private readonly List<Trx> Trxs = new List<Trx>();
 
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="retroverse"></param>
+        /// <param name="user"></param>
+        /// <param name="diffs">all persistons that need to be saved</param>
         public MultiSaver(Retroverse retroverse, IUser user, PersistonDiff[] diffs)
         {
             Retroverse = retroverse;
@@ -70,6 +88,9 @@ namespace RetroDRY
             SaveItems = diffs.Select(d => new SaveItem { Diff = d }).ToArray();
         }
 
+        /// <summary>
+        /// Clean up
+        /// </summary>
         public void Dispose()
         {
             foreach (var trx in Trxs)

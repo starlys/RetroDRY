@@ -50,6 +50,7 @@ namespace RetroDRY
         private DateTime NextCleanup = DateTime.UtcNow.AddHours(1);
 
         /// <param name="changePropogator">optional function taking key and version, to be called after unlocking when there had been an actual change</param>
+        /// <param name="lockDatabaseConnection">function that returns the database connection</param>
         public void Initialize(Func<Task<DbConnection>> lockDatabaseConnection, Func<DatonKey, string, Task> changePropogator)
         {
             GetLockConnection = lockDatabaseConnection;

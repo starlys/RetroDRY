@@ -1,9 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace RetroDRY
 {
+    /// <summary>
+    /// Definition of one daton type
+    /// </summary>
     public class DatonDef
     {
         /// <summary>
@@ -11,6 +13,9 @@ namespace RetroDRY
         /// </summary>
         public Type Type;
 
+        /// <summary>
+        /// Definition of main table
+        /// </summary>
         public TableDef MainTableDef;
 
         /// <summary>

@@ -85,6 +85,10 @@ namespace RetroDRY
         /// Initialize
         /// </summary>
         /// <param name="connectionResolver">Host app function to get an open database connection, which will be disposed after each use</param>
+        /// <param name="dbVendor"></param>
+        /// <param name="ddict"></param>
+        /// <param name="integrationTestMode"></param>
+        /// <param name="lockDatabaseNumber"></param>
         public virtual void Initialize(SqlFlavorizer.VendorKind dbVendor, DataDictionary ddict, Func<int, Task<DbConnection>> connectionResolver,
             int lockDatabaseNumber = 0, bool integrationTestMode = false)
         {
@@ -123,6 +127,9 @@ namespace RetroDRY
             BackgroundWorker.Register(DoLockRefresh, interServerInterval); 
         }
 
+        /// <summary>
+        /// Clean up
+        /// </summary>
         public void Dispose()
         {
             BackgroundWorker?.Dispose();
@@ -141,6 +148,7 @@ namespace RetroDRY
         /// Inject the implementation of RetroSql for the given type name
         /// </summary>
         /// <param name="typeName">matches Daton subclass name</param>
+        /// <param name="r">the inhected implementation</param>
         public void OverrideSql(string typeName, RetroSql r)
         {
             r.Initialize(DatabaseVendor);
@@ -347,6 +355,7 @@ namespace RetroDRY
         /// <param name="user">if null, the return value is a shared guaranteed complete daton; if user is provided,
         /// the return value may be a clone with some rows removed or columns set to null</param>
         /// <param name="forceCheckLatest">if true then checks database to ensure latest version even if it was cached</param>
+        /// <param name="key">identifies daton to get</param>
         /// <returns>object with daton, or readable errors</returns>
         public virtual async Task<RetroSql.LoadResult> GetDaton(DatonKey key, IUser user, bool forceCheckLatest = false)
         {

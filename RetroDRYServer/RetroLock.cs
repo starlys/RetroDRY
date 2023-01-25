@@ -62,6 +62,8 @@ namespace RetroDRY
         /// </summary>
         /// <param name="version">the version which was known</param>
         /// <param name="sessionKey"></param>
+        /// <param name="db"></param>
+        /// <param name="key">daton key to lock</param>
         /// <returns>true if successful</returns>
         public static bool Lock(DbConnection db, DatonKey key, string version, string sessionKey)
         {
@@ -117,6 +119,10 @@ namespace RetroDRY
         /// Unlock a daton and optionally assign new version; only has an effect if it was locked by the given session
         /// </summary>
         /// <param name="datonWasWritten">pass true if this unlock is following a write, or false if it is an abandoned lock</param>
+        /// <param name="db"></param>
+        /// <param name="key">identifies daton to unlock</param>
+        /// <param name="sessionKey">identifies session that owns the lock</param>
+        /// <param name="serverLifeNumber">see RetroLock table</param>
         /// <returns>success flag and the new version (version only returned if datonWasWritten)</returns>
         public static (bool, string) Unlock(DbConnection db, DatonKey key, string sessionKey, bool datonWasWritten, int serverLifeNumber)
         {
@@ -143,6 +149,8 @@ namespace RetroDRY
         /// Get the list of daton keys with version numbers that were updated by other servers since the given time
         /// </summary>
         /// <param name="serverLifeNumber">the number for this server; updates from this server are excluded from the query</param>
+        /// <param name="db"></param>
+        /// <param name="sinceUtc"></param>
         public static List<(DatonKey, string)> GetRecentUpdatesByOtherServers(DbConnection db, DateTime sinceUtc, int serverLifeNumber)
         {
             var ret = new List<(DatonKey, string)>();

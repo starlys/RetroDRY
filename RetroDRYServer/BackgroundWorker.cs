@@ -19,11 +19,16 @@ namespace RetroDRY
         private bool IsDisposed;
         private readonly List<ScheduleItem> Schedule = new List<ScheduleItem>(); //lock on access
 
+        /// <summary>
+        /// Create
+        /// </summary>
         public BackgroundWorker()
         {
             Task.Run(Run);
         }
 
+        /// <summary>
+        /// </summary>
         public void Dispose()
         {
             IsDisposed = true;
@@ -33,6 +38,7 @@ namespace RetroDRY
         /// Register an action to call repeatedly
         /// </summary>
         /// <param name="interval">in seconds; the first call will be this many seconds in the future</param>
+        /// <param name="action">the action to run</param>
         public void Register(Func<Task> action, int interval)
         {
             lock (Schedule)
