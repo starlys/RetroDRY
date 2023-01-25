@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using RetroDRY;
 
+#pragma warning disable CA2211 // Non-constant fields should not be visible
+
 namespace SampleServer
 {
     /// <summary>
@@ -10,11 +12,11 @@ namespace SampleServer
     /// </summary>
     public static class UserCache
     {
-        private static readonly RetroRole AdminRole = new RetroRole
+        private static readonly RetroRole AdminRole = new()
         {
             BaseLevel = PermissionLevel.All
         };
-        private static readonly RetroRole SalesRole = new RetroRole
+        private static readonly RetroRole SalesRole = new()
         {
             BaseLevel = PermissionLevel.View,
             TableOverrides = new List<TablePermission>
@@ -25,7 +27,7 @@ namespace SampleServer
                 new TablePermission { TableName = "SaleItemNote", BaseLevel = PermissionLevel.All }
             }
         };
-        private static readonly RetroRole PublicRole = new RetroRole
+        private static readonly RetroRole PublicRole = new()
         {
             BaseLevel = PermissionLevel.None, 
             TableOverrides = new List<TablePermission>
@@ -38,7 +40,7 @@ namespace SampleServer
                 new TablePermission { TableName = "SaleItem", BaseLevel = PermissionLevel.Create }
             }
         };
-        private static readonly RetroRole CustomerNotesRole = new RetroRole
+        private static readonly RetroRole CustomerNotesRole = new()
         {
             BaseLevel = PermissionLevel.None,
             TableOverrides = new List<TablePermission>

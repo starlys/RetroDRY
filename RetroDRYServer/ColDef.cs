@@ -75,12 +75,12 @@ namespace RetroDRY
         public Type CSType;
 
         /// <summary>
-        /// If false, the column is declared in the containing type; if true the column is declared only at runtime and uses the custom stroage in the Row class
+        /// If false, the column is declared in the containing type; if true the column is declared only at runtime and uses the custom storage in the Row class
         /// </summary>
         public bool IsCustom;
 
         /// <summary>
-        /// If true, the column won't be loaded and saved by default SQL and won't be editable on clients
+        /// If true, the column is declared with the computed attribute, and   won't be loaded and saved by default SQL, and won't be editable on clients
         /// </summary>
         public bool IsComputed;
 
@@ -161,6 +161,11 @@ namespace RetroDRY
         /// Set only if this column is an image identifier (such as a file name)
         /// </summary>
         public ImageInfo Image;
+
+        /// <summary>
+        /// If true, the column is computed or left-joined, and won't be loaded and saved by default SQL, and won't be editable on clients
+        /// </summary>
+        public bool IsComputedOrJoined => IsComputed || LeftJoin != null;
 
         /// <summary>
         /// Convenience method to ensure Prompt is non null while setting a prompt for the given language.

@@ -1,6 +1,6 @@
 {
   "name": "retrodryclient",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "multi-tier tool for data load/save, replication across tiers, and editing",
   "keywords": [
     "framework",

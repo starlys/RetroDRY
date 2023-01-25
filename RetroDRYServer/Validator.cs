@@ -65,7 +65,7 @@ namespace RetroDRY
         {
             foreach (var coldef in rr.TableDef.Cols)
             {
-                if (coldef.IsComputed) continue;
+                if (coldef.IsComputedOrJoined) continue;
                 object value = rr.Row.GetValue(coldef);
                 ValidateCol(coldef, value, false);
             }
