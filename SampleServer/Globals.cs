@@ -1,6 +1,8 @@
 ﻿using System;
 using RetroDRY;
 
+#pragma warning disable CA2211 // Non-constant fields should not be visible
+
 namespace SampleServer
 {
     public static class Globals

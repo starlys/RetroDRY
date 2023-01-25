@@ -8,7 +8,7 @@ namespace UnitTest
     [TestClass]
     public class CacheTests
     {
-        public void CacheCleansBasic()
+        public static void CacheCleansBasic()
         {
             var cache = new DatonCache();
             var clients = new ClientPlex();

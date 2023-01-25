@@ -187,8 +187,7 @@ namespace RetroDRY
             using (var cmd = db.CreateCommand())
             {
                 cmd.CommandText = CustomizeSqlStatement(sql.ToString());
-                if (whereClause != null)
-                    whereClause.ExportParameters(cmd);
+                whereClause?.ExportParameters(cmd);
                 using (var reader = cmd.ExecuteReader())
                 {
                     int rowsLoaded = 0;
@@ -330,7 +329,7 @@ namespace RetroDRY
                 return $"(select {coldef.LeftJoin.RemoteDisplayColumnName} from {foreignTabledef.SqlTableName} {tableAlias} where {tableAlias}.{foreignTabledef.PrimaryKeyColName}={tabledef.SqlTableName}.{fkCol.Name})";
             }
 
-            if (coldef.IsCustom || coldef.IsComputed) throw new Exception("Cannot load custom or computed column from database");
+            if (coldef.IsCustom || coldef.IsComputedOrJoined) throw new Exception("Cannot load custom or computed column from database");
 
             //regular col
             return coldef.Name;

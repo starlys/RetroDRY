@@ -53,6 +53,6 @@ namespace SampleServer.Controllers
             };
         }
 
-        private TestStep GetStep(string code) => TestingState.Steps.First(s => s.StepCode == code);
+        static TestStep GetStep(string code) => TestingState.Steps.First(s => s.StepCode == code);
     }
 }

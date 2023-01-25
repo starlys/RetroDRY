@@ -7,7 +7,7 @@ namespace UnitTest
 {
     class FakeDbConnection : IDbConnection
     {
-        public FakeDbCommand TheCommand = new FakeDbCommand();
+        public FakeDbCommand TheCommand = new();
 
         public string ConnectionString { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
@@ -52,7 +52,7 @@ namespace UnitTest
     class FakeDbCommand : IDbCommand
     {
         public FakeDbParameter TheLastParameter;
-        public List<FakeDbParameter> TheParameters = new List<FakeDbParameter>();
+        public List<FakeDbParameter> TheParameters = new();
 
         public string CommandText { get; set; }
         public int CommandTimeout { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }

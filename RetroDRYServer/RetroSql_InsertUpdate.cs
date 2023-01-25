@@ -56,7 +56,7 @@ namespace RetroDRY
             //write to builder; write custom cols to temporary dictionary
             foreach (var coldef in cdata.TableDef.Cols)
             {
-                if (coldef.IsComputed) continue;
+                if (coldef.IsComputedOrJoined) continue;
                 if (!includePrimaryKey && coldef.Name == cdata.TableDef.PrimaryKeyColName) continue;
                 if (!cdata.DiffRow.Columns.TryGetValue(coldef.Name, out object value)) continue;
                 if (coldef.IsCustom)

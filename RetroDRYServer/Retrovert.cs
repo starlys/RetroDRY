@@ -477,7 +477,7 @@ namespace RetroDRY
                 LeftJoin = ToWire(c.LeftJoin),
                 SelectBehavior = ToWire(c.SelectBehavior),
                 ImageUrlColumName = c.Image?.UrlColumName,
-                IsComputed = c.IsComputed || isDBAssignedKey,
+                IsComputed = c.IsComputedOrJoined || isDBAssignedKey,
                 IsMainColumn = c.IsMainColumn,
                 IsVisibleInDropdown = c.IsVisibleInDropdown,
                 LengthValidationMessage = DataDictionary.ResolvePrompt(c.LengthValidationMessage, user, defaultValue: null),

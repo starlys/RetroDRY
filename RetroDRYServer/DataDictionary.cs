@@ -345,7 +345,6 @@ namespace RetroDRY
                             ForeignKeyColumnName = leftjoin.ForeignKeyColumnName,
                             RemoteDisplayColumnName = leftjoin.DisplayColumnName
                         };
-                        coldef.IsComputed = true;
                     }
 
                     var inherit = field.GetCustomAttribute<InheritFromAttribute>();

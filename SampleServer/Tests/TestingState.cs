@@ -4,6 +4,8 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 
+#pragma warning disable CA2211 // Non-constant fields should not be visible
+
 namespace SampleServer.Tests
 {
     /// <summary>
@@ -284,7 +286,7 @@ namespace SampleServer.Tests
                     foreach (int saleId in saleIds) 
                     {
                         object lockedBy = TestUtils.QueryScalar($"select LockedBy from RetroLock where DatonKey='Sale|={saleId}'");
-                        if (!(lockedBy is DBNull)) throw new Exception($"A december sale is still locked: {saleId}/{lockedBy}");
+                        if (lockedBy is not DBNull) throw new Exception($"A december sale is still locked: {saleId}/{lockedBy}");
                     }
                     int lockCount = TestUtils.LockCount();
                     int expectedLockCount = 960 - saleIds.Count();
