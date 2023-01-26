@@ -176,6 +176,7 @@ Running integration tests - Don't skip this step!
     -   Click "Run Slow Test Suite" then view the browser console to confirm they are working. Note that the slow tests can be really slow when the server is running in debug mode; so try in non-debug if it fails.
 -   To debug integration tests:
 
+    -   If Chrome complains about an invalid localhost certificat, navigate to chrome://flags/ and set allow-insecure-localhost to true.
     -   Note that the retroDRY library is built in TypeScript and transpiled with webpack, while the integration test page uses plain javascript only (no npm, no webpack, etc)
     -   Use breakpoints in the browser developer tools window, not in VS Code!
     -   If you need to make changes and don't want to stop and rebuild each time, then you can use the watcher mode from webpack that rebuilds automatically. To do this, open two terminal windows and run these commands, one in each window:

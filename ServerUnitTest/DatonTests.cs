@@ -28,6 +28,7 @@ namespace UnitTest
             var ogredef = ddict.DatonDefs["Ogre"];
 
             var clone = emily.Clone(ogredef) as Ogre;
+            Assert.IsNotNull(clone);    
             Assert.AreEqual("Emily", clone.Name);
             Assert.AreEqual(1, clone.PaymentMethod.Count);
             Assert.AreEqual("THUMP", clone.PaymentMethod[0].Method);

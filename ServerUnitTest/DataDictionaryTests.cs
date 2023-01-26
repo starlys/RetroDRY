@@ -53,6 +53,7 @@ namespace UnitTest
             ddict.FinalizeInheritance();
             var viewondef = ddict.DatonDefs["EmployeeList"];
             var firstnamedef = viewondef.MainTableDef.Cols.FirstOrDefault(c => c.Name == "FirstName");
+            Assert.IsNotNull(firstnamedef);
             Assert.AreEqual(50, firstnamedef.MaxLength); //this is inherited
             Assert.AreEqual(0, firstnamedef.MinLength); //this is not inherited
         }

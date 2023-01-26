@@ -62,8 +62,8 @@ namespace UnitTest
 
     class Foo
     {
-        public string Name;
+        public string? Name;
         public int Id;
-        public List<int> IntList;
+        public List<int> IntList = new();
     }
 }

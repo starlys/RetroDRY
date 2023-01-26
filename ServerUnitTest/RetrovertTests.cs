@@ -130,6 +130,7 @@ namespace UnitTest
             var jill0 = Retrovert.FromCompatibleWireFull(ddict, jobj);
             Assert.IsTrue(jill0 is Employee);
             var jill = jill0 as Employee;
+            Assert.IsNotNull(jill);
             Assert.AreEqual(new PersistonKey("Employee", "9", false), jill.Key);
             Assert.AreEqual("v2", jill.Version);
             Assert.AreEqual(9, jill.EmpId);
@@ -140,6 +141,7 @@ namespace UnitTest
             var elist0 = Retrovert.FromCompatibleWireFull(ddict, jobj);
             Assert.IsTrue(elist0 is EmployeeList);
             var elist = elist0 as EmployeeList;
+            Assert.IsNotNull(elist);
             Assert.AreEqual(new ViewonKey("EmployeeList"), elist.Key);
             Assert.AreEqual("v2", elist.Version);
             Assert.AreEqual(9, elist.Employee[0].EmpId);
