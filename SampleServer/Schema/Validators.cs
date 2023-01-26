@@ -1,7 +1,6 @@
 ﻿using RetroDRY;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 #pragma warning disable IDE0060
@@ -19,7 +18,7 @@ namespace SampleServer.Schema
             var errors = new List<string>();
 
             //silly rule to demonstrate custom validation:
-            if (cust.Company.StartsWith("The", StringComparison.InvariantCultureIgnoreCase))
+            if (cust?.Company != null && cust.Company.StartsWith("The", StringComparison.InvariantCultureIgnoreCase))
                 errors.Add("Companies cannot start with 'the' "); 
             //note that you can use multi language strings here by checking user.LangCode
 

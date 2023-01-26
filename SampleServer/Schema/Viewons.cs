@@ -12,7 +12,7 @@ namespace SampleServer.Schema
     /// </summary>
     public class EmployeeList : Viewon
     {
-        public List<TopRow> Employee;
+        public List<TopRow> Employee = new();
 
         [InheritFrom("Employee")]
         public class TopRow : Row
@@ -21,16 +21,16 @@ namespace SampleServer.Schema
             public int EmployeeId;
 
             [SortColumn(false)]
-            public string FirstName;
+            public string? FirstName;
 
             [SortColumn(true)]
-            public string LastName;
+            public string? LastName;
 
             [ForeignKey(typeof(Employee))]
             public int SupervisorId;
 
             [LeftJoin("SupervisorId", "LastName"), Prompt("Supervisor")]
-            public string SupervisorLastName;
+            public string? SupervisorLastName;
 
             public bool IsToxic;
 
@@ -41,7 +41,7 @@ namespace SampleServer.Schema
         public abstract class Criteria
         {
             [InheritFrom("Employee.LastName"), Prompt("Last name starts with")]
-            public string LastName;
+            public string? LastName;
 
             [Prompt("Toxic human?")]
             public bool IsToxic;
@@ -56,7 +56,7 @@ namespace SampleServer.Schema
     public class CustomerList : Viewon
     {
         [Prompt("Customer List")]
-        public List<TopRow> Customer; 
+        public List<TopRow> Customer = new(); 
 
         [InheritFrom("Customer")]
         public class TopRow : Row
@@ -65,20 +65,20 @@ namespace SampleServer.Schema
             public int CustomerId;
 
             [SortColumn(true)]
-            public string Company;
+            public string? Company;
 
             [ForeignKey(typeof(Employee))]
             public int SalesRepId;
 
             [LeftJoin("SalesRepId", "LastName"), Prompt("Sales rep.")]
-            public string SalesRepLastName;
+            public string? SalesRepLastName;
         }
 
         [Criteria]
         public abstract class Criteria
         {
             [Prompt("Company starts with")]
-            public string Company;
+            public string? Company;
 
             [InheritFrom("Customer.SalesRepId"), ForeignKey(typeof(Customer))]
             public int SalesRepId;
@@ -98,7 +98,7 @@ namespace SampleServer.Schema
     /// </summary>
     public class ItemList : Viewon
     {
-        public List<TopRow> Item;
+        public List<TopRow> Item = new();
 
         [InheritFrom("Item")]
         public class TopRow : Row
@@ -107,10 +107,10 @@ namespace SampleServer.Schema
             public int ItemId;
 
             [SortColumn(true)]
-            public string ItemCode;
+            public string? ItemCode;
 
             [SortColumn(false)]
-            public string Description;
+            public string? Description;
 
             public double? Weight;
 
@@ -121,10 +121,10 @@ namespace SampleServer.Schema
         public abstract class Criteria
         {
             [Prompt("I-code starts with")]
-            public string ItemCode;
+            public string? ItemCode;
 
             [Prompt("Item description"), RegularExpression("^[^0-9]*$", ErrorMessage = "May not search on digits")] 
-            public string Description;
+            public string? Description;
 
             public double? Weight;
         }
@@ -135,7 +135,7 @@ namespace SampleServer.Schema
     /// </summary>
     public class ItemVariantList : Viewon
     {
-        public List<TopRow> ItemVariant;
+        public List<TopRow> ItemVariant = new();
 
         public class TopRow : Row
         {
@@ -145,10 +145,10 @@ namespace SampleServer.Schema
             public int ItemId;
 
             [MainColumn, SortColumn(true)]
-            public string VariantCode;
+            public string? VariantCode;
 
             [VisibleInDropdown]
-            public string Description;
+            public string? Description;
         }
 
         [Criteria]
@@ -163,7 +163,7 @@ namespace SampleServer.Schema
     /// </summary>
     public class SaleList : Viewon
     {
-        public List<TopRow> Sale;
+        public List<TopRow> Sale = new();
 
         [InheritFrom("Sale", IncludeCustom = true)]
         public class TopRow : Row

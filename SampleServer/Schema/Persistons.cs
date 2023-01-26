@@ -12,7 +12,7 @@ namespace SampleServer.Schema
     [Prompt("Phone types")]
     public class PhoneTypeLookup : Persiston
     {
-        public List<PhoneTypeRow> PhoneType;
+        public List<PhoneTypeRow> PhoneType = new();
 
         [Prompt("Type")]
         public class PhoneTypeRow : Row
@@ -23,7 +23,7 @@ namespace SampleServer.Schema
 
             [StringLength(20), MainColumn, SortColumn]
             [Prompt("Phone type")]
-            public string TypeOfPhone;
+            public string? TypeOfPhone;
         }
     }
 
@@ -33,7 +33,7 @@ namespace SampleServer.Schema
     [Prompt("Sale statuses")]
     public class SaleStatusLookup : Persiston
     {
-        public List<SaleStatusRow> SaleStatus;
+        public List<SaleStatusRow> SaleStatus = new();
 
         [Prompt("Status")]
         public class SaleStatusRow : Row
@@ -44,10 +44,10 @@ namespace SampleServer.Schema
 
             [StringLength(20, MinimumLength = 1), MainColumn, SortColumn]
             [Prompt("Sale status")]
-            public string Name;
+            public string? Name;
 
             [StringLength(20), WireType(Constants.TYPE_NSTRING)]
-            public string Note;
+            public string? Note;
         }
     }
 
@@ -62,10 +62,10 @@ namespace SampleServer.Schema
         public int? EmployeeId;
 
         [StringLength(50, MinimumLength = 1), Prompt("First name")]
-        public string FirstName;
+        public string? FirstName;
 
         [StringLength(50, MinimumLength = 1), Prompt("Last name"), MainColumn]
-        public string LastName;
+        public string? LastName;
 
         [ForeignKey(typeof(Employee))]
         [Prompt("Supervisor ID")]
@@ -73,7 +73,7 @@ namespace SampleServer.Schema
         public int? SupervisorId;
 
         [LeftJoin("SupervisorId", "LastName"), Prompt("Supervisor")]
-        public string SupervisorLastName;
+        public string? SupervisorLastName;
 
         [Prompt("Hired on")]
         public DateTime HireDate;
@@ -84,7 +84,7 @@ namespace SampleServer.Schema
         [Range(0, 10), Prompt("Neatness of desk (0-10)")]
         public int NeatDeskRating;
 
-        public List<EContactRow> EContact;
+        public List<EContactRow> EContact = new();
 
         [SqlTableName("EmployeeContact"), ParentKey("EmployeeId")]
         [Prompt("Employee contact")]
@@ -98,7 +98,7 @@ namespace SampleServer.Schema
             public short PhoneType;
 
             [StringLength(50), Prompt("Phone number")]
-            public string Phone;
+            public string? Phone;
         }
     }
 
@@ -113,7 +113,7 @@ namespace SampleServer.Schema
         public int? CustomerId;
 
         [StringLength(200, MinimumLength = 1)]
-        public string Company;
+        public string? Company;
 
         [ForeignKey(typeof(Employee))]
         [SelectBehavior(typeof(EmployeeList))]
@@ -121,15 +121,15 @@ namespace SampleServer.Schema
         public int SalesRepId;
 
         [LeftJoin("SalesRepId", "LastName"), Prompt("Sales rep")]
-        public string SalesRepLastName;
+        public string? SalesRepLastName;
 
         [StringLength(4000), WireType(Constants.TYPE_NSTRING)]
-        public string Notes;
+        public string? Notes;
 
         public override Task Validate(IUser user, Action<string> fail)
         {
             //silly rule to demonstrate custom validation:
-            if (Company.StartsWith("The", StringComparison.InvariantCultureIgnoreCase))
+            if (Company != null && Company.StartsWith("The", StringComparison.InvariantCultureIgnoreCase))
                 fail("Companies cannot start with 'the' ");
             //note that you can use language-dependent strings here by checking user.LangCode
 
@@ -148,16 +148,16 @@ namespace SampleServer.Schema
         public int? ItemId;
 
         [Prompt("I-code"), RegularExpression("^[A-Z]{2}-[0-9]{4}$"), MainColumn]
-        public string ItemCode;
+        public string? ItemCode;
 
         [StringLength(200, MinimumLength = 3)]
-        public string Description;
+        public string? Description;
 
         public double? Weight;
 
         public decimal? Price;
 
-        public List<ItemVariantRow> ItemVariant;
+        public List<ItemVariantRow> ItemVariant = new();
 
         [ParentKey("ItemId")]
         [Prompt("Variant")]
@@ -168,10 +168,10 @@ namespace SampleServer.Schema
             public int? ItemVariantId;
 
             [StringLength(20, MinimumLength = 1), Prompt("Sub-code"), MainColumn, SortColumn]
-            public string VariantCode;
+            public string? VariantCode;
 
             [StringLength(200, MinimumLength = 3)]
-            public string Description;
+            public string? Description;
         }
     }
 
@@ -199,7 +199,7 @@ namespace SampleServer.Schema
         [ForeignKey(typeof(SaleStatusLookup)), Prompt("Status")]
         public short Status;
 
-        public List<SaleItemRow> SaleItem;
+        public List<SaleItemRow> SaleItem = new();
 
         [ParentKey("SaleId")]
         [Prompt("Item sold")]
@@ -215,7 +215,7 @@ namespace SampleServer.Schema
             public int ItemId;
 
             [LeftJoin("ItemId", "Description")]
-            public string ItemDescription;
+            public string? ItemDescription;
 
             [Range(1, 999)]
             public int Quantity;
@@ -227,7 +227,7 @@ namespace SampleServer.Schema
             [Prompt("Ext Price")]
             public decimal ExtendedPrice;
 
-            public List<SaleItemNoteRow> SaleItemNote;
+            public List<SaleItemNoteRow> SaleItemNote = new();
 
             [ParentKey("SaleItemId")]
             [Prompt("Sale note")]
@@ -238,7 +238,7 @@ namespace SampleServer.Schema
                 public int? SaleItemNoteId;
 
                 [StringLength(4000), WireType(Constants.TYPE_NSTRING)]
-                public string Note;
+                public string? Note;
             }
         }
     }

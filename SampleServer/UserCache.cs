@@ -62,10 +62,10 @@ namespace SampleServer
 
         public class User : IUser
         {
-            public string Id { get; set; }
-            public string Password { get; set; }
-            public RetroRole[] Roles { get; set; }
-            public string LangCode { get; set; }
+            public string? Id { get; set; }
+            public string? Password { get; set; }
+            public RetroRole[] Roles { get; set; } = Array.Empty<RetroRole>();
+            public string? LangCode { get; set; }
             
             /// <summary>
             /// A real app would store users' timezones and calculate the minutes offset from UTC

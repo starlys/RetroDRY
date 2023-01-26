@@ -11,8 +11,7 @@ namespace SampleServer.Schema
         /// </summary>
         public static Task InitializeCustomer(Daton daton)
         {
-            var cust = daton as Customer;
-            cust.Notes = "Leads:\r\nComplaints:";
+            if (daton is Customer cust) cust.Notes = "Leads:\r\nComplaints:";
             return Task.CompletedTask;
         }
     }

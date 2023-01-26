@@ -45,7 +45,7 @@ namespace SampleServer.Controllers
         /// Get any daton in compatible format by key
         /// </summary>
         [HttpGet("any/{datonKey}")]
-        public async Task<object> Get(string datonKey)
+        public async Task<object?> Get(string datonKey)
         {
             //authenticate; for demo purposes we will assume the user, but for a real app you would check the authentication 
             //header and look up the user in a cache or databse
@@ -95,7 +95,7 @@ namespace SampleServer.Controllers
 
     public class LoginRequest
     {
-        public string Id { get; set; }
-        public string Password { get; set; }
+        public string? Id { get; set; }
+        public string? Password { get; set; }
     }
 }

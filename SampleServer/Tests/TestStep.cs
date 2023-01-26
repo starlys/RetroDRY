@@ -8,16 +8,16 @@ namespace SampleServer.Tests
         /// <summary>
         /// Step identifier shared on client and server
         /// </summary>
-        public string StepCode;
+        public string? StepCode;
 
         /// <summary>
         /// Server action to take after client performs the step
         /// </summary>
-        public Func<Task> Validate;
+        public Func<Task>? Validate;
 
         /// <summary>
         /// Next client step to take after server validation
         /// </summary>
-        public string NextStepCode;
+        public string? NextStepCode;
     }
 }

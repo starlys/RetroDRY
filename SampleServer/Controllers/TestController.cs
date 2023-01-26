@@ -36,7 +36,8 @@ namespace SampleServer.Controllers
             TestStep step = GetStep(completedStepCode);
             try
             {
-                await step.Validate();
+                if (step.Validate != null)
+                    await step.Validate();
             }
             catch (Exception ex)
             {
