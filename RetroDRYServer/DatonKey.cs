@@ -36,7 +36,7 @@ namespace RetroDRY
         /// <summary>
         /// Parse a string daton key and return a ViewonKey or PersistonKey
         /// </summary>
-        public static DatonKey Parse(string s)
+        public static DatonKey Parse(string? s)
         {
             var segments = ParseSegments(s);
             if (segments.Count < 1) throw new Exception("Misformed daton key: " + s);
@@ -45,7 +45,7 @@ namespace RetroDRY
             if (segments.Count == 2)
             {
                 string keyseg = segments[1];
-                if (keyseg.StartsWith("=")) return new PersistonKey(segments[0], keyseg.Substring(1), false);
+                if (keyseg.StartsWith("=")) return new PersistonKey(segments[0], keyseg[1..], false);
                 if (keyseg.StartsWith("+")) return new PersistonKey(segments[0], null, true);
             }
 
@@ -56,14 +56,18 @@ namespace RetroDRY
         /// <summary>
         /// Return escaped string segment; use this only for the values within the full key, not for the key as a whole
         /// </summary>
-        protected static string Escape(string s) => s.Replace(ESCAPE, ESCAPEDESCAPE).Replace(DELIMITER, ESCAPEDDELIMITER);
+        protected static string Escape(string? s)
+        {
+            if (s == null) return "";
+            return s.Replace(ESCAPE, ESCAPEDESCAPE).Replace(DELIMITER, ESCAPEDDELIMITER);
+        }
 
         /// <summary>
         /// Convert string form of daton key into unescaped segments
         /// </summary>
-        protected static List<string> ParseSegments(string s)
+        protected static List<string> ParseSegments(string? s)
         {
-            var segments = s.Split(DELIMITER[0]).ToList();
+            var segments = (s ?? "").Split(DELIMITER[0]).ToList();
 
             //unescape; and
             //in case any of the segments contained \|, it would be misinterpreted as 2 segments, so fix that
@@ -72,7 +76,7 @@ namespace RetroDRY
                 string segi = segments[i].Replace(ESCAPEDESCAPE, "\x1");
                 if (segi.EndsWith(ESCAPE))
                 {
-                    segi = segi.Substring(0, segi.Length - 1) + "|" + segments[i + 1];
+                    segi = segi[..^1] + "|" + segments[i + 1];
                     segments.RemoveAt(i + 1);
                 }
                 segments[i] = segi.Replace("\x1", ESCAPE);
@@ -90,7 +94,7 @@ namespace RetroDRY
         /// <summary>
         /// Primary key of the persiston's main single row; also see WholeTable
         /// </summary>
-        public readonly string PrimaryKey;
+        public readonly string? PrimaryKey;
 
         /// <summary>
         /// if true, then primarykey is ignored
@@ -103,7 +107,7 @@ namespace RetroDRY
         /// <param name="name">daton type name</param>
         /// <param name="primaryKey">primary key value</param>
         /// <param name="wholeTable">see WholeTable</param>
-        public PersistonKey(string name, string primaryKey, bool wholeTable) : base(name)
+        public PersistonKey(string name, string? primaryKey, bool wholeTable) : base(name)
         {
             PrimaryKey = primaryKey;
             WholeTable = wholeTable;
@@ -190,17 +194,17 @@ namespace RetroDRY
         /// <summary>
         /// These are not alphabetized; can be null
         /// </summary>
-        private readonly Criterion[] _Criteria;
+        private readonly Criterion[]? _Criteria;
 
         /// <summary>
         /// May be null
         /// </summary>
-        public IEnumerable<Criterion> Criteria => _Criteria;
+        public IEnumerable<Criterion>? Criteria => _Criteria;
 
         /// <summary>
         /// Name of column for order-by clause
         /// </summary>
-        public readonly string SortColumnName;
+        public readonly string? SortColumnName;
 
         /// <summary>
         /// 0-based page number
@@ -223,7 +227,7 @@ namespace RetroDRY
             {
                 int equalsIdx = segment.IndexOf('=');
                 if (equalsIdx < 0) continue;
-                string nam = segment.Substring(0, equalsIdx), val = segment.Substring(equalsIdx + 1);
+                string nam = segment[..equalsIdx], val = segment[(equalsIdx + 1)..];
 
                 //this segment could be a criteria or sort order
                 if (nam == SORTID)
@@ -245,7 +249,7 @@ namespace RetroDRY
         /// <param name="pageNo">0-baed page of results</param>
         /// <param name="sortColumnName">column name for order-by clause</param>
         /// <param name="viewonName">name of Daton type</param>
-        public ViewonKey(string viewonName, IEnumerable<Criterion> criteria = null, string sortColumnName = null, int pageNo = 0) : base(viewonName)
+        public ViewonKey(string viewonName, IEnumerable<Criterion>? criteria = null, string? sortColumnName = null, int pageNo = 0) : base(viewonName)
         {
             SortColumnName = sortColumnName;
             PageNumber = pageNo;

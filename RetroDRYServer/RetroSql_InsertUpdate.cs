@@ -15,10 +15,16 @@ namespace RetroDRY
         /// Insert or update a row
         /// </summary>
         /// <returns>database assigned parent key (only if changed) else null</returns>
-        protected async Task<object> InsertUpdateRow(IDbConnection db, RowChangingData cdata)
+        protected async Task<object?> InsertUpdateRow(IDbConnection db, RowChangingData cdata)
         {
+            if (cdata.TableDef.SqlTableName == null || cdata.TableDef.PrimaryKeyColName == null || SqlFlavor == null)
+                throw new Exception("Must initialize TableDef.SqlTableName and PrimaryKeyColName, and RetroSql.SqlFlavor");
+
             if (cdata.DiffRow.Kind == DiffKind.NewRow)
             {
+                if (cdata.ModifiedRow == null)
+                    throw new Exception("Expected ModifiedRow when DiffKind is NewRow");
+
                 var builder = new SqlInsertBuilder(SqlFlavor, CustomizeSqlStatement);
                 bool dbAssignsKey = cdata.TableDef.DatabaseAssignsKey;
                 PopulateWriterColumns(builder, cdata, !dbAssignsKey);
@@ -29,7 +35,7 @@ namespace RetroDRY
                 //populate the new key value in Modified persiston's row
                 if (newKeyValue != null)
                 {
-                    var rr = new RowRecurPoint() { TableDef = cdata.TableDef, Row = cdata.ModifiedRow };
+                    var rr = new RowRecurPoint(cdata.TableDef, cdata.ModifiedRow);
                     rr.SetPrimaryKey(newKeyValue);
                 }
                 return newKeyValue;
@@ -38,7 +44,7 @@ namespace RetroDRY
             {
                 var builder = new SqlUpdateBuilder(SqlFlavor, CustomizeSqlStatement);
                 PopulateWriterColumns(builder, cdata, false);
-                if (!cdata.DiffRow.Columns.TryGetValue(cdata.TableDef.PrimaryKeyColName, out object pkValue))
+                if (!cdata.DiffRow.Columns.TryGetValue(cdata.TableDef.PrimaryKeyColName, out object? pkValue))
                     throw new Exception($"Cannot update row in {cdata.TableDef.Name} because no primary key was found in diff");
                 if (builder.NonKeyCount > 0)
                     await builder.Execute(db, cdata.TableDef.SqlTableName, cdata.TableDef.PrimaryKeyColName, pkValue);
@@ -51,14 +57,14 @@ namespace RetroDRY
         /// </summary>
         protected virtual void PopulateWriterColumns(SqlWriteBuilder builder, RowChangingData cdata, bool includePrimaryKey)
         {
-            var customColValues = new Dictionary<string, object>(); //contents must be json compatible types
+            var customColValues = new Dictionary<string, object?>(); //contents must be json compatible types
 
             //write to builder; write custom cols to temporary dictionary
             foreach (var coldef in cdata.TableDef.Cols)
             {
                 if (coldef.IsComputedOrJoined) continue;
                 if (!includePrimaryKey && coldef.Name == cdata.TableDef.PrimaryKeyColName) continue;
-                if (!cdata.DiffRow.Columns.TryGetValue(coldef.Name, out object value)) continue;
+                if (!cdata.DiffRow.Columns.TryGetValue(coldef.Name, out object? value)) continue;
                 if (coldef.IsCustom)
                     customColValues[coldef.Name] = value;
                 else
@@ -85,7 +91,7 @@ namespace RetroDRY
         /// <summary>
         /// Convert a dictionary of custom values indexed by custom column name into json format for database storage
         /// </summary>
-        public string CustomValuesToJson(TableDef tabldef, Dictionary<string, object> values)
+        public string CustomValuesToJson(TableDef tabldef, Dictionary<string, object?> values)
         {
             var buf = new StringBuilder(values.Count * 20);
             var wri0 = new StringWriter(buf);
@@ -93,7 +99,7 @@ namespace RetroDRY
             writer.WriteStartObject();
             foreach (var coldef in tabldef.Cols.Where(c => c.IsCustom))
             {
-                if (!values.TryGetValue(coldef.Name, out object value)) continue;
+                if (!values.TryGetValue(coldef.Name, out object? value)) continue;
                 writer.WritePropertyName(coldef.Name);
                 writer.WriteRawValue(Retrovert.FormatRawJsonValue(coldef, value));
             }

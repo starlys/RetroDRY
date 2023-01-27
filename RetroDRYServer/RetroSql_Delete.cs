@@ -12,7 +12,7 @@ namespace RetroDRY
         protected virtual async Task DeleteRowWithCascade(IDbConnection db, TableDef tabledef, Row row)
         {
             //recur to delete child rows
-            var p0 = new RowRecurPoint { TableDef = tabledef, Row = row };
+            var p0 = new RowRecurPoint(tabledef, row);
             foreach (var p1 in p0.GetChildren())
             {
                 foreach (var p2 in p1.GetRows())
@@ -20,6 +20,7 @@ namespace RetroDRY
             }
 
             //delete this row
+            if (tabledef.SqlTableName == null || tabledef.PrimaryKeyColName == null) throw new Exception("Missing table name or key column anme in DeleteRowWithCascade");
             await DeleteSingleRow(db, tabledef.SqlTableName, tabledef.PrimaryKeyColName, p0.GetPrimaryKey());
         }
 

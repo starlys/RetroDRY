@@ -21,10 +21,10 @@ namespace SampleServer
             BaseLevel = PermissionLevel.View,
             TableOverrides = new List<TablePermission>
             {
-                new TablePermission { TableName = "Customer", BaseLevel = PermissionLevel.All },
-                new TablePermission { TableName = "Sale", BaseLevel = PermissionLevel.All },
-                new TablePermission { TableName = "SaleItem", BaseLevel = PermissionLevel.All },
-                new TablePermission { TableName = "SaleItemNote", BaseLevel = PermissionLevel.All }
+                new TablePermission("Customer", PermissionLevel.All),
+                new TablePermission("Sale", PermissionLevel.All),
+                new TablePermission("SaleItem", PermissionLevel.All),
+                new TablePermission("SaleItemNote", PermissionLevel.All)
             }
         };
         private static readonly RetroRole PublicRole = new()
@@ -32,12 +32,12 @@ namespace SampleServer
             BaseLevel = PermissionLevel.None, 
             TableOverrides = new List<TablePermission>
             {
-                new TablePermission { TableName = "Item", BaseLevel = PermissionLevel.View } ,
-                new TablePermission { TableName = "ItemVariant", BaseLevel = PermissionLevel.View } ,
-                new TablePermission { TableName = "PhoneType", BaseLevel = PermissionLevel.View } ,
-                new TablePermission { TableName = "SaleStatus", BaseLevel = PermissionLevel.View } ,
-                new TablePermission { TableName = "Sale", BaseLevel = PermissionLevel.Create } , 
-                new TablePermission { TableName = "SaleItem", BaseLevel = PermissionLevel.Create }
+                new TablePermission("Item", PermissionLevel.View),
+                new TablePermission("ItemVariant", PermissionLevel.View),
+                new TablePermission("PhoneType", PermissionLevel.View),
+                new TablePermission("SaleStatus", PermissionLevel.View),
+                new TablePermission("Sale", PermissionLevel.Create), 
+                new TablePermission("SaleItem", PermissionLevel.Create)
             }
         };
         private static readonly RetroRole CustomerNotesRole = new()
@@ -45,16 +45,16 @@ namespace SampleServer
             BaseLevel = PermissionLevel.None,
             TableOverrides = new List<TablePermission>
             {
-                new TablePermission 
+                new TablePermission("Customer", PermissionLevel.Modify)
                 {
-                    TableName = "Customer", 
+                    TableName = "", 
                     BaseLevel = PermissionLevel.Modify,
                     ColumnOverrides = new List<ColumnPermission>
                     {
-                        new ColumnPermission { ColumnName = "CustomerId", BaseLevel = PermissionLevel.View },
-                        new ColumnPermission { ColumnName = "Company", BaseLevel = PermissionLevel.View },
+                        new ColumnPermission("CustomerId", PermissionLevel.View),
+                        new ColumnPermission("Company", PermissionLevel.View),
                         //must be invisible for integration tests: new ColumnPermission { ColumnName = "SalesRepId", BaseLevel = PermissionLevel.View },
-                        new ColumnPermission { ColumnName = "Notes", BaseLevel = PermissionLevel.View | PermissionLevel.Modify }
+                        new ColumnPermission("Notes", PermissionLevel.View | PermissionLevel.Modify)
                     }
                 }
             }
@@ -62,8 +62,8 @@ namespace SampleServer
 
         public class User : IUser
         {
-            public string? Id { get; set; }
-            public string? Password { get; set; }
+            public string Id { get; set; }
+            public string Password { get; set; }
             public RetroRole[] Roles { get; set; } = Array.Empty<RetroRole>();
             public string? LangCode { get; set; }
             
@@ -71,14 +71,22 @@ namespace SampleServer
             /// A real app would store users' timezones and calculate the minutes offset from UTC
             /// </summary>
             public int TimeOffsetMinutes;
+
+            public User(string id, string password, RetroRole[] roles, string? langCode)
+            {
+                Id = id;
+                Password = password;
+                Roles = roles;
+                LangCode = langCode;
+            }
         }
 
         public static User[] Users = new[]
         {
-            new User { Id = "buffy", Password = "spiffy", TimeOffsetMinutes = -4 * 60, Roles = new[] { AdminRole } },
-            new User { Id = "spot", Password = "arfarf", TimeOffsetMinutes = -6 * 60, Roles = new[] { SalesRole } },
-            new User { Id = "public", Password = "public", TimeOffsetMinutes = -4 * 60, Roles = new[] { PublicRole } },
-            new User { Id = "nate", Password = "steno", TimeOffsetMinutes = -4 * 60, Roles = new[] { PublicRole, CustomerNotesRole } }
+            new User("buffy", "spiffy", new[] { AdminRole }, null) { TimeOffsetMinutes = -4 * 60 },
+            new User("buffy", "arfarf", new[] { SalesRole }, null) { TimeOffsetMinutes = -6 * 60 },
+            new User ("buffy", "public", new[] { PublicRole }, null) { TimeOffsetMinutes = -4 * 60 },
+            new User ("buffy", "steno", new[] { PublicRole, CustomerNotesRole }, null) { TimeOffsetMinutes = -4 * 60 }
         };
 
         public static User Buffy_The_Admin => Users[0];

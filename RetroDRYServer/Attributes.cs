@@ -131,18 +131,18 @@ namespace RetroDRY
         /// <summary>
         /// If set, the viewon will be seeded with a value for this criterion
         /// </summary>
-        public string AutoCriterionName { get; set; }
+        public string? AutoCriterionName { get; set; }
 
         /// <summary>
         /// When used with AutoCriterionName, the viewon's criteria value is taken from the value of this column in the local row
         /// </summary>
-        public string AutoCriterionValueColumnName { get; set; }
+        public string? AutoCriterionValueColumnName { get; set; }
 
         /// <summary>
         /// The value in the viewon's main result table to be copied back into the column being edited; if omitted, the Key column
         /// of the viewon will be used.
         /// </summary>
-        public string ViewonValueColumnName { get; set; }
+        public string? ViewonValueColumnName { get; set; }
 
         /// <summary>
         /// If true, all possible values from the viewon are shown as a dropdown list (only use if you know the number of options will be reasonable);

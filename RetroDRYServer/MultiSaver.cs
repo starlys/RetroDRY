@@ -25,17 +25,17 @@ namespace RetroDRY
             /// <summary>
             /// The original key, which may indicate a new unsaved persiston
             /// </summary>
-            public DatonKey OldKey;
+            public DatonKey? OldKey;
 
             /// <summary>
             /// This key will be different from the requested key for new persistons; may be null on error
             /// </summary>
-            public DatonKey NewKey;
+            public DatonKey? NewKey;
 
             /// <summary>
             /// Collection of error messages if save was not successful
             /// </summary>
-            public string[] Errors;
+            public string[]? Errors;
 
             /// <summary>
             /// True if save was successful
@@ -51,14 +51,19 @@ namespace RetroDRY
         private class SaveItem
         {
             public PersistonDiff Diff;
-            public Persiston Pristine, Modified;
-            public DatonDef DatonDef;
+            public Persiston? Pristine, Modified;
+            public DatonDef? DatonDef;
             public List<string> Errors = new List<string>();
 
             /// <summary>
             /// Is true when the diff specifies that all main rows are deleted
             /// </summary>
             public bool IsDeleted;
+
+            public SaveItem(PersistonDiff diff)
+            {
+                Diff = diff;
+            }
         }
 
         private class Trx
@@ -66,6 +71,13 @@ namespace RetroDRY
             public int DatabaseNumber;
             public DbConnection Connection;
             public DbTransaction Transaction;
+
+            public Trx(int databaseNumber, DbConnection connection, DbTransaction transaction)
+            {
+                DatabaseNumber = databaseNumber;
+                Connection = connection;
+                Transaction = transaction;
+            }
         }
 
         private readonly Retroverse Retroverse;
@@ -85,7 +97,7 @@ namespace RetroDRY
             Retroverse = retroverse;
             User = user;
             Guard = new SecurityGuard(retroverse.DataDictionary, user);
-            SaveItems = diffs.Select(d => new SaveItem { Diff = d }).ToArray();
+            SaveItems = diffs.Select(d => new SaveItem(d)).ToArray();
         }
 
         /// <summary>
@@ -107,6 +119,8 @@ namespace RetroDRY
         /// <returns>true if success</returns>
         public async Task<bool> Save()
         {
+            if (Retroverse.GetDbConnection == null || Retroverse.LockManager == null) throw new Exception("Uninitialized Retroverse");
+
             //prep pristine and modified, validate
             bool anyFailed = false;
             foreach (var i in SaveItems)
@@ -116,15 +130,17 @@ namespace RetroDRY
             }
             if (anyFailed) return false;
 
+            //validate SaveItems is complete
+            if (SaveItems.Any(i => i.DatonDef == null)) throw new Exception("Bug in Save: missing datonDef");
+
             //start transactions 
-            var databaseNumbers = SaveItems.Select(i => i.DatonDef.DatabaseNumber).Distinct().ToArray();
+            var databaseNumbers = SaveItems.Select(i => i.DatonDef!.DatabaseNumber).Distinct().ToArray();
             foreach (var dbno in databaseNumbers)
             {
                 var db = await Retroverse.GetDbConnection(dbno);
-                var trx = new Trx { DatabaseNumber = dbno, Connection = db };
-                Trxs.Add(trx); //being careful to add disposable objects to the class-level data in a way that allows it to be disposed if this method fails
                 var dbtrx = db.BeginTransaction();
-                trx.Transaction = dbtrx;
+                var trx = new Trx(dbno, db, dbtrx);
+                Trxs.Add(trx); //being careful to add disposable objects to the class-level data in a way that allows it to be disposed if this method fails
             }
 
             //save or abort
@@ -163,7 +179,7 @@ namespace RetroDRY
             return SaveItems.Select(item => new Result
             {
                 OldKey = item.Diff.Key, 
-                NewKey = item.Modified.Key, 
+                NewKey = item.Modified?.Key, 
                 IsSuccess = item.Errors.Count == 0,
                 Errors = item.Errors.ToArray(),
                 IsDeleted = item.IsDeleted 
@@ -185,13 +201,16 @@ namespace RetroDRY
             //get pristine, diff, and modified versions
             if (item.Diff.Key.IsNew)
             {
-                item.Modified = Utils.ConstructDaton(item.DatonDef.Type, item.DatonDef) as Persiston; 
+                item.Modified = Utils.ConstructDaton(item.DatonDef.Type, item.DatonDef) as Persiston
+                    ?? throw new Exception("Unable to construct modified daton in MultiSaver"); 
                 item.Modified.Key = item.Diff.Key;
             }
             else
             {
-                item.Pristine = (await Retroverse.GetDaton(item.Diff.Key, null))?.Daton as Persiston;
-                item.Modified = item.Pristine.Clone(item.DatonDef) as Persiston;
+                item.Pristine = (await Retroverse.GetDaton(item.Diff.Key, null))?.Daton as Persiston
+                    ?? throw new Exception("Unable to construct pristine daton in MultiSaver");
+                item.Modified = item.Pristine.Clone(item.DatonDef) as Persiston
+                    ?? throw new Exception("Unable to construct modified daton in MultiSaver");
             }
             item.Diff.ApplyTo(item.DatonDef, item.Modified);
 
@@ -209,8 +228,12 @@ namespace RetroDRY
         /// <returns>true on success</returns>
         private async Task<bool> SaveOne(SaveItem item)
         {
+            if (item?.Modified?.Key == null) throw new Exception("daton has no key in SaveOne");
+            if (item.DatonDef == null) throw new Exception("missing DatonDef in SaveOne");
+
             var trx = Trxs.Single(t => t.DatabaseNumber == item.DatonDef.DatabaseNumber);
             var sql = Retroverse.GetSqlInstance(item.Modified.Key);
+            if (sql == null) throw new Exception("Cannot resolve RetroSql instance in SaveOne");
             try
             {
                 await sql.Save(trx.Connection, User, item.Pristine, item.Modified, item.Diff);
@@ -231,6 +254,8 @@ namespace RetroDRY
         /// </summary>
         private static void AssignPersistonKey(SaveItem item)
         {
+            if (item.Modified?.Key == null || item.DatonDef == null) throw new Exception("daton has no key or definition in AssignPersistonKey");
+
             if (!item.Modified.Key.IsNew) return;
             var mainTdef = item.DatonDef.MainTableDef;
             var r = RecurPoint.FromDaton(item.DatonDef, item.Modified);

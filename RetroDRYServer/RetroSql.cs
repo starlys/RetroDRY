@@ -14,7 +14,7 @@ namespace RetroDRY
         /// <summary>
         /// Defines database platform behaviors
         /// </summary>
-        protected SqlFlavorizer SqlFlavor;
+        protected SqlFlavorizer? SqlFlavor;
 
         /// <summary>
         /// incremented when used to generate unique alias names

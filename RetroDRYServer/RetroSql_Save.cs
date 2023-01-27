@@ -19,7 +19,7 @@ namespace RetroDRY
             /// <summary>
             /// Key value of parent row
             /// </summary>
-            public object ParentKey;
+            public object? ParentKey;
 
             /// <summary>
             /// defintion of the table
@@ -34,17 +34,33 @@ namespace RetroDRY
             /// <summary>
             /// List of unchanged rows; null if single main row or there was no old row
             /// </summary>
-            public IList PristineList;
+            public IList? PristineList;
 
             /// <summary>
             /// List of rows after change; null if single main row or there is no new row
             /// </summary>
-            public IList ModifiedList;
+            public IList? ModifiedList;
 
             /// <summary>
             /// return values are object (newly assigned key for the row) and bool (true to process child tables)
             /// </summary>
-            public Func<RowChangingData, Task<(object, bool)>> ProcessRowF;
+            public Func<RowChangingData, Task<(object?, bool)>> ProcessRowF;
+
+            /// <summary>
+            /// Create
+            /// </summary>
+            /// <param name="parentKey"></param>
+            /// <param name="tableDef"></param>
+            /// <param name="diffRowList"></param>
+            /// <param name="processRowF"></param>
+            public TraversalData(object? parentKey, TableDef tableDef, List<PersistonDiff.DiffRow> diffRowList, 
+                Func<RowChangingData, Task<(object?, bool)>> processRowF)
+            {
+                ParentKey = parentKey;
+                TableDef = tableDef;
+                DiffRowList = diffRowList;
+                ProcessRowF = processRowF;
+            }
         }
 
         /// <summary>
@@ -55,7 +71,7 @@ namespace RetroDRY
             /// <summary>
             /// primary key of parent row (use to set parent key on new rows)
             /// </summary>
-            public object ParentKey;
+            public object? ParentKey;
 
             /// <summary>
             /// table being saved
@@ -75,12 +91,27 @@ namespace RetroDRY
             /// <summary>
             /// The original row (null if DiffRow indicates a new row)
             /// </summary>
-            public Row PristineRow;
+            public Row? PristineRow;
             
             /// <summary>
             /// The modified row (null if DiffRow indicates a deleted row)
             /// </summary>
-            public Row ModifiedRow;
+            public Row? ModifiedRow;
+
+            /// <summary>
+            /// Create
+            /// </summary>
+            /// <param name="parentKey"></param>
+            /// <param name="tableDef"></param>
+            /// <param name="diffRowList"></param>
+            /// <param name="diffRow"></param>
+            public RowChangingData(object? parentKey, TableDef tableDef, List<PersistonDiff.DiffRow> diffRowList, PersistonDiff.DiffRow diffRow)
+            {
+                ParentKey = parentKey;
+                TableDef = tableDef;
+                DiffRowList = diffRowList;
+                DiffRow = diffRow;
+            }
         }
 
         /// <summary>
@@ -91,28 +122,24 @@ namespace RetroDRY
         /// <param name="diff">the difference between pristine and modified, which is what this method inspects to make the changes</param>
         /// <param name="db"></param>
         /// <param name="user"></param>
-        public virtual async Task Save(IDbConnection db, IUser user, Persiston pristineDaton, Persiston modifiedDaton, PersistonDiff diff)
+        public virtual async Task Save(IDbConnection db, IUser user, Persiston? pristineDaton, Persiston modifiedDaton, PersistonDiff diff)
         {
             //called for each row in traversal; return true to recurse over children
-            async Task<(object, bool)> rowCallback(RowChangingData cdata)
+            async Task<(object?, bool)> rowCallback(RowChangingData cdata)
             {
                 if (cdata.DiffRow.Kind == DiffKind.DeletedRow)
                 {
+                    if (cdata.PristineRow == null) throw new Exception("Expected row for deletion in Save.rowCallback");
                     await DeleteRowWithCascade(db, cdata.TableDef, cdata.PristineRow);
                     return (null, false); //don't recur to children of deleted row
                 }
-                object newpk = await InsertUpdateRow(db, cdata);
+                object? newpk = await InsertUpdateRow(db, cdata);
                 return (newpk, true);
             }
 
-            var tdata = new TraversalData
-            {
-                ParentKey = null,
-                TableDef = diff.DatonDef.MainTableDef,
-                DiffRowList = diff.MainTable,
+            var tdata = new TraversalData(null, diff.DatonDef.MainTableDef, diff.MainTable, rowCallback) { 
                 PristineList = null,
                 ModifiedList = null,
-                ProcessRowF = rowCallback
             };
             if (diff.DatonDef.MultipleMainRows)
             {
@@ -133,17 +160,18 @@ namespace RetroDRY
         /// <param name="singleMainPristineRow">only set for top level call if there is a single main row</param>
         /// <param name="singleMainModifiedRow">only set for top level call if there is a single main row</param>
         /// <param name="tdata"></param>
-        protected async Task TraverseDiffList(TraversalData tdata, Row singleMainPristineRow, Row singleMainModifiedRow)
+        protected async Task TraverseDiffList(TraversalData tdata, Row? singleMainPristineRow, Row? singleMainModifiedRow)
         {
             var pkField = tdata.TableDef.RowType.GetField(tdata.TableDef.PrimaryKeyColName);
 
             foreach (var row in tdata.DiffRowList)
             {
-                if (!row.Columns.TryGetValue(tdata.TableDef.PrimaryKeyColName, out object rowKey)) 
+                if (tdata.TableDef.PrimaryKeyColName == null 
+                    || !row.Columns.TryGetValue(tdata.TableDef.PrimaryKeyColName, out object? rowKey)) 
                     throw new Exception($"Diff row is missing primary key {tdata.TableDef.PrimaryKeyColName}");
 
                 //find pristine row
-                Row pristineRow = singleMainPristineRow;
+                Row? pristineRow = singleMainPristineRow;
                 if (tdata.PristineList != null && row.Kind != DiffKind.NewRow)
                 {
                     int rowIdx = Utils.IndexOfPrimaryKeyMatch(tdata.PristineList, pkField, rowKey);
@@ -151,7 +179,7 @@ namespace RetroDRY
                 }
 
                 //find modified row 
-                Row modifiedRow = singleMainModifiedRow;
+                Row? modifiedRow = singleMainModifiedRow;
                 if (tdata.ModifiedList != null)
                 {
                     int rowIdx = Utils.IndexOfPrimaryKeyMatch(tdata.ModifiedList, pkField, rowKey);
@@ -159,16 +187,12 @@ namespace RetroDRY
                 }
 
                 //callback to process row
-                var cdata = new RowChangingData
-                {
-                    ParentKey = tdata.ParentKey,
-                    DiffRow = row,
-                    DiffRowList = tdata.DiffRowList,
-                    TableDef = tdata.TableDef,
+                var cdata = new RowChangingData(tdata.ParentKey, tdata.TableDef, tdata.DiffRowList, row) 
+                { 
                     PristineRow = pristineRow,
                     ModifiedRow = modifiedRow
                 };
-                (object newPK, bool doTraverseChildren) = await tdata.ProcessRowF?.Invoke(cdata);
+                (object? newPK, bool doTraverseChildren) = await tdata.ProcessRowF(cdata);
                 if (newPK != null) rowKey = newPK;
 
                 //skip child tables?
@@ -184,23 +208,19 @@ namespace RetroDRY
                         var listField = tdata.TableDef.RowType.GetField(childTableDef.Name);
 
                         //get pristine list
-                        IList childPristineList = null;
+                        IList? childPristineList = null;
                         if (pristineRow != null)
                             childPristineList = listField.GetValue(pristineRow) as IList;
 
                         //get modified list
-                        IList childModifiedList = null;
+                        IList? childModifiedList = null;
                         if (modifiedRow != null)
                             childModifiedList = listField.GetValue(modifiedRow) as IList;
 
-                        var childTdata = new TraversalData
-                        {
-                            ParentKey = rowKey,
-                            TableDef = childTableDef,
-                            DiffRowList = childRows,
+                        var childTdata = new TraversalData(rowKey, childTableDef, childRows, tdata.ProcessRowF)
+                        { 
                             PristineList = childPristineList,
                             ModifiedList = childModifiedList,
-                            ProcessRowF = tdata.ProcessRowF
                         };
                         await TraverseDiffList(childTdata, null, null);
                     }

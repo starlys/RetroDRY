@@ -13,6 +13,11 @@ namespace RetroDRY
         {
             public DateTime LastAccessedUtc = DateTime.UtcNow;
             public Daton Daton;
+
+            public Item(Daton daton)
+            {
+                Daton = daton;
+            }
         }
 
         private readonly ConcurrentDictionary<DatonKey, Item> Cache = new ConcurrentDictionary<DatonKey, Item>();
@@ -31,7 +36,7 @@ namespace RetroDRY
         /// Get one daton from cache or null if not found
         /// </summary>
         /// <param name="key"></param>
-        public Daton Get(DatonKey key)
+        public Daton? Get(DatonKey key)
         {
             if (Cache.TryGetValue(key, out Item i))
             {
@@ -48,10 +53,8 @@ namespace RetroDRY
         /// <param name="daton"></param>
         public void Put(Daton daton)
         {
-            Cache[daton.Key] = new Item
-            {
-                Daton = daton
-            };
+            if (daton.Key == null) throw new Exception("Attempt to put daton in cache with null key");
+            Cache[daton.Key] = new Item(daton);
         }
 
         /// <summary>

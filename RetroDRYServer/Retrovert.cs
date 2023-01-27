@@ -7,6 +7,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Xml.Linq;
 
 namespace RetroDRY
 {
@@ -30,7 +31,7 @@ namespace RetroDRY
             /// <param name="serializer"></param>
             /// <returns></returns>
             /// <exception cref="NotImplementedException"></exception>
-            public override CondensedDatonResponse ReadJson(JsonReader reader, Type objectType, CondensedDatonResponse existingValue, bool hasExistingValue, JsonSerializer serializer)
+            public override CondensedDatonResponse ReadJson(JsonReader reader, Type objectType, CondensedDatonResponse? existingValue, bool hasExistingValue, JsonSerializer serializer)
             {
                 throw new NotImplementedException();
             }
@@ -41,9 +42,10 @@ namespace RetroDRY
             /// <param name="writer"></param>
             /// <param name="value"></param>
             /// <param name="serializer"></param>
-            public override void WriteJson(JsonWriter writer, CondensedDatonResponse value, JsonSerializer serializer)
+            public override void WriteJson(JsonWriter writer, CondensedDatonResponse? value, JsonSerializer serializer)
             {
-                writer.WriteRawValue(value.CondensedDatonJson);
+                if (value != null) 
+                    writer.WriteRawValue(value.CondensedDatonJson);
             }
         }
 
@@ -52,6 +54,8 @@ namespace RetroDRY
         /// </summary>
         public static string ToWire(DataDictionary dbdef, Daton daton, bool compatibleFormat)
         {
+            if (daton.Key == null) throw new Exception("Expected daton key in ToWire");
+
             var datondef = dbdef.FindDef(daton);
             var buf = new StringBuilder(1000);
             var writerOLD = new StringWriter(buf);
@@ -72,7 +76,7 @@ namespace RetroDRY
                 if (r is TableRecurPoint rt) WriteToCompatibleWire(writer, rt);
                 if (r is RowRecurPoint rr)
                 {
-                    writer.WritePropertyName(CamelCasify(datondef.MainTableDef.Name));
+                    writer.WritePropertyName(CamelCasify(datondef.MainTableDef.Name) ?? "");
                     WriteToCompatibleWire(writer, rr);
                 }
             }
@@ -104,15 +108,16 @@ namespace RetroDRY
             if (daton is Viewon viewon && jroot.Value<bool>("isComplete") == false)
                 viewon.IsCompleteLoad = false;
 
-            var mainRowsNode = jroot[CamelCasify(datondef.MainTableDef.Name)];
+            var mainRowsNode = jroot[CamelCasify(datondef.MainTableDef.Name) ?? ""];
             if (mainRowsNode == null) return daton;
             if (!(mainRowsNode is JArray mainRowsArray)) throw new Exception($"{datondef.MainTableDef.Name} node must be an array");
             if (datondef.MultipleMainRows)
             {
                 var targetListInfo = datondef.Type.GetField(datondef.MainTableDef.Name);
                 if (targetListInfo == null) throw new Exception($"Expected {datondef.MainTableDef.Name} to be a member of {datondef.Type.Name}");
-                var targetList = Utils.CreateOrGetFieldValue<IList>(daton, targetListInfo) as IList;
-                ReadCompatibleJsonRowArray(mainRowsArray, datondef.MainTableDef, (IList)targetList);
+                var targetList = Utils.CreateOrGetFieldValue<IList>(daton, targetListInfo);
+                if (targetList == null) throw new Exception("Could not get list field value in FromCompatibleWireFull");
+                ReadCompatibleJsonRowArray(mainRowsArray, datondef.MainTableDef, targetList);
             }
             else
             {
@@ -133,6 +138,8 @@ namespace RetroDRY
             var datondef = dbdef.FindDef(datonKey);
             var diff = new PersistonDiff(datondef, datonKey, jroot.Value<string>("version"));
 
+            if (datondef.MainTableDef.PrimaryKeyColName == null) throw new Exception("Missing primary key in FromDiff");
+
             ReadJsonDiffRowArray(jroot, datondef.MainTableDef, diff.MainTable);
 
             //existing single-main-row diffs might not include the primary key in the main row, so add it here
@@ -143,6 +150,7 @@ namespace RetroDRY
                 {
                     var pkColdef = datondef.MainTableDef.FindCol(datondef.MainTableDef.PrimaryKeyColName);
                     var pk = Utils.ChangeType(((PersistonKey)datonKey).PrimaryKey, pkColdef.CSType);
+                    if (pk == null) throw new Exception("Could not change key type in FromDiff");
                     mainDiffRow.Columns[datondef.MainTableDef.PrimaryKeyColName] = pk;
                 }
             }
@@ -153,7 +161,7 @@ namespace RetroDRY
         /// <summary>
         /// Convert a node to a value of the given type; handles dates and other things that aren't in the JSON standard
         /// </summary>
-        public static object ParseNode(JToken node, Type toType)
+        public static object? ParseNode(JToken node, Type toType)
         {
             //null
             if (node.Type == JTokenType.Null) return null;
@@ -162,12 +170,12 @@ namespace RetroDRY
             if (toType == typeof(byte[])) return Convert.FromBase64String(node.ToObject<string>());
             if (toType == typeof(DateTime))
             {
-                string s = node.ToObject<string>();
+                string? s = node.ToObject<string>();
                 return ParseRetroDateTime(s, false);
             }
             if (toType == typeof(DateTime?))
             {
-                string s = node.ToObject<string>();
+                string? s = node.ToObject<string>();
                 if (string.IsNullOrEmpty(s)) return null;
                 return ParseRetroDateTime(s, false);
             }
@@ -181,11 +189,11 @@ namespace RetroDRY
         /// </summary>
         /// <param name="isDateOnly">if false, it will interpret 8- or 12-char inputs; if true it will ignore any time portion</param>
         /// <param name="s">the packed date/time</param>
-        public static DateTime ParseRetroDateTime(string s, bool isDateOnly)
+        public static DateTime ParseRetroDateTime(string? s, bool isDateOnly)
         {
             try
             {
-                int yr = int.Parse(s.Substring(0, 4));
+                int yr = int.Parse(s![..4]);
                 int mo = int.Parse(s.Substring(4, 2));
                 int da = int.Parse(s.Substring(6, 2));
                 if (isDateOnly || s.Length == 8) return new DateTime(yr, mo, da, 0, 0, 0, DateTimeKind.Utc);
@@ -204,9 +212,9 @@ namespace RetroDRY
         /// </summary>
         /// <param name="value">any supported value or null</param>
         /// <param name="coldef">definition of column</param>
-        public static string FormatRawJsonValue(ColDef coldef, object value) 
+        public static string FormatRawJsonValue(ColDef coldef, object? value) 
         {
-            string jsonQuote(string s) => JsonConvert.ToString(s);
+            static string jsonQuote(string s) => JsonConvert.ToString(s);
 
             //null
             if (value == null) return "null";
@@ -248,6 +256,8 @@ namespace RetroDRY
         {
             void ParseArray(string arrayName, DiffKind kind, bool allowChildren, bool fillInMissingNegativeKey) 
             {
+                if (tableDef.PrimaryKeyColName == null) throw new Exception("Missing primary key in ReadJsonDiffRowArray");
+
                 var rows = parent[arrayName];
                 if (rows == null) return;
                 if(!(rows is JArray rowsA)) throw new Exception($"Diff json nodes must be arrays");
@@ -262,12 +272,14 @@ namespace RetroDRY
                     if (fillInMissingNegativeKey && !target.Columns.ContainsKey(tableDef.PrimaryKeyColName))
                     {
                         var newRowPK = Utils.ChangeType(-1, tableDef.FindCol(tableDef.PrimaryKeyColName).CSType);
+                        if (newRowPK == null) throw new Exception("Could not conver type in ReadJsonDiffRowArray");
                         target.Columns[tableDef.PrimaryKeyColName] = newRowPK;
                     }
                 }
             }
 
-            string name = CamelCasify(tableDef.Name);
+            string? name = CamelCasify(tableDef.Name);
+            if (name == null) throw new Exception("Expected tableDef name in ReadJsonDiffRowArray");
             ParseArray(name, DiffKind.Other, true, false);
             ParseArray(name + "-new", DiffKind.NewRow, true, true);
             ParseArray(name + "-deleted", DiffKind.DeletedRow, false, false);
@@ -292,7 +304,7 @@ namespace RetroDRY
             {
                 foreach (var childTableDef in tableDef.Children)
                 {
-                    if (target.ChildTables == null) target.ChildTables = new Dictionary<TableDef, List<PersistonDiff.DiffRow>>();
+                    target.ChildTables ??= new Dictionary<TableDef, List<PersistonDiff.DiffRow>>();
                     if (!target.ChildTables.ContainsKey(childTableDef)) target.ChildTables[childTableDef] = new List<PersistonDiff.DiffRow>();
                     ReadJsonDiffRowArray(node, childTableDef, target.ChildTables[childTableDef]);
                 }
@@ -316,8 +328,10 @@ namespace RetroDRY
         /// <summary>
         /// copy row from node (a json object) to target (a daton root or child row), based on tableDef
         /// </summary>
-        private static void ReadCompatibleJsonRow(JObject node, TableDef tableDef, Row targetRow)
+        private static void ReadCompatibleJsonRow(JObject? node, TableDef tableDef, Row targetRow)
         {
+            if (node == null) throw new Exception("Expected node in ReadCompatibleJsonRow");
+
             //copy fields in this row
             foreach (var colDef in tableDef.Cols)
             {
@@ -352,6 +366,7 @@ namespace RetroDRY
                     var listType = targetListField.FieldType;
                     if (!(targetListField is IList) || !listType.IsGenericType) continue; //is not List<xxx>
                     var list = Utils.CreateOrGetFieldValue<IList>(targetRow, targetListField);
+                    if (list == null) throw new Exception("Could not create list field value in ReadCompatibleJsonRow");
 
                     //loop rows
                     foreach (var node2 in jarray)
@@ -397,7 +412,7 @@ namespace RetroDRY
             writer.WriteStartObject();
             foreach (var coldef in rr.TableDef.Cols)
             {
-                writer.WritePropertyName(CamelCasify(coldef.Name));
+                writer.WritePropertyName(CamelCasify(coldef.Name) ?? "");
                 WriteColValue(writer, rr.TableDef.RowType, rr.Row, coldef);
             }
             foreach (var rt in rr.GetChildren())
@@ -410,7 +425,7 @@ namespace RetroDRY
         /// </summary>
         private static void WriteToCompatibleWire(JsonTextWriter writer, TableRecurPoint rt)
         {
-            writer.WritePropertyName(CamelCasify(rt.TableDef.Name));
+            writer.WritePropertyName(CamelCasify(rt.TableDef.Name) ?? "");
             writer.WriteStartArray();
             foreach (var rr in rt.GetRows())
                 WriteToCompatibleWire(writer, rr);
@@ -422,7 +437,7 @@ namespace RetroDRY
         /// </summary>
         private static void WriteColValue(JsonTextWriter writer, Type rowType, Row row, ColDef coldef)
         {
-            object value;
+            object? value;
             if (coldef.IsCustom) value = row.GetCustom(coldef.Name); 
             else value = rowType.GetField(coldef.Name).GetValue(row);
             string jsonValue = FormatRawJsonValue(coldef, value);
@@ -435,7 +450,7 @@ namespace RetroDRY
         /// <param name="languageMessages">may be null; see Retroverse.LanguageMessages</param>
         /// <param name="user"></param>
         /// <param name="ddict"></param>
-        public static DataDictionaryResponse DataDictionaryToWire(DataDictionary ddict, IUser user, Dictionary<string, Dictionary<string, string>> languageMessages)
+        public static DataDictionaryResponse DataDictionaryToWire(DataDictionary ddict, IUser user, Dictionary<string, Dictionary<string, string>>? languageMessages)
         {
             var guard = new SecurityGuard(ddict, user);
             var datonWires = new List<DatonDefResponse>();
@@ -453,8 +468,8 @@ namespace RetroDRY
             }
 
             var messages = new Dictionary<string, string>();
-            Dictionary<string, string> dictByLanguage = null;
-            languageMessages?.TryGetValue(user.LangCode, out dictByLanguage);
+            Dictionary<string, string>? dictByLanguage = null;
+            languageMessages?.TryGetValue(user.LangCode ?? "", out dictByLanguage);
             foreach ((string code, string englishMessage) in Constants.EnglishMessages)
             {
                 messages[code] = englishMessage;
@@ -469,7 +484,7 @@ namespace RetroDRY
         }
 
         //see DataDictionaryToWire
-        private static TableDefResponse ToWire(SecurityGuard guard, TableDef source, IUser user, bool isCriteria)
+        private static TableDefResponse? ToWire(SecurityGuard guard, TableDef? source, IUser user, bool isCriteria)
         {
             if (source == null) return null;
             var wire = new TableDefResponse()
@@ -514,7 +529,7 @@ namespace RetroDRY
             };
         }
 
-        private static ColDef.LeftJoinInfo ToWire(ColDef.LeftJoinInfo lji)
+        private static ColDef.LeftJoinInfo? ToWire(ColDef.LeftJoinInfo? lji)
         {
             if (lji == null) return null;
             return new ColDef.LeftJoinInfo
@@ -524,7 +539,7 @@ namespace RetroDRY
             };
         }
 
-        private static ColDef.SelectBehaviorInfo ToWire(ColDef.SelectBehaviorInfo sbi)
+        private static ColDef.SelectBehaviorInfo? ToWire(ColDef.SelectBehaviorInfo? sbi)
         {
             if (sbi == null) return null;
             return new ColDef.SelectBehaviorInfo
@@ -540,10 +555,10 @@ namespace RetroDRY
         /// <summary>
         /// return s with the first letter converted to lowercase
         /// </summary>
-        public static string CamelCasify(string s)
+        public static string? CamelCasify(string? s)
         {
             if (string.IsNullOrEmpty(s)) return s;
-            if (char.IsUpper(s, 0)) s = char.ToLowerInvariant(s[0]) + s.Substring(1);
+            if (char.IsUpper(s, 0)) s = char.ToLowerInvariant(s[0]) + s[1..];
             return s;
         }
     }

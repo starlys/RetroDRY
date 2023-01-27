@@ -34,18 +34,15 @@ namespace UnitTest
                     BaseLevel = PermissionLevel.View ,
                     TableOverrides = new List<TablePermission>
                     {
-                        new TablePermission 
+                        new TablePermission("Ogre", PermissionLevel.View | PermissionLevel.Modify)
                         {
-                            TableName = "Ogre",
-                            BaseLevel = PermissionLevel.View | PermissionLevel.Modify,
                             ColumnOverrides = new List<ColumnPermission>
                             {
-                                new ColumnPermission { ColumnName = "Money", BaseLevel = PermissionLevel.None}
+                                new ColumnPermission("Money", PermissionLevel.None)
                             }
                         },
-                        new TablePermission
+                        new TablePermission("PaymentMethod", PermissionLevel.None)
                         {
-                            TableName = "PaymentMethod",
                             Level = (usr, daton, tabname) => PermissionLevel.None
                         }
                     }
@@ -87,18 +84,15 @@ namespace UnitTest
                     BaseLevel = PermissionLevel.All,
                     TableOverrides = new List<TablePermission>
                     {
-                        new TablePermission
+                        new TablePermission("Ogre", PermissionLevel.View | PermissionLevel.Modify)
                         {
-                            TableName = "Ogre",
-                            BaseLevel = PermissionLevel.View | PermissionLevel.Modify,
                             ColumnOverrides = new List<ColumnPermission>
                             {
-                                new ColumnPermission { ColumnName = "Money", BaseLevel = PermissionLevel.None}
+                                new ColumnPermission("Money",  PermissionLevel.None)
                             }
                         },
-                        new TablePermission
+                        new TablePermission("PaymentMethod", PermissionLevel.None)
                         {
-                            TableName = "PaymentMethod",
                             Level = (usr, daton, tabname) => PermissionLevel.None
                         }
                     }
@@ -108,7 +102,7 @@ namespace UnitTest
             var ddict = new DataDictionary();
             ddict.AddDatonUsingClassAnnotation(typeof(Ogre));
             var ogredef = ddict.DatonDefs["Ogre"];
-            var paymentdef = ogredef.MainTableDef.Children[0];
+            var paymentdef = ogredef.MainTableDef.Children![0];
 
             var diff = new PersistonDiff(ogredef, xorg.Key, xorg.Version)
             {
@@ -117,7 +111,7 @@ namespace UnitTest
                     new PersistonDiff.DiffRow
                     {
                         Kind = DiffKind.Other,
-                        Columns = new Dictionary<string, object>
+                        Columns = new Dictionary<string, object?>
                         {
                             { "Name", "Priscilla" }, //allowed
                             { "Money", (decimal)5.49 } //disallowed
@@ -131,7 +125,7 @@ namespace UnitTest
                                     new PersistonDiff.DiffRow
                                     {
                                         Kind = DiffKind.Other,
-                                        Columns = new Dictionary<string, object>
+                                        Columns = new Dictionary<string, object?>
                                         {
                                             { "Method", "cash" }, //disallowed by function
                                             { "Notes", "cash is best" }
@@ -176,11 +170,7 @@ namespace UnitTest
                     BaseLevel = PermissionLevel.None,
                     TableOverrides = new List<TablePermission>
                     {
-                        new TablePermission
-                        {
-                            TableName = "PaymentMethod",
-                            BaseLevel = PermissionLevel.Create
-                        }
+                        new TablePermission("PaymentMethod",PermissionLevel.Create)
                     }
                 }
             };
@@ -188,7 +178,7 @@ namespace UnitTest
             var ddict = new DataDictionary();
             ddict.AddDatonUsingClassAnnotation(typeof(Ogre));
             var ogredef = ddict.DatonDefs["Ogre"];
-            var paymentdef = ogredef.MainTableDef.Children[0];
+            var paymentdef = ogredef.MainTableDef.Children![0];
 
             var diff = new PersistonDiff(ogredef, xorg.Key, xorg.Version)
             {
@@ -197,7 +187,7 @@ namespace UnitTest
                     new PersistonDiff.DiffRow
                     {
                         Kind = DiffKind.Other,
-                        Columns = new Dictionary<string, object>
+                        Columns = new Dictionary<string, object?>
                         {
                             { "Name", "Priscilla" } //disallowed
                         },
@@ -210,7 +200,7 @@ namespace UnitTest
                                     new PersistonDiff.DiffRow
                                     {
                                         Kind = DiffKind.Other,
-                                        Columns = new Dictionary<string, object>
+                                        Columns = new Dictionary<string, object?>
                                         {
                                             { "Notes", "disallowed" } //disallowed update
                                         }
@@ -218,7 +208,7 @@ namespace UnitTest
                                     new PersistonDiff.DiffRow
                                     {
                                         Kind = DiffKind.NewRow,
-                                        Columns = new Dictionary<string, object>
+                                        Columns = new Dictionary<string, object?>
                                         {
                                             { "Method", "barter" } //allowed create row
                                         }

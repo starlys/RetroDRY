@@ -80,7 +80,7 @@ namespace RetroDRY
         /// <summary>
         /// Column name for order-by clause
         /// </summary>
-        public string SortColumnName;
+        public string? SortColumnName;
 
         /// <summary>
         /// zero for unlimited or the page size to load; the query will be set up to actually return one more row than the number here, so
@@ -104,7 +104,7 @@ namespace RetroDRY
         /// <param name="mainTable">main table name</param>
         /// <param name="sortColName">column to use for order by clause</param>
         /// <param name="sqlFlavor">identifies vendor syntax exceptions</param>
-        public SqlSelectBuilder(SqlFlavorizer sqlFlavor, string mainTable, string sortColName, List<string> returnColumnNames)
+        public SqlSelectBuilder(SqlFlavorizer sqlFlavor, string mainTable, string? sortColName, List<string> returnColumnNames)
         {
             SqlFlavor = sqlFlavor;
             MainTable = mainTable;

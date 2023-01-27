@@ -37,7 +37,12 @@ namespace RetroDRY
             /// The bool generic argument is not used. For thread safety, completing this might be done on multiple threads so it should be ok
             /// to ignore exceptions in that case.
             /// </summary>
-            public TaskCompletionSource<bool> LongPollingCompleter;
+            public TaskCompletionSource<bool>? LongPollingCompleter;
+
+            public SessionInfo(IUser user)
+            {
+                User = user;
+            }
         }
 
         /// <summary>
@@ -48,7 +53,7 @@ namespace RetroDRY
             /// <summary>
             /// Dateons being pushed
             /// </summary>
-            public Daton[] Datons;
+            public Daton[]? Datons;
 
             /// <summary>
             /// True to include a new data dictionary version; false if there were no changes
@@ -76,7 +81,7 @@ namespace RetroDRY
         /// </summary>
         public string CreateSession(IUser user)
         {
-            var client = new SessionInfo { User = user };
+            var client = new SessionInfo(user);
             Sessions[client.SessionKey] = client;
             return client.SessionKey;
         }
@@ -92,7 +97,7 @@ namespace RetroDRY
         /// <summary>
         /// Get a user by session key; null if not found
         /// </summary>
-        public IUser GetUser(string sessionKey)
+        public IUser? GetUser(string? sessionKey)
         {
             if (sessionKey == null) return null;
             if (!Sessions.TryGetValue(sessionKey, out SessionInfo client)) return null;
@@ -116,7 +121,7 @@ namespace RetroDRY
         /// </summary>
         /// <param name="callback">if provided, this is called with each session key removed</param>
         /// <param name="secondsOld">override this to specify a different timeframe</param>
-        public async Task Clean(Func<string, Task> callback, int secondsOld = 120)
+        public async Task Clean(Func<string, Task>? callback, int secondsOld = 120)
         {
             DateTime cutoff = DateTime.UtcNow.AddSeconds(0 - secondsOld);
             foreach (var client in Sessions.Values)
@@ -133,7 +138,7 @@ namespace RetroDRY
         /// Start a long poll for the session
         /// </summary>
         /// <returns>Task that should be awaited with a timeout, or null if bad sessionkey</returns>
-        internal  Task<bool> BeginLongPoll(string sessionKey)
+        internal Task<bool>? BeginLongPoll(string sessionKey)
         {
             if (!Sessions.TryGetValue(sessionKey, out var ses)) return null;
             var completer = new TaskCompletionSource<bool>();
@@ -145,12 +150,12 @@ namespace RetroDRY
         /// If there is anything to push to the client, return it while also clearing the accumulators of those items.
         /// If there is nothing or unknown user, return null.
         /// </summary>
-        public PushGroup GetAndClearItemsToPush(string sessionKey)
+        public PushGroup? GetAndClearItemsToPush(string sessionKey)
         {
             if (!Sessions.TryGetValue(sessionKey, out var ses)) return null;
             
             //datons: move to local vars and clear from session
-            Daton[] datons = null;
+            Daton[]? datons = null;
             lock (ses.DatonsToPush)
             {
                 if (ses.DatonsToPush.Any())
@@ -180,7 +185,7 @@ namespace RetroDRY
         /// Determine if any subscription from any client is out of date; that is, if there is a client
         /// whose latest version is not the new version provided for the daton key provided.
         /// </summary>
-        public bool IsAnyOutOfDate(DatonKey key, string newVersion)
+        public bool IsAnyOutOfDate(DatonKey key, string? newVersion)
         {
             foreach (var cli in Sessions.Values)
             {
@@ -224,7 +229,9 @@ namespace RetroDRY
                 foreach (var daton in datons)
                 {
                     //skip if this user doesn't need this daton
-                    if (!cli.Subscriptions.TryGetValue(daton.Key, out string version)) continue;
+                    if (daton.Key == null || daton.Version == null) continue;
+                    if (!cli.Subscriptions.TryGetValue(daton.Key, out string version))
+                        continue;
                     if (version == daton.Version) continue; //don't send if client already has the latest version
 
                     //remember we sent it

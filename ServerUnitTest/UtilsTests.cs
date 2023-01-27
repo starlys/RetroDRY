@@ -13,17 +13,17 @@ namespace UnitTest
         [TestMethod]
         public void InferredWireType()
         {
-            Assert.AreEqual("bool", RetroDRY.Utils.InferredWireType(typeof(bool)));
-            Assert.AreEqual("nbool", RetroDRY.Utils.InferredWireType(typeof(bool?)));
-            Assert.AreEqual("blob", RetroDRY.Utils.InferredWireType(typeof(byte[])));
-            Assert.ThrowsException<Exception>(() => RetroDRY.Utils.InferredWireType(typeof(Task)));
+            Assert.AreEqual("bool", Utils.InferredWireType(typeof(bool)));
+            Assert.AreEqual("nbool", Utils.InferredWireType(typeof(bool?)));
+            Assert.AreEqual("blob", Utils.InferredWireType(typeof(byte[])));
+            Assert.ThrowsException<Exception>(() => Utils.InferredWireType(typeof(Task)));
         }
 
         [TestMethod]
         public void Construct()
         {
-            Assert.IsTrue(RetroDRY.Utils.Construct(typeof(UtilsTests)).GetType() == typeof(UtilsTests));
-            Assert.IsTrue(RetroDRY.Utils.Construct(typeof(Retroverse)).GetType() == typeof(Retroverse)); 
+            Assert.IsTrue(Utils.Construct(typeof(UtilsTests)).GetType() == typeof(UtilsTests));
+            Assert.IsTrue(Utils.Construct(typeof(Retroverse)).GetType() == typeof(Retroverse)); 
         }
 
         [TestMethod]
@@ -36,12 +36,15 @@ namespace UnitTest
             };
             foo.IntList.Add(21);
             var field = foo.GetType().GetField("IntList");
-            var intlist = RetroDRY.Utils.CreateOrGetFieldValue<IList>(foo, field);
+            Assert.IsNotNull(field);
+            var intlist = Utils.CreateOrGetFieldValue<IList>(foo, field);
+            Assert.IsNotNull(intlist);
             Assert.AreEqual(21, intlist[0]);
 
             //when field is null
             foo = new Foo();
-            intlist = RetroDRY.Utils.CreateOrGetFieldValue<IList>(foo, field);
+            intlist = Utils.CreateOrGetFieldValue<IList>(foo, field);
+            Assert.IsNotNull(intlist);
             foo.IntList.Add(56);
             Assert.AreEqual(56, intlist[0]);
         }
@@ -55,8 +58,9 @@ namespace UnitTest
                 new Foo { Id = 6, Name = "Jane" }
             };
             var pkfield = typeof(Foo).GetField("Id");
-            Assert.AreEqual(1, RetroDRY.Utils.IndexOfPrimaryKeyMatch(list, pkfield, 6));
-            Assert.AreEqual(-1, RetroDRY.Utils.IndexOfPrimaryKeyMatch(list, pkfield, 7));
+            Assert.IsNotNull(pkfield);
+            Assert.AreEqual(1, Utils.IndexOfPrimaryKeyMatch(list, pkfield, 6));
+            Assert.AreEqual(-1, Utils.IndexOfPrimaryKeyMatch(list, pkfield, 7));
         }
     }
 

@@ -62,6 +62,7 @@ namespace SampleServer.Tests
             return count;
         }
 
-        public static IEnumerable<Diagnostics.Report> AllDiagnostics => Globals.TestingRetroverse.Select(r => r.Diagnostics.GetStatus());
+        public static IEnumerable<Diagnostics.Report> AllDiagnostics => Globals.TestingRetroverse
+            .Where(r => r.Diagnostics != null).Select(r => r.Diagnostics!.GetStatus());
     }
 }

@@ -8,7 +8,7 @@ namespace RetroDRY
     /// <summary>
     /// Base class for the functionality to recurse over all rows and child tables in a daton.
     /// </summary>
-    public class RecurPoint
+    public abstract class RecurPoint
     {
         /// <summary>
         /// Definition of table being traveled
@@ -16,20 +16,29 @@ namespace RetroDRY
         public TableDef TableDef;
 
         /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="tableDef"></param>
+        protected RecurPoint(TableDef tableDef)
+        {
+            TableDef = tableDef;
+        }
+
+        /// <summary>
         /// Get a RecurPoint for the top level of a daton, which will be a RowRecurPoint for single-main-row type, else a TableRecurPoint
         /// </summary>
         public static RecurPoint FromDaton(DatonDef datondef, Daton daton)
         {
             if (datondef.MultipleMainRows)
-                return new TableRecurPoint { TableDef = datondef.MainTableDef, Table = GetMainTable(datondef, daton, createIfMissing: true) };
+                return new TableRecurPoint(datondef.MainTableDef, GetMainTable(datondef, daton, createIfMissing: true)!);
             else
-                return new RowRecurPoint { TableDef = datondef.MainTableDef, Row = daton };
+                return new RowRecurPoint(datondef.MainTableDef, daton);
         }
 
         /// <summary>
         /// Get the main table (IList) of a daton
         /// </summary>
-        public static IList GetMainTable(DatonDef datondef, Daton daton, bool createIfMissing = false)
+        public static IList? GetMainTable(DatonDef datondef, Daton daton, bool createIfMissing = false)
         {
             var f = daton.GetType().GetField(datondef.MainTableDef.Name);
             return GetChildTable(daton, f, createIfMissing);
@@ -38,7 +47,7 @@ namespace RetroDRY
         /// <summary>
         /// Get a child table (IList) within a parent Row using the child's TableDef.
         /// </summary>
-        public static IList GetChildTable(TableDef parentdef, Row parent, TableDef memberdef, bool createIfMissing = false)
+        public static IList? GetChildTable(TableDef parentdef, Row parent, TableDef memberdef, bool createIfMissing = false)
         {
             if (parent.GetType() != parentdef.RowType) throw new Exception("Incorrect type");
             var f = parentdef.RowType.GetField(memberdef.Name); 
@@ -49,7 +58,7 @@ namespace RetroDRY
         /// <summary>
         /// Get a child table (IList) within a parent Row using the child's FieldInfo
         /// </summary>
-        private static IList GetChildTable(Row parent, FieldInfo f, bool createIfMissing)
+        private static IList? GetChildTable(Row parent, FieldInfo f, bool createIfMissing)
         {
             var list = f.GetValue(parent) as IList;
             if (list == null && createIfMissing)
@@ -70,18 +79,25 @@ namespace RetroDRY
         /// table rows
         /// </summary>
         public IList Table;
-    
+
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="table"></param>
+        /// <param name="tableDef"></param>
+        public TableRecurPoint(TableDef tableDef, IList table) : base(tableDef)
+        {
+            Table = table;
+        }
+
+
         /// <summary>
         /// Convert table rows into RowRecurPoints
         /// </summary>
         public IEnumerable<RowRecurPoint> GetRows()
         {
             foreach (Row row in Table)
-                yield return new RowRecurPoint
-                {
-                    TableDef = TableDef,
-                    Row = row
-                };
+                yield return new RowRecurPoint(TableDef, row);
         }
     }
 
@@ -94,6 +110,16 @@ namespace RetroDRY
         /// The row this relates to
         /// </summary>
         public Row Row;
+
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="tableDef"></param>
+        /// <param name="row"></param>
+        public RowRecurPoint(TableDef tableDef, Row row) : base(tableDef)
+        {
+            Row = row;
+        }
 
         /// <summary>
         /// Get the primary key value for the row
@@ -130,11 +156,7 @@ namespace RetroDRY
             {
                 foreach (var childTableDef in TableDef.Children)
                 {
-                    yield return new TableRecurPoint
-                    {
-                        TableDef = childTableDef,
-                        Table = GetChildTable(TableDef, Row, childTableDef, createIfMissing: true)
-                    };
+                    yield return new TableRecurPoint(childTableDef, GetChildTable(TableDef, Row, childTableDef, createIfMissing: true)!);
                 }
             }
         }

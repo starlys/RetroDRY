@@ -38,7 +38,7 @@ namespace SampleServer.Tests
                 NextStepCode = "a10-30",
                 Validate = () =>
                 {
-                    if (Globals.Retroverse.Diagnostics.GetStatus().NumSessions != 0) throw new Exception("Expected no sessions");
+                    if (Globals.Retroverse.Diagnostics?.GetStatus().NumSessions != 0) throw new Exception("Expected no sessions");
                     return Task.CompletedTask;
                 }
             },
@@ -50,7 +50,7 @@ namespace SampleServer.Tests
                 NextStepCode = "a20-10",
                 Validate = () =>
                 {
-                    if (Globals.Retroverse.Diagnostics.GetStatus().NumSessions != 1) throw new Exception("Expected 1 session");
+                    if (Globals.Retroverse.Diagnostics?.GetStatus().NumSessions != 1) throw new Exception("Expected 1 session");
                     return Task.CompletedTask;
                 }
             },

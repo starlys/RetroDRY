@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
+using NuGet.ContentModel;
 using RetroDRY;
 
 namespace SampleServer.Schema
@@ -84,11 +85,16 @@ namespace SampleServer.Schema
             public int SalesRepId;
         }
 
-        public override Task ValidateCriteria(IUser user, ViewonKey key, Action<string> fail)
+        public override Task ValidateCriteria(IUser? user, ViewonKey key, Action<string> fail)
         {
-            var companyCri = key.Criteria.FirstOrDefault(c => c.Name == "Company");
-            if (companyCri != null && companyCri.PackedValue.StartsWith("The", StringComparison.InvariantCultureIgnoreCase))
-                fail("Cannot search for companies starting with 'the'");
+            if (key.Criteria == null)
+                fail("missing criteria");
+            else
+            {
+                var companyCri = key.Criteria.FirstOrDefault(c => c.Name == "Company");
+                if (companyCri != null && companyCri.PackedValue.StartsWith("The", StringComparison.InvariantCultureIgnoreCase))
+                    fail("Cannot search for companies starting with 'the'");
+            }
             return Task.CompletedTask;
         }
     }

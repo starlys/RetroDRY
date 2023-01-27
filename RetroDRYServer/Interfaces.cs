@@ -21,7 +21,7 @@ namespace RetroDRY
         /// <summary>
         /// Null for the default language, or a code that matches the code used when adding prompts
         /// </summary>
-        string LangCode { get; }
+        string? LangCode { get; }
     }
 
 }

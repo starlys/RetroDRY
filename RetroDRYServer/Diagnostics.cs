@@ -58,7 +58,7 @@ namespace RetroDRY
         /// <summary>
         /// When set by the host app, is then called whenever an internal error occurs during a client request
         /// </summary>
-        public Action<string> ReportClientCallError;
+        public Action<string>? ReportClientCallError;
 
         internal void IncrementLoadCount()
         {

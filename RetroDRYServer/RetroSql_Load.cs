@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using static RetroDRY.RetroSql;
 
 namespace RetroDRY
 {
@@ -31,6 +32,19 @@ namespace RetroDRY
             /// the string to use in the select clause
             /// </summary>
             public string SqlExpression;
+
+            /// <summary>
+            /// Create
+            /// </summary>
+            /// <param name="index"></param>
+            /// <param name="field"></param>
+            /// <param name="sqlExpression"></param>
+            public LoadColInfo(int index, FieldInfo field, string sqlExpression)
+            {
+                Index = index;
+                Field = field;
+                SqlExpression = sqlExpression;
+            }
         }
 
         /// <summary>
@@ -41,7 +55,7 @@ namespace RetroDRY
             /// <summary>
             /// rows loaded; dict is indexed by parent key for child tables, or has a single index "" for main table
             /// </summary>
-            public Dictionary<object, List<Row>> RowsByParentKey;
+            public Dictionary<object, List<Row>>? RowsByParentKey;
 
             /// <summary>
             /// true if viewon was loaded to completion; false if there may be more rows
@@ -57,14 +71,13 @@ namespace RetroDRY
             /// <summary>
             /// Daton being set
             /// </summary>
-            public Daton Daton;
+            public Daton? Daton;
 
             /// <summary>
             /// user-readable errors
             /// </summary>
-            public string[] Errors;
+            public string[]? Errors;
         }
-
 
         /// <summary>
         /// Load daton from database. Caller is responsible for setting the version (this does not deal with locks or versions)
@@ -75,7 +88,7 @@ namespace RetroDRY
         /// <param name="dbdef"></param>
         /// <param name="user"></param>
         /// <returns>null if not found</returns>
-        public virtual async Task<LoadResult> Load(IDbConnection db, DataDictionary dbdef, IUser user, DatonKey key, int pageSize)
+        public virtual async Task<LoadResult?> Load(IDbConnection db, DataDictionary dbdef, IUser? user, DatonKey key, int pageSize)
         {
             var datondef = dbdef.FindDef(key);
 
@@ -88,7 +101,7 @@ namespace RetroDRY
             }
 
             //handle viewon paging and ordering
-            string sortColName = datondef.MainTableDef.DefaulSortColName;
+            string? sortColName = datondef.MainTableDef.DefaulSortColName;
             int pageNo = 0;
             if (key is ViewonKey vkey)
             {
@@ -101,12 +114,13 @@ namespace RetroDRY
             //load main table
             var whereClause = MainTableWhereClause(datondef.MainTableDef, key);
             var loadResult = await LoadTable(db, dbdef, datondef.MainTableDef, whereClause, sortColName, pageSize, pageNo);
+            if (loadResult.RowsByParentKey == null) throw new Exception("Expected LoadTable to yield rows");
             loadResult.RowsByParentKey.TryGetValue("", out var rowsForParent);
 
             //single-main-row datons cannot have zero main rows
             if (!datondef.MultipleMainRows && (rowsForParent == null || rowsForParent.Count == 0)) return null; //was throw new Exception("Single-main-row not found using: " + whereClause.ToString());
 
-            Daton daton = Utils.Construct(datondef.Type) as Daton;
+            Daton daton = Utils.Construct(datondef.Type) as Daton ?? throw new Exception("Cannot construct daton in Load");
             if (datondef.MultipleMainRows)
             {
                 if (daton is Viewon viewon) viewon.IsCompleteLoad = loadResult.IsComplete;
@@ -116,13 +130,14 @@ namespace RetroDRY
                 if (rowsForParent != null)
                 {
                     var list = Utils.CreateOrGetFieldValue<IList>(daton, listField);
+                    if (list == null) throw new Exception("Could not get list field value in Load");
                     foreach (var row in rowsForParent) list.Add(row);
                 }
             }
             else //single main row
             {
                 if (rowsForParent != null)
-                    daton = rowsForParent?[0] as Daton;
+                    daton = rowsForParent?[0] as Daton ?? throw new Exception("Cannot construct single main row daton in Load");
             }
 
             //child tables
@@ -137,7 +152,7 @@ namespace RetroDRY
         /// <summary>
         /// Get where clause for main table, or null if none
         /// </summary>
-        protected SqlSelectBuilder.Where MainTableWhereClause(TableDef tabledef, DatonKey key)
+        protected SqlSelectBuilder.Where? MainTableWhereClause(TableDef tabledef, DatonKey key)
         {
             if (key is PersistonKey pkey) return MainTableWhereClause(tabledef, pkey);
             if (key is ViewonKey vkey) return MainTableWhereClause(tabledef, vkey);
@@ -147,13 +162,14 @@ namespace RetroDRY
         /// <summary>
         /// Get where clause for persiston main table, or null if this is a whole-table persiston
         /// </summary>
-        protected virtual SqlSelectBuilder.Where MainTableWhereClause(TableDef tabledef, PersistonKey key)
+        protected virtual SqlSelectBuilder.Where? MainTableWhereClause(TableDef tabledef, PersistonKey key)
         {
             if (key.WholeTable) return null;
             var pkType = tabledef.FindCol(tabledef.PrimaryKeyColName).CSType;
-            object pk = key.PrimaryKey; //always string here
+            object? pk = key.PrimaryKey; //always string here
             if (pkType != typeof(string))
                 pk = Utils.ChangeType(pk, pkType);
+            if (pk == null) throw new Exception("Could not change type of key in MainTableWhereClause");
             var w = new SqlSelectBuilder.Where();
             w.AddWhere($"{tabledef.PrimaryKeyColName}={w.NextParameterName()}", pk);
             return w;
@@ -164,16 +180,20 @@ namespace RetroDRY
         /// </summary>
         protected virtual SqlSelectBuilder.Where MainTableWhereClause(TableDef tabledef, ViewonKey key)
         {
+            if (SqlFlavor == null)
+                throw new Exception("Must initialize RetroSql.SqlFlavor");
+
             var w = new SqlSelectBuilder.Where();
-            foreach (var cri in key.Criteria)
-            {
-                var coldef = tabledef.FindCol(cri.Name);
-                if (coldef != null)
+            if (key.Criteria != null)
+                foreach (var cri in key.Criteria)
                 {
-                    var crihelper = new ViewonCriterion(coldef, cri.PackedValue);
-                    crihelper.ExportWhereClause(w, SqlFlavor);
+                    var coldef = tabledef.FindCol(cri.Name);
+                    if (coldef != null)
+                    {
+                        var crihelper = new ViewonCriterion(coldef, cri.PackedValue);
+                        crihelper.ExportWhereClause(w, SqlFlavor);
+                    }
                 }
-            }
             return w;
         }
 
@@ -190,11 +210,14 @@ namespace RetroDRY
         /// <param name="db"></param>
         /// <param name="sortColName">name of column for order-by clause</param>
         /// <param name="tabledef"></param>
-        protected virtual Task<SingleLoadResult> LoadTable(IDbConnection db, DataDictionary dbdef, TableDef tabledef, SqlSelectBuilder.Where whereClause,
-            string sortColName, int pageSize, int pageNo)
+        protected virtual Task<SingleLoadResult> LoadTable(IDbConnection db, DataDictionary dbdef, TableDef tabledef, SqlSelectBuilder.Where? whereClause,
+            string? sortColName, int pageSize, int pageNo)
         {
+            if (tabledef.SqlTableName == null || SqlFlavor == null)
+                throw new Exception("Must initialize TableDef.SqlTableName and RetroSql.SqlFlavor");
+
             var colInfos = BuildColumnsToLoadList(dbdef, tabledef);
-            string parentKeyColName = tabledef.ParentKeyColumnName;
+            string? parentKeyColName = tabledef.ParentKeyColumnName;
             int parentKeyColIndex = -1;
             var columnNames = colInfos.Select(c => c.SqlExpression).ToList();
             if (parentKeyColName != null)
@@ -220,39 +243,37 @@ namespace RetroDRY
             {
                 cmd.CommandText = CustomizeSqlStatement(sql.ToString());
                 whereClause?.ExportParameters(cmd);
-                using (var reader = cmd.ExecuteReader())
+                using var reader = cmd.ExecuteReader();
+                int rowsLoaded = 0;
+                while (reader.Read())
                 {
-                    int rowsLoaded = 0;
-                    while (reader.Read())
+                    //if this is the throw-away row that was one more than the page size, then note as incomplete but don't look at it
+                    if (++rowsLoaded > pageSize && pageSize > 0)
                     {
-                        //if this is the throw-away row that was one more than the page size, then note as incomplete but don't look at it
-                        if (++rowsLoaded > pageSize && pageSize > 0)
-                        {
-                            isComplete = false;
-                            break;
-                        }
-
-                        //read parent key value
-                        object pk = "";
-                        if (parentKeyColIndex >= 0)
-                            pk = reader.GetValue(parentKeyColIndex);
-
-                        //read remaining values
-                        var row = Utils.Construct(tabledef.RowType) as Row;
-                        SetRowFromReader(colInfos, reader, row);
-
-                        //read custom values
-                        if (tabledef.HasCustomColumns)
-                        {
-                            string json = (string)Utils.ChangeType(reader.GetValue(customColIndex), typeof(string));
-                            if (!string.IsNullOrEmpty(json))
-                                SetRowFromCustomValues(json, tabledef, row);
-                        }
-
-                        //store in return dict
-                        if (!rowsByParentKey.ContainsKey(pk)) rowsByParentKey[pk] = new List<Row>();
-                        rowsByParentKey[pk].Add(row);
+                        isComplete = false;
+                        break;
                     }
+
+                    //read parent key value
+                    object pk = "";
+                    if (parentKeyColIndex >= 0)
+                        pk = reader.GetValue(parentKeyColIndex);
+
+                    //read remaining values
+                    var row = Utils.Construct(tabledef.RowType) as Row ?? throw new Exception("Cannot construct row in LoadTable"); ;
+                    SetRowFromReader(colInfos, reader, row);
+
+                    //read custom values
+                    if (tabledef.HasCustomColumns)
+                    {
+                        string? json = (string?)Utils.ChangeType(reader.GetValue(customColIndex), typeof(string));
+                        if (!string.IsNullOrEmpty(json))
+                            SetRowFromCustomValues(json, tabledef, row);
+                    }
+
+                    //store in return dict
+                    if (!rowsByParentKey.ContainsKey(pk)) rowsByParentKey[pk] = new List<Row>();
+                    rowsByParentKey[pk].Add(row);
                 }
             }
             var ret = new SingleLoadResult
@@ -290,6 +311,7 @@ namespace RetroDRY
                 whereClause.AddWhere($"{childTabledef.ParentKeyColumnName} in({parentKeyListFormatted})");
                 var loadResult = await LoadTable(db, dbdef, childTabledef, whereClause, childTabledef.DefaulSortColName, 0, 0);
                 var rowdict = loadResult.RowsByParentKey;
+                if (rowdict == null) throw new Exception("Expected RowsByParentKey in LoadChildTablesRecursive");
 
                 //deal out the rows into the parent objects' Lists of this type
                 var listField = parentdef.RowType.GetField(childTabledef.Name);
@@ -298,6 +320,7 @@ namespace RetroDRY
                     var rowsForParent = rowdict[parentKey];
                     var parentRow = parentRows[parentKey];
                     var list = Utils.CreateOrGetFieldValue<IList>(parentRow, listField);
+                    if (list == null) throw new Exception("Could not create list field in LoadChildTablesRecursive");
                     foreach (var row in rowsForParent) list.Add(row);
                 }
 
@@ -332,13 +355,8 @@ namespace RetroDRY
             var ret = new List<LoadColInfo>();
             foreach (var coldef in tabledef.Cols)
             {
-                if (coldef.IsCustom || coldef.IsComputed) continue; 
-                ret.Add(new LoadColInfo
-                {
-                    Index = ++colIdx,
-                    SqlExpression = SqlColumnExpression(dbdef, tabledef, coldef),
-                    Field = tabledef.RowType.GetField(coldef.Name)
-                });
+                if (coldef.IsCustom || coldef.IsComputed) continue;
+                ret.Add(new LoadColInfo(++colIdx, tabledef.RowType.GetField(coldef.Name), SqlColumnExpression(dbdef, tabledef, coldef)));
             }
             return ret;
         }
@@ -377,7 +395,7 @@ namespace RetroDRY
         {
             foreach (var ci in colInfos)
             {
-                object value = reader.GetValue(ci.Index);
+                object? value = reader.GetValue(ci.Index);
                 if (value is DBNull) value = null;
                 else value = Utils.ChangeType(value, ci.Field.FieldType);
                 ci.Field.SetValue(target, value);
@@ -390,11 +408,12 @@ namespace RetroDRY
         private void SetRowFromCustomValues(string json, TableDef tabledef, Row row)
         {
             var customs = JsonConvert.DeserializeObject<JObject>(json, Constants.CamelSerializerSettings);
+            if (customs == null) throw new Exception("Expected to deserialize json in SetRowFromCustomValues");
             foreach (var coldef in tabledef.Cols.Where(c => c.IsCustom))
             {
                 var node = customs[coldef.Name];
                 if (node == null) continue;
-                object value = Retrovert.ParseNode(node, coldef.CSType);
+                object? value = Retrovert.ParseNode(node, coldef.CSType);
                 row.SetCustom(coldef.Name, value);
             }
         }

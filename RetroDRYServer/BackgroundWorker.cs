@@ -14,6 +14,13 @@ namespace RetroDRY
             public Func<Task> Action;
             public DateTime Next; //UTC
             public int Interval; //seconds
+
+            public ScheduleItem(Func<Task> action, DateTime next, int interval)
+            {
+                Action = action;
+                Next = next;
+                Interval = interval;
+            }
         }
 
         private bool IsDisposed;
@@ -43,12 +50,7 @@ namespace RetroDRY
         {
             lock (Schedule)
             {
-                Schedule.Add(new ScheduleItem
-                {
-                    Action = action,
-                    Next = DateTime.UtcNow.AddSeconds(interval),
-                    Interval = interval
-                });
+                Schedule.Add(new ScheduleItem(action, DateTime.UtcNow.AddSeconds(interval), interval));
             }
         }
 

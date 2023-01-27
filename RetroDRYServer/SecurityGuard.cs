@@ -54,7 +54,7 @@ namespace RetroDRY
         /// <param name="pristineDaton">null for new persistons, or the pristine version being edited</param>
         /// <param name="tablename">null ok</param>
         /// <param name="colname">null ok</param>
-        public PermissionLevel FinalLevel(Daton pristineDaton, string tablename, string colname)
+        public PermissionLevel FinalLevel(Daton? pristineDaton, string tablename, string? colname)
         {
             var max = PermissionLevel.None;
             foreach (var role in User.Roles)
@@ -91,7 +91,7 @@ namespace RetroDRY
         /// <param name="pristineDaton">null for new unsaved persistons, else the pristine version being edited</param>
         /// <param name="datondef">definition of pristineDaton</param>
         /// <param name="diff">the proposed changeset, some of which may be disallowed</param>
-        public IEnumerable<string> GetDisallowedWrites(Daton pristineDaton, DatonDef datondef, PersistonDiff diff)
+        public IEnumerable<string> GetDisallowedWrites(Daton? pristineDaton, DatonDef datondef, PersistonDiff diff)
         {
             var errors = new List<string>();
             FindDisallowedWrites(errors, pristineDaton, datondef.MainTableDef, diff.MainTable);
@@ -138,7 +138,7 @@ namespace RetroDRY
         /// <summary>
         /// Locate all writes that are disallowed for the table and append readable errors to the errors list
         /// </summary>
-        private void FindDisallowedWrites(List<string> errors, Daton pristineDaton, TableDef tabledef, List<PersistonDiff.DiffRow> table)
+        private void FindDisallowedWrites(List<string> errors, Daton? pristineDaton, TableDef tabledef, List<PersistonDiff.DiffRow> table)
         {
             var unwritableColNames = GetUnwritableColumnNames(pristineDaton, tabledef);
             var tableLev = FinalLevel(pristineDaton, tabledef.Name, null);
@@ -197,7 +197,7 @@ namespace RetroDRY
         /// <summary>
         /// determine which col names are not writable
         /// </summary>
-        private List<string> GetUnwritableColumnNames(Daton pristineDaton, TableDef tabledef)
+        private List<string> GetUnwritableColumnNames(Daton? pristineDaton, TableDef tabledef)
         {
             var unwritableCols = new List<string>();
             foreach (var coldef in tabledef.Cols)

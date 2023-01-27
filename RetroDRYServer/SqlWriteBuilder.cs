@@ -29,12 +29,28 @@ namespace RetroDRY
             /// <summary>
             /// Value to save
             /// </summary>
-            public object Value;
+            public object? Value;
 
             /// <summary>
             /// for example "@p1"; this gets built into the SQL command text
             /// </summary>
             public string LiteralExpression;
+
+            /// <summary>
+            /// Create
+            /// </summary>
+            /// <param name="name"></param>
+            /// <param name="parameterName"></param>
+            /// <param name="value"></param>
+            /// <param name="literalExpression"></param>
+            public Col(string name, string parameterName, object? value, string literalExpression)
+            {
+                Name = name;
+                ParameterName = parameterName;
+                Value = value;
+                LiteralExpression = literalExpression;
+            }
+
 
             /// <summary>
             /// Add a paramater with this object's value to cmd
@@ -87,7 +103,7 @@ namespace RetroDRY
         /// <param name="name">name for Col instance</param>
         /// <param name="useJson">see LiteralUpdateColumnExperession</param>
         /// <param name="value">value for Col instance</param>
-        public void AddNonKey(string name, string wiretype, object value, bool useJson = false)
+        public void AddNonKey(string name, string? wiretype, object? value, bool useJson = false)
         {
             //fix some nullable issues
             if (wiretype == Constants.TYPE_STRING && value == null) value = "";
@@ -96,13 +112,7 @@ namespace RetroDRY
             string paramName = "p" + (++LastParamNoUsed);
             string litExpression = SqlFlavor.LiteralUpdateColumnExperession(name, paramName, useJson);
 
-            Cols.Add(new Col
-            {
-                Name = name,
-                Value = value,
-                ParameterName = paramName,
-                LiteralExpression = litExpression
-            });
+            Cols.Add(new Col(name, paramName, value, litExpression));
         }
 
         /// <summary>
@@ -143,27 +153,25 @@ namespace RetroDRY
         /// <param name="pkColName">column name of database-asigned key to return</param>
         /// <param name="tableName"></param>
         /// <returns>null or a newly assigned key</returns>
-        public Task<object> Execute(IDbConnection db, string tableName, string pkColName, bool databaseAssignsKey)
+        public Task<object?> Execute(IDbConnection db, string tableName, string pkColName, bool databaseAssignsKey)
         {
             string nonKeyColNames = string.Join(",", Cols.Select(c => c.Name));
             string valuesList = string.Join(",", Cols.Select(c => c.LiteralExpression));
-            using (var cmd = db.CreateCommand())
-            {
-                foreach (var c in Cols) cmd.Parameters.Add(c.AsParameter(cmd));
-                string coreCommand = $"insert into {tableName} ({nonKeyColNames}) values ({valuesList})";
+            using var cmd = db.CreateCommand();
+            foreach (var c in Cols) cmd.Parameters.Add(c.AsParameter(cmd));
+            string coreCommand = $"insert into {tableName} ({nonKeyColNames}) values ({valuesList})";
 
-                if (databaseAssignsKey)
-                {
-                    cmd.CommandText = coreCommand + SqlFlavor.BuildGetIdentityClause(pkColName);
-                    cmd.CommandText = SqlCustomizer(cmd.CommandText);
-                    return Task.FromResult(cmd.ExecuteScalar());
-                }
-                else
-                {
-                    cmd.CommandText = SqlCustomizer(coreCommand);
-                    cmd.ExecuteNonQuery();
-                    return Task.FromResult<object>(null);
-                }
+            if (databaseAssignsKey)
+            {
+                cmd.CommandText = coreCommand + SqlFlavor.BuildGetIdentityClause(pkColName);
+                cmd.CommandText = SqlCustomizer(cmd.CommandText);
+                return Task.FromResult<object?>(cmd.ExecuteScalar());
+            }
+            else
+            {
+                cmd.CommandText = SqlCustomizer(coreCommand);
+                cmd.ExecuteNonQuery();
+                return Task.FromResult<object?>(null);
             }
         }
     }
@@ -183,7 +191,7 @@ namespace RetroDRY
         /// <summary>
         /// Execute the update statement
         /// </summary>
-        public Task Execute(IDbConnection db, string tableName, string pkColName, object pkValue)
+        public Task Execute(IDbConnection db, string tableName, string pkColName, object? pkValue)
         {
             string colClauses = string.Join(",", Cols.Select(c => $"{c.Name}={c.LiteralExpression}"));
             using (var cmd = db.CreateCommand())

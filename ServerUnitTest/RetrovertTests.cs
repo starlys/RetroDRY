@@ -127,6 +127,7 @@ namespace UnitTest
 
             string json = "{'key':'Employee|=9','version':'v2','employee':[{'empId':9,'firstName':'Jill'}]}".Replace('\'', '"');
             var jobj = JsonConvert.DeserializeObject<JObject>(json);
+            Assert.IsNotNull(jobj);
             var jill0 = Retrovert.FromCompatibleWireFull(ddict, jobj);
             Assert.IsTrue(jill0 is Employee);
             var jill = jill0 as Employee;
@@ -138,6 +139,7 @@ namespace UnitTest
 
             json = "{'key':'EmployeeList','version':'v2','employee':[{'empId':9,'firstName':'Jill','lastName':null,'supervisorId':0,'supervisorLastName':null}]}".Replace('\'', '"');
             jobj = JsonConvert.DeserializeObject<JObject>(json);
+            Assert.IsNotNull(jobj);
             var elist0 = Retrovert.FromCompatibleWireFull(ddict, jobj);
             Assert.IsTrue(elist0 is EmployeeList);
             var elist = elist0 as EmployeeList;
@@ -171,7 +173,7 @@ namespace UnitTest
 
             string json = "{'key':'Ogre|=9','version':'v2','ogre':[{'ogreId':9,'money':2.50,'paymentMethod-deleted':[{'paymentMethodId':92}],'paymentMethod-new':[{'method':'STOMP','notes':'n2'}]}]}".Replace('\'', '"');
             var jobj = JsonConvert.DeserializeObject<JObject>(json);
-            var emilyChanges = Retrovert.FromDiff(ddict, jobj);
+            var emilyChanges = Retrovert.FromDiff(ddict, jobj!);
             Assert.AreEqual(new PersistonKey("Ogre", "9", false), emilyChanges.Key);
             Assert.AreEqual("v2", emilyChanges.BasedOnVersion);
             Assert.AreEqual(9, emilyChanges.MainTable[0].Columns["OgreId"]);
@@ -187,7 +189,7 @@ namespace UnitTest
         [TestMethod]
         public void FormatValues()
         {
-            var c = new ColDef { WireType = Constants.TYPE_DATE };
+            var c = new ColDef("", Constants.TYPE_DATE, typeof(DateTime));
             Assert.AreEqual("null", Retrovert.FormatRawJsonValue(c, null));
             Assert.AreEqual("true", Retrovert.FormatRawJsonValue(c, true));
             Assert.AreEqual("false", Retrovert.FormatRawJsonValue(c, false));
@@ -210,13 +212,13 @@ namespace UnitTest
             var firstnamedef = datondef.MainTableDef.FindCol("FirstName");
             firstnamedef.SetPrompt("de", "ERSTE");
             firstnamedef.SetPrompt("fr", "PREMIER");
-            Assert.AreEqual(3, firstnamedef.Prompt.Count);
+            Assert.AreEqual(3, firstnamedef.Prompt!.Count);
             var birgitte = new User { LangCode = "de" };
             var wiredict = Retrovert.DataDictionaryToWire(ddict, birgitte, null);
-            Assert.AreEqual("ERSTE", wiredict.DatonDefs[0].MainTableDef.Cols.Single(c => c.Name == "firstName").Prompt);
+            Assert.AreEqual("ERSTE", wiredict.DatonDefs![0].MainTableDef!.Cols!.Single(c => c.Name == "firstName").Prompt);
             var jaques = new User { LangCode = "fr" };
             wiredict = Retrovert.DataDictionaryToWire(ddict, jaques, null);
-            Assert.AreEqual("PREMIER", wiredict.DatonDefs[0].MainTableDef.Cols.Single(c => c.Name == "firstName").Prompt);
+            Assert.AreEqual("PREMIER", wiredict.DatonDefs![0].MainTableDef!.Cols!.Single(c => c.Name == "firstName").Prompt);
         }
     }
 }

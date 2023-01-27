@@ -11,31 +11,31 @@ namespace RetroDRY
     /// </summary>
     public abstract class Row
     {
-        private Dictionary<string, object> CustomValues;
+        private Dictionary<string, object?>? CustomValues;
 
         /// <summary>
         /// Set a custom value
         /// </summary>
-        public void SetCustom(string name, object value)
+        public void SetCustom(string name, object? value)
         {
-            if (CustomValues == null) CustomValues = new Dictionary<string, object>();
+            CustomValues ??= new Dictionary<string, object?>();
             CustomValues[name] = value;
         }
 
         /// <summary>
         /// Get a custom value or null if not found
         /// </summary>
-        public object GetCustom(string name)
+        public object? GetCustom(string name)
         {
             if (CustomValues == null) return null;
-            if (CustomValues.TryGetValue(name, out object value)) return value;
+            if (CustomValues.TryGetValue(name, out object? value)) return value;
             return null;
         }
 
         /// <summary>
         /// Get a standard or custom value from this row
         /// </summary>
-        public object GetValue(ColDef coldef)
+        public object? GetValue(ColDef coldef)
         {
             if (coldef.IsCustom) return GetCustom(coldef.Name);
             return GetType().GetField(coldef.Name).GetValue(this);
@@ -46,7 +46,7 @@ namespace RetroDRY
         /// </summary>
         /// <param name="value">may be null even for value types (oddly this actually works)</param>
         /// <param name="coldef"></param>
-        public void SetValue(ColDef coldef, object value)
+        public void SetValue(ColDef coldef, object? value)
         {
             if (coldef.IsCustom) SetCustom(coldef.Name, value);
             else GetType().GetField(coldef.Name).SetValue(this, value);
@@ -63,9 +63,10 @@ namespace RetroDRY
         public object Clone(TableDef tableDef) 
         {
             var target = Utils.Construct(tableDef.RowType) as Row;
+            if (target == null) throw new Exception("Cannot construct row in Clone");
 
             //copy custom fields in this row
-            if (CustomValues != null) target.CustomValues = new Dictionary<string, object>(CustomValues);
+            if (CustomValues != null) target.CustomValues = new Dictionary<string, object?>(CustomValues);
 
             //copy other fields in this row
             foreach (var colDef in tableDef.Cols)
@@ -87,6 +88,7 @@ namespace RetroDRY
                     if (sourceList != null)
                     {
                         var targetList = Utils.CreateOrGetFieldValue<IList>(target, listField);
+                        if (targetList == null) throw new Exception("Cannot construct row list in Clone");
                         foreach (var row in sourceList)
                             if (row is Row trow) targetList.Add(trow.Clone(childTableDef));
                     }

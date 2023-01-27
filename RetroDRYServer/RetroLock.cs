@@ -16,7 +16,7 @@ namespace RetroDRY
         /// the version
         /// </summary>
         /// <returns>(version,lockedBy) where lockedBy might be null</returns>
-        public static (string, string) GetVersion(DbConnection db, DatonKey key)
+        public static (string, string?) GetVersion(DbConnection db, DatonKey key)
         {
             retry:
 
@@ -28,11 +28,9 @@ namespace RetroDRY
                 p.ParameterName = "k";
                 p.Value = key.ToString();
                 cmd.Parameters.Add(p);
-                using (var rdr = cmd.ExecuteReader())
-                {
-                    if (rdr.Read())
-                        return (Utils.Read<string>(rdr, 0), Utils.Read<string>(rdr, 1));
-                }
+                using var rdr = cmd.ExecuteReader();
+                if (rdr.Read())
+                    return (Utils.ReadString(rdr, 0)!, Utils.ReadString(rdr, 1));
             }
 
             //not found, so create it
@@ -124,25 +122,23 @@ namespace RetroDRY
         /// <param name="sessionKey">identifies session that owns the lock</param>
         /// <param name="serverLifeNumber">see RetroLock table</param>
         /// <returns>success flag and the new version (version only returned if datonWasWritten)</returns>
-        public static (bool, string) Unlock(DbConnection db, DatonKey key, string sessionKey, bool datonWasWritten, int serverLifeNumber)
+        public static (bool, string?) Unlock(DbConnection db, DatonKey key, string sessionKey, bool datonWasWritten, int serverLifeNumber)
         {
-            string version = datonWasWritten ? Guid.NewGuid().ToString() : null;
-            using (var cmd = db.CreateCommand())
+            string? version = datonWasWritten ? Guid.NewGuid().ToString() : null;
+            using var cmd = db.CreateCommand();
+            string versionsql = datonWasWritten ? ",DatonVersion=@v,UpdatedByServer=@u" : "";
+            cmd.CommandText = $"update RetroLock set LockedBy=null,Touched=@t{versionsql} where DatonKey=@k and LockedBy=@s";
+            Utils.AddParameterWithValue(cmd, "t", DateTime.UtcNow);
+            Utils.AddParameterWithValue(cmd, "k", key.ToString());
+            Utils.AddParameterWithValue(cmd, "s", sessionKey);
+            if (datonWasWritten)
             {
-                string versionsql = datonWasWritten ? ",DatonVersion=@v,UpdatedByServer=@u" : "";
-                cmd.CommandText = $"update RetroLock set LockedBy=null,Touched=@t{versionsql} where DatonKey=@k and LockedBy=@s";
-                Utils.AddParameterWithValue(cmd, "t", DateTime.UtcNow);
-                Utils.AddParameterWithValue(cmd, "k", key.ToString());
-                Utils.AddParameterWithValue(cmd, "s", sessionKey);
-                if (datonWasWritten)
-                {
-                    Utils.AddParameterWithValue(cmd, "v", version);
-                    Utils.AddParameterWithValue(cmd, "u", serverLifeNumber);
-                }
-                int nrows = cmd.ExecuteNonQuery();
-                bool success = nrows == 1;
-                return (success, version);
+                Utils.AddParameterWithValue(cmd, "v", version);
+                Utils.AddParameterWithValue(cmd, "u", serverLifeNumber);
             }
+            int nrows = cmd.ExecuteNonQuery();
+            bool success = nrows == 1;
+            return (success, version);
         }
 
         /// <summary>
@@ -151,22 +147,20 @@ namespace RetroDRY
         /// <param name="serverLifeNumber">the number for this server; updates from this server are excluded from the query</param>
         /// <param name="db"></param>
         /// <param name="sinceUtc"></param>
-        public static List<(DatonKey, string)> GetRecentUpdatesByOtherServers(DbConnection db, DateTime sinceUtc, int serverLifeNumber)
+        public static List<(DatonKey, string?)> GetRecentUpdatesByOtherServers(DbConnection db, DateTime sinceUtc, int serverLifeNumber)
         {
-            var ret = new List<(DatonKey, string)>();
+            var ret = new List<(DatonKey, string?)>();
             using (var cmd = db.CreateCommand())
             {
                 cmd.CommandText = $"select DatonKey,DatonVersion from RetroLock where Touched>@t and UpdatedByServer<>@u";
                 Utils.AddParameterWithValue(cmd, "t", sinceUtc);
                 Utils.AddParameterWithValue(cmd, "u", serverLifeNumber);
-                using (var rdr = cmd.ExecuteReader())
+                using var rdr = cmd.ExecuteReader();
+                while (rdr.Read())
                 {
-                    while (rdr.Read())
-                    {
-                        var key = DatonKey.Parse(Utils.Read<string>(rdr, 0));
-                        string version = Utils.Read<string>(rdr, 1);
-                        ret.Add((key, version));
-                    }
+                    var key = DatonKey.Parse(Utils.ReadString(rdr, 0));
+                    string? version = Utils.ReadString(rdr, 1);
+                    ret.Add((key, version));
                 }
             }
             return ret;
@@ -177,14 +171,12 @@ namespace RetroDRY
         /// </summary>
         public static void Touch(DbConnection db, DatonKey key, string sessionKey)
         {
-            using (var cmd = db.CreateCommand())
-            {
-                cmd.CommandText = "update RetroLock set Touched=@t where DatonKey=@k and LockedBy=@s";
-                Utils.AddParameterWithValue(cmd, "t", DateTime.UtcNow);
-                Utils.AddParameterWithValue(cmd, "k", key.ToString());
-                Utils.AddParameterWithValue(cmd, "s", sessionKey);
-                cmd.ExecuteNonQuery();
-            }
+            using var cmd = db.CreateCommand();
+            cmd.CommandText = "update RetroLock set Touched=@t where DatonKey=@k and LockedBy=@s";
+            Utils.AddParameterWithValue(cmd, "t", DateTime.UtcNow);
+            Utils.AddParameterWithValue(cmd, "k", key.ToString());
+            Utils.AddParameterWithValue(cmd, "s", sessionKey);
+            cmd.ExecuteNonQuery();
         }
 
         /// <summary>
@@ -193,12 +185,10 @@ namespace RetroDRY
         internal static void Cleanup(DbConnection db)
         {
             DateTime old = DateTime.UtcNow.AddDays(-5);
-            using (var cmd = db.CreateCommand())
-            {
-                cmd.CommandText = "delete from RetroLock where Touched<@t";
-                Utils.AddParameterWithValue(cmd, "t", old);
-                cmd.ExecuteNonQuery();
-            }
+            using var cmd = db.CreateCommand();
+            cmd.CommandText = "delete from RetroLock where Touched<@t";
+            Utils.AddParameterWithValue(cmd, "t", old);
+            cmd.ExecuteNonQuery();
         }
     }
 }

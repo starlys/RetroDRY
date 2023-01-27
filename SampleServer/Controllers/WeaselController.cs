@@ -87,7 +87,7 @@ namespace SampleServer.Controllers
 
             return new
             {
-                Key = saveresult[0].NewKey.ToString(),
+                Key = saveresult[0].NewKey!.ToString(),
                 saveresult[0].Errors
             };
         }

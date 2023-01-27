@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using RetroDRY;
 
 namespace UnitTest
@@ -66,7 +67,7 @@ namespace UnitTest
         [Range(-2, +2, ErrorMessage = "VALUERANGE")]
         public decimal Money;
 
-        public override Task Validate(IUser user, Action<string> fail)
+        public override Task Validate(IUser? user, Action<string> fail)
         {
             if (Company != null && Company.StartsWith("THE")) fail("THE");
             return Task.CompletedTask;
@@ -125,8 +126,9 @@ namespace UnitTest
             public string? LastName;
         }
 
-        public override Task ValidateCriteria(IUser user, ViewonKey key, Action<string> fail)
+        public override Task ValidateCriteria(IUser? user, ViewonKey key, Action<string> fail)
         {
+            Assert.IsNotNull(key.Criteria);
             var companyCri = key.Criteria.FirstOrDefault(c => c.Name == "LastName"); //assume this exists for the tests
             if (companyCri?.PackedValue.StartsWith("THE") == true) fail("THE");
             return Task.CompletedTask;

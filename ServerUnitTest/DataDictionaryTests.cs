@@ -40,6 +40,7 @@ namespace UnitTest
             var ddict = new DataDictionary();
             ddict.AddDatonUsingClassAnnotation(typeof(EmployeeList));
             var viewondef = ddict.DatonDefs["EmployeeList"];
+            Assert.IsNotNull(viewondef?.CriteriaDef);
             Assert.AreEqual(1, viewondef.CriteriaDef.Cols.Count);
             Assert.AreEqual("LastName", viewondef.CriteriaDef.Cols[0].Name);
         }

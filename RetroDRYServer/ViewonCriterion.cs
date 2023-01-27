@@ -39,7 +39,7 @@ namespace RetroDRY
             {
                 try
                 {
-                    (string lo, string hi) = SplitOnTilde(PackedValue);
+                    (string? lo, string? hi) = SplitOnTilde(PackedValue);
                     if (lo != null)
                     {
                         decimal dlo = decimal.Parse(lo);
@@ -61,7 +61,7 @@ namespace RetroDRY
             else if (ColDef.CSType == typeof(DateTime))
             {
                 bool isDateOnly = ColDef.WireType == Constants.TYPE_DATE;
-                (string lo, string hi) = SplitOnTilde(PackedValue);
+                (string? lo, string? hi) = SplitOnTilde(PackedValue);
                 if (lo != null)
                 {
                     var dlo = Retrovert.ParseRetroDateTime(lo, isDateOnly); 
@@ -96,11 +96,11 @@ namespace RetroDRY
         /// Split a string in the form "1~2", "~2", "1~" or "1" into the low and high parts of the range, ensuring nulls
         /// are returned if no values provided. If no tilde is in the string, it returns the same value for lo and hi.
         /// </summary>
-        public static (string, string) SplitOnTilde(string s)
+        public static (string?, string?) SplitOnTilde(string s)
         {
             int h = s.IndexOf('~');
             if (h < 0) return(s, s);
-            string lo = s.Substring(0, h), hi = s.Substring(h + 1);
+            string? lo = s[..h], hi = s[(h + 1)..];
             if (lo.Length == 0) lo = null;
             if (hi.Length == 0) hi = null;
             return (lo, hi);

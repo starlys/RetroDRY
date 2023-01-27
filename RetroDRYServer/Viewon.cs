@@ -20,6 +20,7 @@ namespace RetroDRY
         public override Daton Clone(DatonDef datondef)
         {
             var c = base.Clone(datondef) as Viewon;
+            if (c == null) throw new Exception("Cannot clone viewon");
             c.IsCompleteLoad = IsCompleteLoad;
             return c;
         }
@@ -28,6 +29,6 @@ namespace RetroDRY
         /// Validate a viewon key; called on a temporary instance of the class, so the implementation should not expect any class members should be set. 
         /// Implementations should call fail one or more times to register failures, passing user-readable messages
         /// </summary>
-        public virtual Task ValidateCriteria(IUser user, ViewonKey key, Action<string> fail) { return Task.CompletedTask; }
+        public virtual Task ValidateCriteria(IUser? user, ViewonKey key, Action<string> fail) { return Task.CompletedTask; }
     }
 }

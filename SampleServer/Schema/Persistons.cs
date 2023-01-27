@@ -126,7 +126,7 @@ namespace SampleServer.Schema
         [StringLength(4000), WireType(Constants.TYPE_NSTRING)]
         public string? Notes;
 
-        public override Task Validate(IUser user, Action<string> fail)
+        public override Task Validate(IUser? user, Action<string> fail)
         {
             //silly rule to demonstrate custom validation:
             if (Company != null && Company.StartsWith("The", StringComparison.InvariantCultureIgnoreCase))

@@ -13,15 +13,15 @@ namespace RetroDRY
         /// <summary>
         /// Collection of error messages
         /// </summary>
-        public List<string> Errors;
+        public List<string> Errors = new List<string>();
 
-        private readonly IUser User;
+        private readonly IUser? User;
 
         /// <summary>
         /// Create
         /// </summary>
         /// <param name="user"></param>
-        public Validator(IUser user)
+        public Validator(IUser? user)
         {
             User = user;
         }
@@ -53,7 +53,7 @@ namespace RetroDRY
             if (viewonKey.Criteria != null) {
                 foreach (var cri in viewonKey.Criteria)
                 {
-                    var coldef = datondef.CriteriaDef.FindCol(cri.Name);
+                    var coldef = datondef.CriteriaDef?.FindCol(cri.Name);
                     if (coldef == null)
                         Errors.Add("Unknown parameter: " + cri.Name);
                     else
@@ -74,7 +74,7 @@ namespace RetroDRY
             foreach (var coldef in rr.TableDef.Cols)
             {
                 if (coldef.IsComputedOrJoined) continue;
-                object value = rr.Row.GetValue(coldef);
+                object? value = rr.Row.GetValue(coldef);
                 ValidateCol(coldef, value, false);
             }
 
@@ -88,10 +88,10 @@ namespace RetroDRY
                 Validate(rr);
         }
 
-        private void ValidateCol(ColDef coldef, object value, bool isCriterion)
+        private void ValidateCol(ColDef coldef, object? value, bool isCriterion)
         {
             string valueS = value == null ? "" : value.ToString();
-            string prompt = DataDictionary.ResolvePrompt(coldef.Prompt, User, coldef.Name);
+            string? prompt = DataDictionary.ResolvePrompt(coldef.Prompt, User, coldef.Name);
 
             //string length
             if (coldef.CSType == typeof(string))

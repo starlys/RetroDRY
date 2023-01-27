@@ -21,7 +21,7 @@ namespace RetroDRY
         /// <summary>
         /// For viewons, this may be set to a quasi-table whose columns define the criteria. Otherwise null.
         /// </summary>
-        public TableDef CriteriaDef;
+        public TableDef? CriteriaDef;
 
         /// <summary>
         /// If true, the daton subclass should contain only one or more Lists of rows using nested types; if false,
@@ -37,6 +37,17 @@ namespace RetroDRY
         /// <summary>
         /// Injectable initializer of new datons
         /// </summary>
-        public Func<Daton, Task> Initializer;
+        public Func<Daton, Task>? Initializer;
+
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="type"></param>
+        /// <param name="mainTableDef"></param>
+        public DatonDef(Type type, TableDef mainTableDef)
+        {
+            Type = type;
+            MainTableDef = mainTableDef;
+        }
     }
 }

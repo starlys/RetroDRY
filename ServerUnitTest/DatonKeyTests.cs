@@ -64,7 +64,7 @@ namespace UnitTest
 
             //viewon without criteria
             var vk = DatonKey.Parse("EmpList") as ViewonKey;
-            Assert.IsNotNull(vk);
+            Assert.IsNotNull(vk?.Criteria);
             Assert.AreEqual("EmpList", vk.Name);
             Assert.AreEqual(0, vk.PageNumber);
             Assert.IsNull(vk.SortColumnName);
@@ -72,7 +72,7 @@ namespace UnitTest
 
             //viewon with escaped criteria
             vk = DatonKey.Parse(@"CustomerList|code1=\\/|code2=\||code3=a=\|b\|") as ViewonKey;
-            Assert.IsNotNull(vk);
+            Assert.IsNotNull(vk?.Criteria);
             Assert.AreEqual("CustomerList", vk.Name);
             Assert.AreEqual(3, vk.Criteria.Count());
             var criArray = vk.Criteria.ToArray();
@@ -85,7 +85,7 @@ namespace UnitTest
 
             //with sort and page
             vk = DatonKey.Parse("EmpList|_page=2|_sort=firstName") as ViewonKey;
-            Assert.IsNotNull(vk);
+            Assert.IsNotNull(vk?.Criteria);
             Assert.AreEqual("EmpList", vk.Name);
             Assert.IsNotNull(vk);
             Assert.AreEqual(2, vk.PageNumber);
