@@ -76,7 +76,7 @@ namespace RetroDRY
                 if (r is TableRecurPoint rt) WriteToCompatibleWire(writer, rt);
                 if (r is RowRecurPoint rr)
                 {
-                    writer.WritePropertyName(CamelCasify(datondef.MainTableDef.Name) ?? "");
+                    writer.WritePropertyName(CamelCasify(datondef.MainTableDef?.Name) ?? "");
                     WriteToCompatibleWire(writer, rr);
                 }
             }
@@ -108,6 +108,8 @@ namespace RetroDRY
             if (daton is Viewon viewon && jroot.Value<bool>("isComplete") == false)
                 viewon.IsCompleteLoad = false;
 
+            if (datondef.MainTableDef == null) throw new Exception("Expected main table to be defined in FromCompatibleWireFull");
+
             var mainRowsNode = jroot[CamelCasify(datondef.MainTableDef.Name) ?? ""];
             if (mainRowsNode == null) return daton;
             if (!(mainRowsNode is JArray mainRowsArray)) throw new Exception($"{datondef.MainTableDef.Name} node must be an array");
@@ -138,7 +140,7 @@ namespace RetroDRY
             var datondef = dbdef.FindDef(datonKey);
             var diff = new PersistonDiff(datondef, datonKey, jroot.Value<string>("version"));
 
-            if (datondef.MainTableDef.PrimaryKeyColName == null) throw new Exception("Missing primary key in FromDiff");
+            if (datondef.MainTableDef?.PrimaryKeyColName == null) throw new Exception("Missing primary key in FromDiff");
 
             ReadJsonDiffRowArray(jroot, datondef.MainTableDef, diff.MainTable);
 

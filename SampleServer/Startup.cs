@@ -79,9 +79,9 @@ public class Startup
         //ddict.DatonDefs["Customer"].MainTableDef.Prompt["de"] = "..,";
 
         //sample custom values (dynamic columns that are not declared in the database or at compile time)
-        ddict.DatonDefs["Sale"].MainTableDef.AddCustomColum("CouponCode", typeof(string), Constants.TYPE_NSTRING);
-        ddict.DatonDefs["Sale"].MainTableDef.AddCustomColum("IsRushOrder", typeof(bool?), Constants.TYPE_NBOOL).SetPrompt("", "Is Rush Order");
-        ddict.DatonDefs["Sale"].MainTableDef.AddCustomColum("IsInternalSale", typeof(bool), Constants.TYPE_BOOL);
+        ddict.DatonDefs["Sale"].MainTableDef!.AddCustomColum("CouponCode", typeof(string), Constants.TYPE_NSTRING);
+        ddict.DatonDefs["Sale"].MainTableDef!.AddCustomColum("IsRushOrder", typeof(bool?), Constants.TYPE_NBOOL).SetPrompt("", "Is Rush Order");
+        ddict.DatonDefs["Sale"].MainTableDef!.AddCustomColum("IsInternalSale", typeof(bool), Constants.TYPE_BOOL);
 
         //sample default values initializer
         ddict.DatonDefs["Customer"].Initializer = Initializers.InitializeCustomer;

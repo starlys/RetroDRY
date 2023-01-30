@@ -19,8 +19,7 @@ namespace RetroDRY
         /// <param name="datondef"></param>
         public override Daton Clone(DatonDef datondef)
         {
-            var c = base.Clone(datondef) as Viewon;
-            if (c == null) throw new Exception("Cannot clone viewon");
+            if (!(base.Clone(datondef) is Viewon c)) throw new Exception("Cannot clone viewon");
             c.IsCompleteLoad = IsCompleteLoad;
             return c;
         }

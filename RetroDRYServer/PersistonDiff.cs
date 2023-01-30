@@ -92,6 +92,7 @@ namespace RetroDRY
         public ApplyAction ApplyTo(DatonDef datondef, Persiston target) 
         {
             if (MainTable.Count == 0) return ApplyAction.NoChanges;
+            if (datondef.MainTableDef == null) throw new Exception("Expected main table to be defined in PersistonDiff");
 
             if (datondef.MultipleMainRows)
             {

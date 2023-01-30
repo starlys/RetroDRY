@@ -93,6 +93,8 @@ namespace RetroDRY
         /// <param name="diff">the proposed changeset, some of which may be disallowed</param>
         public IEnumerable<string> GetDisallowedWrites(Daton? pristineDaton, DatonDef datondef, PersistonDiff diff)
         {
+            if (datondef.MainTableDef == null) throw new Exception("Expected main table to be defined in SecurityGuard");
+
             var errors = new List<string>();
             FindDisallowedWrites(errors, pristineDaton, datondef.MainTableDef, diff.MainTable);
             return errors;

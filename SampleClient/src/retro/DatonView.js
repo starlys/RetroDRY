@@ -179,13 +179,19 @@ export default React.memo(props => {
                     } else
                         layer.stackstate.removeByKey(daton.key, false);
                 } else {
-                    const errors = await session.changeSubscribeState([daton], 1);
-                    const myerrors = errors[daton.key];
-                    if (myerrors) {
-                        setErrorItems([lang.ERRUNLOCK]);
-                    } else {
-                        setErrorItems([]);
+                    const loadResults = await session.getMulti([daton.key], {doSubscribe: true, forceCheckVersion: true});
+                    const loadResult = loadResults[0];
+                    if (loadResult.daton) {
+                        layer.stackstate.replaceDaton(daton.key, loadResult.daton);
                     }
+                    setErrorItems(loadResult.errors);
+                    // const errors = await session.changeSubscribeState([daton], 1);
+                    // const myerrors = errors[daton.key];
+                    // if (myerrors) {
+                    //     setErrorItems([lang.ERRUNLOCK]);
+                    // } else {
+                    //     setErrorItems([]);
+                    // }
                     if (layer.stackstate.onLayerSaved) layer.stackstate.onLayerSaved(daton.key);
                 }
             } else {
@@ -195,7 +201,8 @@ export default React.memo(props => {
                 setErrorItems(errors);
             }
         }
-        catch {
+        catch (e)  {
+            console.log('Error in view:', e);
             setErrorItems([lang.ERRNET]);
         }
     };

@@ -29,6 +29,7 @@ namespace RetroDRY
         /// </summary>
         public static RecurPoint FromDaton(DatonDef datondef, Daton daton)
         {
+            if (datondef.MainTableDef == null) throw new Exception("Expected main table to be defined in RecurPoint");
             if (datondef.MultipleMainRows)
                 return new TableRecurPoint(datondef.MainTableDef, GetMainTable(datondef, daton, createIfMissing: true)!);
             else
@@ -40,6 +41,7 @@ namespace RetroDRY
         /// </summary>
         public static IList? GetMainTable(DatonDef datondef, Daton daton, bool createIfMissing = false)
         {
+            if (datondef.MainTableDef == null) throw new Exception("Expected main table to be defined in RecurPoint");
             var f = daton.GetType().GetField(datondef.MainTableDef.Name);
             return GetChildTable(daton, f, createIfMissing);
         }

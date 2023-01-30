@@ -36,7 +36,7 @@ function isEditable(row, colDef) {
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
 //props.showChildTables is true if you want to show child tables (the default when shown in a stack)
 //props.isNested is true for nested CardViews; should be omitted from user code
-export default props => {
+const Component = props => {
     const {session, overrideCard, row, criset, datonDef, tableDef, edit, layer, isNested, showChildTables} = props;
     const [cardLayout, setCardLayout] = useState(null);
     const [, incrementCardRenderCount] = useReducer(x => x + 1, 0); 
@@ -143,3 +143,5 @@ export default props => {
         </>
     );
 };
+
+export default Component;

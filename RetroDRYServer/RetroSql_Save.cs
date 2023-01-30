@@ -124,6 +124,8 @@ namespace RetroDRY
         /// <param name="user"></param>
         public virtual async Task Save(IDbConnection db, IUser user, Persiston? pristineDaton, Persiston modifiedDaton, PersistonDiff diff)
         {
+            if (diff.DatonDef.MainTableDef == null) throw new Exception("Expected main table to be defined in Save");
+
             //called for each row in traversal; return true to recurse over children
             async Task<(object?, bool)> rowCallback(RowChangingData cdata)
             {

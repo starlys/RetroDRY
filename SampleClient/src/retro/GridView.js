@@ -12,7 +12,7 @@ import {securityUtil, seedNewRow} from 'retrodryclient';
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
 //props.sortClicked is falsy if sorting is not allowed here, or a function taking the column name
 //props.overrideGrid is the GridLayout to use (if omitted, uses the default defined by the session)
-export default props => {
+const Component = props => {
     const {rows, datonDef, tableDef, edit, session, layer} = props;
     const [expandRowIdx, setExpandRowIdx] = useState(-1);
     const [gridLayout, setGridLayout] = useState(null);
@@ -132,3 +132,5 @@ export default props => {
         </>
     );
 };
+
+export default Component;

@@ -4,7 +4,7 @@ import DatonView from './DatonView';
 //View/edit a stack of datons supporting some interoperations between them
 //props.session is the session for obtaining layouts
 //props.stackstate is an instance of DatonStackState which will track state for the mounted lifetime of this stack
-export default (props) => {
+const Component = (props) => {
     const {session, stackstate} = props;
     const [stackRenderCount, incrementStackRenderCount] = useReducer(x => x + 1, 0); 
 
@@ -27,3 +27,5 @@ export default (props) => {
             edit={layer.edit} renderCount={layer.renderCount} />;
     });
 };
+
+export default Component;

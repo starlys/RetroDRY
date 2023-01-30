@@ -222,7 +222,7 @@ Main endpoint behaviors
 
 -   manage datons' status (only if the ManageDatons member of the request is present)
     -   Notes
-        -   Lock must be obtained a daton can be saved. This can be immediately before saving, or at the beginning of user editing to ensure user edits are not lost.
+        -   Lock must be obtained before a daton can be saved. This can be immediately before saving, or at the beginning of user editing to ensure user edits are not lost.
         -   Client should call this every 55s to extend lock on every locked persiston, or else the lock will expire. This repetition is not needed to maintain subscriptions.
     -   behaviors
         -   Ends subscription conditonally.

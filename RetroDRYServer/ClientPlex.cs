@@ -20,7 +20,7 @@ namespace RetroDRY
             /// <summary>
             /// The daton keys that this client is subscribed to. Having a key listed here ensures that the daton
             /// will remain cached and that changes to it will be pushed to the client.
-            /// The dictionary value is the verion that was last sent to the client.
+            /// The dictionary value is the version that was last sent to the client.
             /// </summary>
             public readonly ConcurrentDictionary<DatonKey, string> Subscriptions = new ConcurrentDictionary<DatonKey, string>();
 
@@ -108,11 +108,16 @@ namespace RetroDRY
         /// <summary>
         /// Change the subscription state of a daton for a client
         /// </summary>
-        public void ManageSubscribe(string sessionKey, DatonKey datonKey, string version, bool subscribe)
+        /// <param name="version">required when subscribing</param>
+        /// <param name="datonKey"></param>
+        /// <param name="sessionKey"></param>
+        /// <param name="subscribe"></param>
+        public void ManageSubscribe(string sessionKey, DatonKey datonKey, string? version, bool subscribe)
         {
+            if (subscribe && version == null) throw new Exception("Version required when subscribing");
             if (datonKey.IsNew) throw new Exception("Cannot subscribe to an unsaved persiston");
             if (!Sessions.TryGetValue(sessionKey, out var ses)) return;
-            if (subscribe) ses.Subscriptions[datonKey] = version;
+            if (subscribe) ses.Subscriptions[datonKey] = version!;
             else ses.Subscriptions.TryRemove(datonKey, out _);
         }
 

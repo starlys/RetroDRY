@@ -37,7 +37,7 @@ const saleItemCard = {
 //exists to demonstrate how you can use cards and grids in more controlled settings than
 //what is provided by the default stack behavior. In this case, it requires exactly one sale item.
 //props.session is the Session object
-export default (props) => {
+const Component = (props) => {
     const {session} = props;
     const [sale, setSale] = useState(null);
     const [messages, setMessages] = useState(['Enter the sale']);
@@ -83,3 +83,5 @@ export default (props) => {
         <button onClick={saveClicked}>Save New Sale</button>
     </>;
 };
+
+export default Component;

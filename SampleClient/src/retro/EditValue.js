@@ -40,7 +40,7 @@ function getFormattedNumber(row, colName, baseType) {
 //props.session is the retrodry Session 
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
 //props.onChanged is called with no arguments after a change is saved to the row (on each keystroke)
-export default (props) => {
+const Component = (props) => {
     const {colDef, row, width, layer, session, isCriterion} = props;
     const invalidMemberName = getInvalidMemberName(colDef);
     const [hasFocus, setHasFocus] = useState(false);
@@ -279,3 +279,5 @@ export default (props) => {
             {lookupButton}
         </span>);
 };
+
+export default Component;

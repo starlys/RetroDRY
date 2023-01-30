@@ -278,7 +278,6 @@ namespace RetroDRY
                     bool isSubscribed = false;
                     if (datonKey is PersistonKey)
                     {
-                        if (mrequest.Version == null) throw new Exception("Expected daton version in ManageDatons");
                         ClientPlex.ManageSubscribe(req.SessionKey, datonKey, mrequest.Version, wantsSubscribe);
                         isSubscribed = wantsSubscribe;
                     }

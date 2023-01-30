@@ -255,6 +255,7 @@ namespace RetroDRY
         private static void AssignPersistonKey(SaveItem item)
         {
             if (item.Modified?.Key == null || item.DatonDef == null) throw new Exception("daton has no key or definition in AssignPersistonKey");
+            if (item.DatonDef.MainTableDef == null) throw new Exception("Expected main table to be defined in AssignPersistonKey");
 
             if (!item.Modified.Key.IsNew) return;
             var mainTdef = item.DatonDef.MainTableDef;

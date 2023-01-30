@@ -89,7 +89,7 @@ namespace RetroDRY
         /// <param name="datondef">definition of d</param>
         public static void FixTopLevelDefaultsInNewPersiston(DatonDef datondef, Daton d)
         {
-            if (datondef.MultipleMainRows) return;
+            if (datondef.MultipleMainRows || datondef.MainTableDef == null) return;
             foreach (var coldef in datondef.MainTableDef.Cols)
                 if (coldef.CSType == typeof(DateTime))
                 {

@@ -102,7 +102,7 @@ namespace UnitTest
             var ddict = new DataDictionary();
             ddict.AddDatonUsingClassAnnotation(typeof(Ogre));
             var ogredef = ddict.DatonDefs["Ogre"];
-            var paymentdef = ogredef.MainTableDef.Children![0];
+            var paymentdef = ogredef.MainTableDef!.Children![0];
 
             var diff = new PersistonDiff(ogredef, xorg.Key, xorg.Version)
             {
@@ -178,7 +178,7 @@ namespace UnitTest
             var ddict = new DataDictionary();
             ddict.AddDatonUsingClassAnnotation(typeof(Ogre));
             var ogredef = ddict.DatonDefs["Ogre"];
-            var paymentdef = ogredef.MainTableDef.Children![0];
+            var paymentdef = ogredef.MainTableDef!.Children![0];
 
             var diff = new PersistonDiff(ogredef, xorg.Key, xorg.Version)
             {

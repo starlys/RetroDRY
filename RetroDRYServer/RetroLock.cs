@@ -78,19 +78,6 @@ namespace RetroDRY
                 if (nrows == 1) return true;
             }
 
-            //update touched date: this tells us if the record exists, and ensures it won't be cleaned up during the lock process;
-            //also unlock it if the lock is too old
-            //bool recordExists;
-            //using (var cmd = db.CreateCommand())
-            //{
-            //    cmd.CommandText = "update RetroLock set LockedBy=(case when Touched<@old then null else LockedBy end), Touched=@t where DatonKey=@k";
-            //    Utils.AddParameterWithValue(cmd, "old", DateTime.UtcNow.AddSeconds(-120));
-            //    Utils.AddParameterWithValue(cmd, "t", DateTime.UtcNow);
-            //    Utils.AddParameterWithValue(cmd, "k", key.ToString());
-            //    int nrows = cmd.ExecuteNonQuery();
-            //    recordExists = nrows == 1;
-            //}
-
             //reached here, so there was no record; create one with lock 
             //(this won't occur if everything is working, since reading the version should happen before attempting to lock)
             using (var cmd = db.CreateCommand())

@@ -16,7 +16,7 @@ namespace RetroDRY
         /// <summary>
         /// Definition of main table
         /// </summary>
-        public TableDef MainTableDef;
+        public TableDef? MainTableDef;
 
         /// <summary>
         /// For viewons, this may be set to a quasi-table whose columns define the criteria. Otherwise null.
@@ -43,11 +43,9 @@ namespace RetroDRY
         /// Create
         /// </summary>
         /// <param name="type"></param>
-        /// <param name="mainTableDef"></param>
-        public DatonDef(Type type, TableDef mainTableDef)
+        public DatonDef(Type type)
         {
             Type = type;
-            MainTableDef = mainTableDef;
         }
     }
 }

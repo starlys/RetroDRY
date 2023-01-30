@@ -209,7 +209,7 @@ namespace UnitTest
             var ddict = new DataDictionary();
             ddict.AddDatonUsingClassAnnotation(typeof(Employee));
             var datondef = ddict.DatonDefs["Employee"];
-            var firstnamedef = datondef.MainTableDef.FindCol("FirstName");
+            var firstnamedef = datondef.MainTableDef!.FindCol("FirstName");
             firstnamedef.SetPrompt("de", "ERSTE");
             firstnamedef.SetPrompt("fr", "PREMIER");
             Assert.AreEqual(3, firstnamedef.Prompt!.Count);

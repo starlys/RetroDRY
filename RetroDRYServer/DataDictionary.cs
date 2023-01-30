@@ -71,7 +71,7 @@ namespace RetroDRY
             if (datonType.GetCustomAttribute<RetroHideAttribute>() != null) return null;
 
             //add to collection
-            var datondef = new DatonDef(datonType, new TableDef("dummy", datonType)); //tableDef replaced below
+            var datondef = new DatonDef(datonType);
             DatonDefs[datonType.Name] = datondef;
             bool isViewon = typeof(Viewon).IsAssignableFrom(datondef.Type);
 
@@ -110,6 +110,7 @@ namespace RetroDRY
             foreach ((var targetTabledef, var inherit) in TableInheritances)
             {
                 (var sourceTabledef, var _) = FindInheritanceSource(inherit.SourceName, false);
+                if (sourceTabledef == null) throw new Exception($"Inheritance of {targetTabledef.Name} could not be resolved.");
                 targetTabledef.ParentKeyColumnName ??= sourceTabledef.ParentKeyColumnName;
                 targetTabledef.PrimaryKeyColName ??= sourceTabledef.PrimaryKeyColName;
                 targetTabledef.Prompt ??= sourceTabledef.Prompt;
@@ -163,7 +164,7 @@ namespace RetroDRY
         {
             foreach (var datondef in DatonDefs.Values)
             {
-                datondef.MainTableDef.Validate(false);
+                datondef.MainTableDef?.Validate(false);
                 datondef.CriteriaDef?.Validate(true);
             }
         }
@@ -386,7 +387,7 @@ namespace RetroDRY
         /// </summary>
         /// <param name="sourceName">dot-delimited names starting with daton name and optionally including table names, and optionally ending with column name</param>
         /// <param name="forColumn">if true, the last part of sourceName must be a column and ColDef will be returned; if false, no column name will be on sourceName, and ColDef will be null in the return pair.</param>
-        private (TableDef, ColDef?) FindInheritanceSource(string sourceName, bool forColumn)
+        private (TableDef?, ColDef?) FindInheritanceSource(string sourceName, bool forColumn)
         {
             //parse the string into the names for identifying the daton, tables and column
             var parts = sourceName.Split('.');
@@ -405,13 +406,13 @@ namespace RetroDRY
             var tabledef = datondef.MainTableDef;
             foreach (string tableName in tableNames)
             {
-                tabledef = tabledef.FindChildTable(tableName);
+                tabledef = tabledef?.FindChildTable(tableName);
                 if (tabledef == null) throw new Exception($"InheritFrom syntax '{sourceName}' does not refer to any known table name; {tableName} is unknown");
             }
             ColDef? coldef = null;
             if (forColumn)
             {
-                coldef = tabledef.FindCol(colName);
+                coldef = tabledef?.FindCol(colName);
                 if (coldef == null) throw new Exception($"InheritFrom syntax '{sourceName}' does not refer to any known column name; {colName} is unknown");
             }
 

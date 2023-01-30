@@ -225,11 +225,13 @@ export default class Session {
             if (currentState === 0 && subscribeState !== 0)
                 throw new Error('Can only change subscribe state if initial get was subscribed');
             if (subscribeState !== currentState)
+            {
                 requestDetails.push({ 
                     key: daton.key, 
                     subscribeState: subscribeState,
                     version: cacheEntry?.daton.version
                 });
+            }
         }
         if (!requestDetails.length) return {};
         const request = {
@@ -318,14 +320,17 @@ export default class Session {
         //manage cache changes: forget version numbers but remember the saved version in case it gets displayed immediately after editing
         //(But note this newly cached saved version can't be edited again; we have to refetch from database for that)
         if (saveResponse?.savePersistonsSuccess) {
+            console.log('SAVE CACHE BEFORE', this.datonCache);
             for (let daton of datons) {
-                delete daton.version;
-                const parsedkey = parseDatonKey(daton.key);
-                if (!parsedkey.isNew()) {
-                    const cacheEntry = this.datonCache[daton.key];
-                    if (cacheEntry) cacheEntry.daton = daton;
-                }
+                delete this.datonCache[daton.key];
+                // delete daton.version;
+                // const parsedkey = parseDatonKey(daton.key);
+                // if (!parsedkey.isNew()) {
+                //     const cacheEntry = this.datonCache[daton.key];
+                //     if (cacheEntry) cacheEntry.daton = daton;
+                // }
             }
+            console.log('SAVE CACHE AFTER', this.datonCache);
         }
 
         //host app callback
