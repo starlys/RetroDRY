@@ -198,6 +198,9 @@ React component testing
     -   Run react app and watch for changes: npm start
     -   Or you can try this if https isn't working for you locally: npm start-http
 
+-   When you make changes in the folder SampleClient/src/retro, it rebuilds dynamically. But when you make changes in RetroDRYClient, you must re-issue 'npm run builddev' in that folder, which you can do by having two terminal sessions open. That change will be noticed by the dev server.
+-   Do not make changes in RetroDRYReact (for the reason, see distribution section below).
+
 Distribution
 ============
 
