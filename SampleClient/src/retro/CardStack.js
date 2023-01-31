@@ -8,7 +8,7 @@ import CardView from './CardView';
 //props.tableDef is the TableDefResponse which is the metadata for props.rows
 //props.edit is true to display with editors; false for read only
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
-export default props => {
+const Component = props => {
     const {session, rows, datonDef, tableDef, edit, layer} = props;
     const [cardLayout, setCardLayout] = useState(null);
 
@@ -27,3 +27,5 @@ export default props => {
         </>
     );
 };
+
+export default Component;

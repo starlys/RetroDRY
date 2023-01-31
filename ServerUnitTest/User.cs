@@ -12,7 +12,7 @@ namespace UnitTest
             new RetroRole { BaseLevel = PermissionLevel.All }
         };
 
-        public string LangCode { get; set; } = null;
+        public string? LangCode { get; set; } = null;
     }
 
     class SpecificUser : User

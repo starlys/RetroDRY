@@ -77,7 +77,7 @@ Server application plumbing
 Server side code organization
 -----------------------------
 
--   RetroDRY is a single .net standard 2.0 assembly. (Other languages could also be supported later.) Add it to your project using Nuget, by searching on the name RetroDRY.
+-   RetroDRY is a single .net standard 2.1 assembly. (Other languages could also be supported later.) Add it to your project using Nuget, by searching on the name RetroDRY.
 -   Because it is not an application template and does not have an entry point itself, the developer needs to wire up the behavior as noted in the "Server application plumbing" section.
 -   If you are using your models in two tiers, the models should go into their own separate assembly to be used in multiple places.
 -   If you would rather start with a template, you can get it here: https://github.com/starlys/RetroDRY-ServerTemplate - However, you should still go through these instructions in detail even if using the template.

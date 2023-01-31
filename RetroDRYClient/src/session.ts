@@ -225,11 +225,13 @@ export default class Session {
             if (currentState === 0 && subscribeState !== 0)
                 throw new Error('Can only change subscribe state if initial get was subscribed');
             if (subscribeState !== currentState)
+            {
                 requestDetails.push({ 
                     key: daton.key, 
                     subscribeState: subscribeState,
                     version: cacheEntry?.daton.version
                 });
+            }
         }
         if (!requestDetails.length) return {};
         const request = {
@@ -315,17 +317,19 @@ export default class Session {
             await this.changeSubscribeState(datonsToLock, 1);
         }
 
-        //manage cache changes: forget version numbers but remember the saved version in case it gets displayed immediately after editing
-        //(But note this newly cached saved version can't be edited again; we have to refetch from database for that)
+        //for each, remove from cache if no longer locked, or reload if still locked
         if (saveResponse?.savePersistonsSuccess) {
+            const keysToRefetch = [];
+            const cache = this.datonCache;
             for (let daton of datons) {
-                delete daton.version;
-                const parsedkey = parseDatonKey(daton.key);
-                if (!parsedkey.isNew()) {
-                    const cacheEntry = this.datonCache[daton.key];
-                    if (cacheEntry) cacheEntry.daton = daton;
-                }
+                const wasUnlocked = datonsToLock.indexOf(daton) >= 0;
+                if (wasUnlocked)
+                    delete cache[daton.key];
+                else
+                    keysToRefetch.push(daton.key);
             }
+            if (keysToRefetch.length)
+                await this.getMulti(keysToRefetch, {isForEdit: true, forceCheckVersion: true});
         }
 
         //host app callback

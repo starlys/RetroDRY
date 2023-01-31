@@ -7,10 +7,31 @@ namespace RetroDRY
     /// </summary>
     public class SqlFlavorizer
     {
-        public enum VendorKind { PostgreSQL, MySQL, SQLServer }
+        /// <summary>
+        /// Database platform
+        /// </summary>
+        public enum VendorKind
+        {
+            /// <summary>
+            /// </summary>
+            PostgreSQL,
+            /// <summary>
+            /// </summary>
+            MySQL,
+            /// <summary>
+            /// </summary>
+            SQLServer
+        }
 
+        /// <summary>
+        /// Database platform
+        /// </summary>
         public VendorKind Vendor { get; private set; }
 
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="v"></param>
         public SqlFlavorizer(VendorKind v)
         {
             Vendor = v;

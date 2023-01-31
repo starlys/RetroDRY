@@ -11,7 +11,7 @@ import {securityUtil} from 'retrodryclient';
 //props.deleteClicked is the handler for deleting a persiston (only called after this component handles confirmation)
 //props.parsedDatonKey
 //props.session is the Session object for language strings 
-export default (props) => {
+const Component = (props) => {
     const {datonDef, editState, parsedDatonKey, session} = props;
     const [isDeleteConfirming, setDeleteConfirming] = useState(false);
 
@@ -60,3 +60,5 @@ export default (props) => {
     );
 
 };
+
+export default Component;

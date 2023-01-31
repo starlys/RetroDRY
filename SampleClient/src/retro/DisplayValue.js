@@ -16,7 +16,7 @@ function textToHtml(s) {
 //props.row is the daton row
 //props.width is the css width string
 //props.session is the retrodry Session 
-export default (props) => {
+const Component = (props) => {
     const {colDef, row, width, session} = props;
     const [displayAs, setDisplayAs] = useState(null); //mapped value via DropdownState, if any
 
@@ -54,3 +54,5 @@ export default (props) => {
     //default for numbers
     return <span className="card-value" style={wrapStyle}>{value}</span>;
 };
+
+export default Component;

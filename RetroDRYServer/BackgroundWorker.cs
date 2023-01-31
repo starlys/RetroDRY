@@ -14,16 +14,28 @@ namespace RetroDRY
             public Func<Task> Action;
             public DateTime Next; //UTC
             public int Interval; //seconds
+
+            public ScheduleItem(Func<Task> action, DateTime next, int interval)
+            {
+                Action = action;
+                Next = next;
+                Interval = interval;
+            }
         }
 
         private bool IsDisposed;
         private readonly List<ScheduleItem> Schedule = new List<ScheduleItem>(); //lock on access
 
+        /// <summary>
+        /// Create
+        /// </summary>
         public BackgroundWorker()
         {
             Task.Run(Run);
         }
 
+        /// <summary>
+        /// </summary>
         public void Dispose()
         {
             IsDisposed = true;
@@ -33,16 +45,12 @@ namespace RetroDRY
         /// Register an action to call repeatedly
         /// </summary>
         /// <param name="interval">in seconds; the first call will be this many seconds in the future</param>
+        /// <param name="action">the action to run</param>
         public void Register(Func<Task> action, int interval)
         {
             lock (Schedule)
             {
-                Schedule.Add(new ScheduleItem
-                {
-                    Action = action,
-                    Next = DateTime.UtcNow.AddSeconds(interval),
-                    Interval = interval
-                });
+                Schedule.Add(new ScheduleItem(action, DateTime.UtcNow.AddSeconds(interval), interval));
             }
         }
 

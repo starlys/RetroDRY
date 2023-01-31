@@ -4,16 +4,27 @@ using System.Linq;
 
 namespace RetroDRY
 {
+    /// <summary>
+    /// cache of datons that include those that clients are subscribed to
+    /// </summary>
     public class DatonCache
     {
         private class Item
         {
             public DateTime LastAccessedUtc = DateTime.UtcNow;
             public Daton Daton;
+
+            public Item(Daton daton)
+            {
+                Daton = daton;
+            }
         }
 
         private readonly ConcurrentDictionary<DatonKey, Item> Cache = new ConcurrentDictionary<DatonKey, Item>();
 
+        /// <summary>
+        /// Number of datons in cache
+        /// </summary>
         public int Count => Cache.Count;
 
         /// <summary>
@@ -21,7 +32,11 @@ namespace RetroDRY
         /// </summary>
         public int CountViewons => Cache.Keys.Where(k => k is ViewonKey).Count();
 
-        public Daton Get(DatonKey key)
+        /// <summary>
+        /// Get one daton from cache or null if not found
+        /// </summary>
+        /// <param name="key"></param>
+        public Daton? Get(DatonKey key)
         {
             if (Cache.TryGetValue(key, out Item i))
             {
@@ -32,12 +47,22 @@ namespace RetroDRY
             return null;
         }
 
+        /// <summary>
+        /// Store daton in cache, overwriting an existing item whose key matches
+        /// </summary>
+        /// <param name="daton"></param>
         public void Put(Daton daton)
         {
-            Cache[daton.Key] = new Item
-            {
-                Daton = daton
-            };
+            if (daton.Key == null) throw new Exception("Attempt to put daton in cache with null key");
+            Cache[daton.Key] = new Item(daton);
+        }
+
+        /// <summary>
+        /// Remove daton from cache, if it is there
+        /// </summary>
+        public void Remove(DatonKey key)
+        {
+            Cache.TryRemove(key, out _);
         }
 
         /// <summary>

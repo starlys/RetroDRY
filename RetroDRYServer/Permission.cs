@@ -8,18 +8,21 @@ namespace RetroDRY
     /// </summary>
     public class RetroRole
     {
+        /// <summary>
+        /// level to use for all tables, unless overriden in TableOverrides
+        /// </summary>
         public PermissionLevel BaseLevel;
 
         /// <summary>
         /// Optional resolver function taking user, daton; if missing, BaseLevel is used.
         /// Daton will be null when checking security for a new unsaved persiston.
         /// </summary>
-        public Func<IUser, Daton, PermissionLevel> Level;
+        public Func<IUser, Daton?, PermissionLevel>? Level;
 
         /// <summary>
         /// null or a list of table overrides
         /// </summary>
-        public List<TablePermission> TableOverrides;
+        public List<TablePermission>? TableOverrides;
     }
 
     /// <summary>
@@ -33,18 +36,32 @@ namespace RetroDRY
         /// </summary>
         public string TableName;
 
+        /// <summary>
+        /// level to use for all columns, unless overriden in ColumnOverrides
+        /// </summary>
         public PermissionLevel BaseLevel;
 
         /// <summary>
         /// Optional resolver function taking user, daton, table name; if missing, BaseLevel is used
         /// Daton will be null when checking security for a new unsaved persiston.
         /// </summary>
-        public Func<IUser, Daton, string, PermissionLevel> Level;
+        public Func<IUser, Daton?, string, PermissionLevel>? Level;
 
         /// <summary>
         /// null or a list of column overrides
         /// </summary>
-        public List<ColumnPermission> ColumnOverrides;
+        public List<ColumnPermission>? ColumnOverrides;
+
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="tableName"></param>
+        /// <param name="baseLevel"></param>
+        public TablePermission(string tableName, PermissionLevel baseLevel)
+        {
+            TableName = tableName;
+            BaseLevel = baseLevel;
+        }
     }
 
     /// <summary>
@@ -52,13 +69,31 @@ namespace RetroDRY
     /// </summary>
     public class ColumnPermission
     {
+        /// <summary>
+        /// Column name
+        /// </summary>
         public string ColumnName;
+
+        /// <summary>
+        /// Persmission override for the column
+        /// </summary>
         public PermissionLevel BaseLevel;
 
         /// <summary>
         /// Optional resolver function taking user, daton, table name, column name; if missing, BaseLevel is used
         /// Daton will be null when checking security for a new unsaved persiston.
         /// </summary>
-        public Func<IUser, Daton, string, string, PermissionLevel> Level;
+        public Func<IUser, Daton?, string, string, PermissionLevel>? Level;
+
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="columnName"></param>
+        /// <param name="baseLevel"></param>
+        public ColumnPermission(string columnName, PermissionLevel baseLevel)
+        {
+            ColumnName = columnName;
+            BaseLevel = baseLevel;
+        }
     }
 }

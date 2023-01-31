@@ -4,53 +4,65 @@ using System.Collections.Generic;
 
 namespace RetroDRY
 {
+    /// <summary>
+    /// A defintion of one table column
+    /// </summary>
     public class ColDef
     {
+        /// <summary>
+        /// Information about how images are handled
+        /// </summary>
         public class ImageInfo
         {
             /// <summary>
             /// The column name in the same row whose value will be set to the URL of the image
             /// </summary>
-            public string UrlColumName;
+            public string? UrlColumName;
         }
 
+        /// <summary>
+        /// Information about left-join for one column; for example, how to look up the name associated with the value of a foreign key
+        /// </summary>
         [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
         public class LeftJoinInfo
         {
             /// <summary>
             /// The foreign key column in this same table
             /// </summary>
-            public string ForeignKeyColumnName;
+            public string? ForeignKeyColumnName;
 
             /// <summary>
             /// The column in the joined table to join in (usually a name or description column)
             /// </summary>
-            public string RemoteDisplayColumnName;
+            public string? RemoteDisplayColumnName;
         }
 
+        /// <summary>
+        /// Behavior when editing the column (used when the column references another type)
+        /// </summary>
         [JsonObject(ItemNullValueHandling = NullValueHandling.Ignore)]
         public class SelectBehaviorInfo
         {
             /// <summary>
             /// The viewon type name used to choose values for this column
             /// </summary>
-            public string ViewonTypeName;
+            public string? ViewonTypeName;
 
             /// <summary>
             /// If set, the viewon will be seeded with a value for this criterion
             /// </summary>
-            public string AutoCriterionName { get; set; }
+            public string? AutoCriterionName { get; set; }
 
             /// <summary>
             /// When used with AutoCriterionName, the viewon's criteria value is taken from the value of this column in the local row
             /// </summary>
-            public string AutoCriterionValueColumnName { get; set; }
+            public string? AutoCriterionValueColumnName { get; set; }
 
             /// <summary>
             /// The value in the viewon's main result table to be copied back into the column being edited; if omitted, the Key column
             /// of the viewon will be used.
             /// </summary>
-            public string ViewonValueColumnName { get; set; }
+            public string? ViewonValueColumnName { get; set; }
 
             /// <summary>
             /// If true, all possible values from the viewon are shown as a dropdown list (only use if you know the number of options will be reasonable);
@@ -92,17 +104,17 @@ namespace RetroDRY
         /// <summary>
         /// The daton type that this column references
         /// </summary>
-        public string ForeignKeyDatonTypeName;
+        public string? ForeignKeyDatonTypeName;
 
         /// <summary>
         /// Information needed to define selection behavior
         /// </summary>
-        public SelectBehaviorInfo SelectBehavior;
+        public SelectBehaviorInfo? SelectBehavior;
 
         /// <summary>
         /// Information needed to load this column via a left-join.
         /// </summary>
-        public LeftJoinInfo LeftJoin;
+        public LeftJoinInfo? LeftJoin;
 
         /// <summary>
         /// If true, this column is the readable name or description that users would see to identify the row (or in some cases it could also be the primary key)
@@ -118,7 +130,7 @@ namespace RetroDRY
         /// Column prompt in natural language indexed by language code (index is "" for default language);
         /// or this may be null if the Name should be used.
         /// </summary>
-        public SortedList<string, string> Prompt;
+        public SortedList<string, string>? Prompt;
 
         /// <summary>
         /// String minimum length
@@ -134,33 +146,39 @@ namespace RetroDRY
         /// Validation message with optional placeholders: {0}=prompt {1}=maxlength {2}=minlength
         /// (For use of the SortedList, see Prompt property)
         /// </summary>
-        public SortedList<string, string> LengthValidationMessage; 
+        public SortedList<string, string>? LengthValidationMessage; 
 
-        public string Regex;
+        /// <summary>
+        /// Regular expression for validating values for this column
+        /// </summary>
+        public string? Regex;
 
         /// <summary>
         /// Validation message with optional placeholders: {0}=prompt
         /// (For use of the SortedList, see Prompt property)
         /// </summary>
-        public SortedList<string, string> RegexValidationMessage;
+        public SortedList<string, string>? RegexValidationMessage;
 
         /// <summary>
         /// The minimum numeric value; if MinNumberValue and MaxNumberValue are both 0, then range is not enforced
         /// </summary>
         public decimal MinNumberValue;
 
+        /// <summary>
+        /// Seee MinNumberValue
+        /// </summary>
         public decimal MaxNumberValue;
 
         /// <summary>
         /// Validation message with optional placeholders: {0}=prompt {1}=min {2}=max
         /// (For use of the SortedList, see Prompt property)
         /// </summary>
-        public SortedList<string, string> RangeValidationMessage;
+        public SortedList<string, string>? RangeValidationMessage;
 
         /// <summary>
         /// Set only if this column is an image identifier (such as a file name)
         /// </summary>
-        public ImageInfo Image;
+        public ImageInfo? Image;
 
         /// <summary>
         /// If true, the column is computed or left-joined, and won't be loaded and saved by default SQL, and won't be editable on clients
@@ -168,12 +186,25 @@ namespace RetroDRY
         public bool IsComputedOrJoined => IsComputed || LeftJoin != null;
 
         /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="name"></param>
+        /// <param name="wireType"></param>
+        /// <param name="cSType"></param>
+        public ColDef(string name, string wireType, Type cSType)
+        {
+            Name = name;
+            WireType = wireType;
+            CSType = cSType;
+        }
+
+        /// <summary>
         /// Convenience method to ensure Prompt is non null while setting a prompt for the given language.
         /// Use langCode="" for default language.
         /// </summary>
         public void SetPrompt(string langCode, string prompt)
         {
-            if (Prompt == null) Prompt = new SortedList<string, string>();
+            Prompt ??= new SortedList<string, string>();
             Prompt[langCode] = prompt;
         }
 

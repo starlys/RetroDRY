@@ -20,7 +20,7 @@ namespace SampleServer.Tests
         }
 
         /// <summary>
-        /// Execute scalar query
+        /// Execute scalar query; return DBNull if no result
         /// </summary>
         public static object QueryScalar(string sql)
         {
@@ -28,15 +28,15 @@ namespace SampleServer.Tests
             db.Open();
             using var cmd = db.CreateCommand();
             cmd.CommandText = sql;
-            return cmd.ExecuteScalar();
+            return cmd.ExecuteScalar() ?? DBNull.Value;
         }
 
         /// <summary>
         /// Load a list of values from one column
         /// </summary>
-        public static IEnumerable<T> LoadList<T>(string sql)
+        public static IEnumerable<T?> LoadList<T>(string sql)
         {
-            var ret = new List<T>();
+            var ret = new List<T?>();
             using var db = new Npgsql.NpgsqlConnection(Globals.ConnectionString);
             db.Open();
             using var cmd = db.CreateCommand();
@@ -44,9 +44,9 @@ namespace SampleServer.Tests
             using var rdr = cmd.ExecuteReader();
             while (rdr.Read())
             {
-                object value = rdr[0];
+                object? value = rdr[0];
                 if (value is DBNull) value = null;
-                ret.Add((T)Convert.ChangeType(value, typeof(T)));
+                ret.Add((T?)Convert.ChangeType(value, typeof(T?)));
             }
             return ret;
         }
@@ -62,6 +62,7 @@ namespace SampleServer.Tests
             return count;
         }
 
-        public static IEnumerable<Diagnostics.Report> AllDiagnostics => Globals.TestingRetroverse.Select(r => r.Diagnostics.GetStatus());
+        public static IEnumerable<Diagnostics.Report> AllDiagnostics => Globals.TestingRetroverse
+            .Where(r => r.Diagnostics != null).Select(r => r.Diagnostics!.GetStatus());
     }
 }

@@ -1,6 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
+
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
 
 namespace RetroDRY
 {
@@ -58,7 +58,7 @@ namespace RetroDRY
         /// <summary>
         /// When set by the host app, is then called whenever an internal error occurs during a client request
         /// </summary>
-        public Action<string> ReportClientCallError;
+        public Action<string>? ReportClientCallError;
 
         internal void IncrementLoadCount()
         {

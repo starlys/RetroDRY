@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 
 namespace RetroDRY
 {
@@ -13,11 +12,35 @@ namespace RetroDRY
         private readonly IUser User;
         private readonly DataDictionary Dbdef;
 
+        /// <summary>
+        /// Convenience shortener to test PermissionLevel.View
+        /// </summary>
+        /// <param name="lev"></param>
         public static bool CanView(PermissionLevel lev) => (lev & PermissionLevel.View) != 0;
+
+        /// <summary>
+        /// Convenience shortener to test PermissionLevel.Modify
+        /// </summary>
+        /// <param name="lev"></param>
         public static bool CanUpdate(PermissionLevel lev) => (lev & PermissionLevel.Modify) != 0;
+
+        /// <summary>
+        /// Convenience shortener to test PermissionLevel.Create
+        /// </summary>
+        /// <param name="lev"></param>
         public static bool CanCreate(PermissionLevel lev) => (lev & PermissionLevel.Create) != 0;
+
+        /// <summary>
+        /// Convenience shortener to test PermissionLevel.Delete
+        /// </summary>
+        /// <param name="lev"></param>
         public static bool CanDelete(PermissionLevel lev) => (lev & PermissionLevel.Delete) != 0;
 
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="dbdef"></param>
+        /// <param name="user"></param>
         public SecurityGuard(DataDictionary dbdef, IUser user)
         {
             User = user;
@@ -31,7 +54,7 @@ namespace RetroDRY
         /// <param name="pristineDaton">null for new persistons, or the pristine version being edited</param>
         /// <param name="tablename">null ok</param>
         /// <param name="colname">null ok</param>
-        public PermissionLevel FinalLevel(Daton pristineDaton, string tablename, string colname)
+        public PermissionLevel FinalLevel(Daton? pristineDaton, string tablename, string? colname)
         {
             var max = PermissionLevel.None;
             foreach (var role in User.Roles)
@@ -66,8 +89,12 @@ namespace RetroDRY
         /// Return readable strings describing any disallowed writes for this user
         /// </summary>
         /// <param name="pristineDaton">null for new unsaved persistons, else the pristine version being edited</param>
-        public IEnumerable<string> GetDisallowedWrites(Daton pristineDaton, DatonDef datondef, PersistonDiff diff)
+        /// <param name="datondef">definition of pristineDaton</param>
+        /// <param name="diff">the proposed changeset, some of which may be disallowed</param>
+        public IEnumerable<string> GetDisallowedWrites(Daton? pristineDaton, DatonDef datondef, PersistonDiff diff)
         {
+            if (datondef.MainTableDef == null) throw new Exception("Expected main table to be defined in SecurityGuard");
+
             var errors = new List<string>();
             FindDisallowedWrites(errors, pristineDaton, datondef.MainTableDef, diff.MainTable);
             return errors;
@@ -113,7 +140,7 @@ namespace RetroDRY
         /// <summary>
         /// Locate all writes that are disallowed for the table and append readable errors to the errors list
         /// </summary>
-        private void FindDisallowedWrites(List<string> errors, Daton pristineDaton, TableDef tabledef, List<PersistonDiff.DiffRow> table)
+        private void FindDisallowedWrites(List<string> errors, Daton? pristineDaton, TableDef tabledef, List<PersistonDiff.DiffRow> table)
         {
             var unwritableColNames = GetUnwritableColumnNames(pristineDaton, tabledef);
             var tableLev = FinalLevel(pristineDaton, tabledef.Name, null);
@@ -172,7 +199,7 @@ namespace RetroDRY
         /// <summary>
         /// determine which col names are not writable
         /// </summary>
-        private List<string> GetUnwritableColumnNames(Daton pristineDaton, TableDef tabledef)
+        private List<string> GetUnwritableColumnNames(Daton? pristineDaton, TableDef tabledef)
         {
             var unwritableCols = new List<string>();
             foreach (var coldef in tabledef.Cols)

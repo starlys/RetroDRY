@@ -10,33 +10,78 @@ namespace RetroDRY
     /// </summary>
     public class PersistonDiff
     {
-        public enum ApplyAction { NoChanges, Changes, PersistonDeleted }
+        /// <summary>
+        /// The type of action discovered by ApplyTo
+        /// </summary>
+        public enum ApplyAction
+        {
+            /// <summary>
+            /// no changes
+            /// </summary>
+            NoChanges, 
+            
+            /// <summary>
+            /// Some changes (adds/edits/deletes)
+            /// </summary>
+            Changes, 
+            
+            /// <summary>
+            /// Whole persiston deleted
+            /// </summary>
+            PersistonDeleted
+        }
 
         /// <summary>
         /// Storage for changes to a single row
         /// </summary>
         public class DiffRow
         {
+            /// <summary>
+            /// Type of change
+            /// </summary>
             public DiffKind Kind;
-            public Dictionary<string, object> Columns = new Dictionary<string, object>();
-            public Dictionary<TableDef, List<DiffRow>> ChildTables; //may be null
+
+            /// <summary>
+            /// Changed column values (documentation may be misleading)
+            /// </summary>
+            public Dictionary<string, object?> Columns = new Dictionary<string, object?>();
+
+            /// <summary>
+            /// Changed child rows collection, or null
+            /// </summary>
+            public Dictionary<TableDef, List<DiffRow>>? ChildTables; 
         }
 
+        /// <summary>
+        /// Key of daton being changed
+        /// </summary>
         public DatonKey Key { get; protected set; }
+
+        /// <summary>
+        /// Defintion of daton being changed
+        /// </summary>
         public DatonDef DatonDef { get; protected set; }
 
         /// <summary>
-        /// The persiston version from which this diff was built; it will be a new version once the diff is saved
+        /// The persiston version from which this diff was built; it will be a new version once the diff is saved;
+        /// is null if persiston is new
         /// </summary>
-        public string BasedOnVersion { get; protected set; }
+        public string? BasedOnVersion { get; protected set; }
 
         /// <summary>
         /// Changes on the main table rows, including nested changes in child rows
         /// </summary>
         public List<DiffRow> MainTable = new List<DiffRow>();
 
-        public PersistonDiff(DatonDef datondef, DatonKey key, string version)
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="datondef">definition of daton being diffed</param>
+        /// <param name="key">key of daton being diffed</param>
+        /// <param name="version">original version before changes (exception on null)</param>
+        public PersistonDiff(DatonDef datondef, DatonKey key, string? version)
         {
+            if (version == null && !key.IsNew) throw new Exception("Expected daton version in PersistonDiff");
             DatonDef = datondef;
             Key = key;
             BasedOnVersion = version;
@@ -48,6 +93,7 @@ namespace RetroDRY
         public ApplyAction ApplyTo(DatonDef datondef, Persiston target) 
         {
             if (MainTable.Count == 0) return ApplyAction.NoChanges;
+            if (datondef.MainTableDef == null) throw new Exception("Expected main table to be defined in PersistonDiff");
 
             if (datondef.MultipleMainRows)
             {
@@ -65,7 +111,7 @@ namespace RetroDRY
                 if (MainTable.Count != 1)
                     throw new Exception("For single-main-table persistons the diff may only include the single main row");
                 bool diffIsNewRow = MainTable[0].Kind == DiffKind.NewRow;
-                if (diffIsNewRow != target.Key.IsNew)
+                if (target.Key == null || diffIsNewRow != target.Key.IsNew)
                     throw new Exception("The key specifies a new row but the diff does not indicate a new row; or the key specifies modified/delete but the diff indicates a new row");
                 var source = MainTable[0];
                 if (source.Kind == DiffKind.DeletedRow) 
@@ -98,7 +144,7 @@ namespace RetroDRY
 
             if (source.Kind == DiffKind.DeletedRow)
             {
-                if (!source.Columns.TryGetValue(tabledef.PrimaryKeyColName, out object pkToDelete)) throw new Exception("Deleted row in diff needs primary key member");
+                if (!source.Columns.TryGetValue(tabledef.PrimaryKeyColName, out object? pkToDelete)) throw new Exception("Deleted row in diff needs primary key member");
                 int idxToDelete = Utils.IndexOfPrimaryKeyMatch(targetList, pkField, pkToDelete);
                 if (idxToDelete >= 0)
                 {
@@ -119,10 +165,11 @@ namespace RetroDRY
                 }
                 else
                 {
-                    if (!source.Columns.TryGetValue(tabledef.PrimaryKeyColName, out object pkToUpdate)) throw new Exception("Updated row in diff needs primary key member");
+                    if (!source.Columns.TryGetValue(tabledef.PrimaryKeyColName, out object? pkToUpdate)) throw new Exception("Updated row in diff needs primary key member");
                     int idxToUpdate = Utils.IndexOfPrimaryKeyMatch(targetList, pkField, pkToUpdate);
                     if (idxToUpdate < 0) throw new Exception("Row to update is not found");
-                    target = targetList[idxToUpdate] as Row;
+                    target = targetList[idxToUpdate] as Row
+                        ?? throw new Exception("Cannot convert daton row to Row class");
                 }
 
                 //copy values
@@ -175,7 +222,8 @@ namespace RetroDRY
                     var childRows = child.Value;
                     var field = targetType.GetField(childTableDef.Name);
                     if (field == null) throw new Exception($"Row class {targetType.Name} must include field member {childTableDef.Name}");
-                    var childTargetList = Utils.CreateOrGetFieldValue<IList>(target, field);
+                    var childTargetList = Utils.CreateOrGetFieldValue<IList>(target, field)
+                        ?? throw new Exception("Cannot get list field value in diff");
                     foreach (var childRow in childRows)
                         anyChanges |= ApplyDiffRowToList(childTableDef, childRow, childTargetList);
                 }

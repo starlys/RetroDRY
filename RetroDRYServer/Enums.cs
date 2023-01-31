@@ -1,7 +1,12 @@
 ﻿using System;
 
+#pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
+
 namespace RetroDRY
 {
+    /// <summary>
+    /// Type of change for a single row, where "other" means it was edited but was not created or deleted
+    /// </summary>
     public enum DiffKind { Other, NewRow, DeletedRow }
 
     [Flags]

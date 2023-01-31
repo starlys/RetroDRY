@@ -3,13 +3,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 
+#pragma warning disable CS8767 // Nullability of reference types in type of parameter doesn't match implicitly implemented member (possibly because of nullability attributes).
+
 namespace UnitTest
 {
     class FakeDbConnection : IDbConnection
     {
         public FakeDbCommand TheCommand = new();
 
-        public string ConnectionString { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public string ConnectionString { get => ""; set => throw new NotImplementedException(); }
 
         public int ConnectionTimeout => throw new NotImplementedException();
 
@@ -51,17 +53,17 @@ namespace UnitTest
 
     class FakeDbCommand : IDbCommand
     {
-        public FakeDbParameter TheLastParameter;
+        public FakeDbParameter? TheLastParameter;
         public List<FakeDbParameter> TheParameters = new();
 
-        public string CommandText { get; set; }
+        public string CommandText { get; set; } = "";
         public int CommandTimeout { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public CommandType CommandType { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public IDbConnection Connection { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
         public IDataParameterCollection Parameters { get; set; } = new FakeDbParameterCollection();
 
-        public IDbTransaction Transaction { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public IDbTransaction? Transaction { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
         public UpdateRowSource UpdatedRowSource { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
         public void Cancel()
@@ -107,7 +109,7 @@ namespace UnitTest
     class FakeDbParameterCollection : IDataParameterCollection
     {
         public object this[string parameterName] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
-        public object this[int index] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
+        public object? this[int index] { get => throw new NotImplementedException(); set => throw new NotImplementedException(); }
 
         public bool IsFixedSize => throw new NotImplementedException();
 
@@ -133,7 +135,7 @@ namespace UnitTest
             return false;
         }
 
-        public bool Contains(object value)
+        public bool Contains(object? value)
         {
             return false;
         }
@@ -152,16 +154,16 @@ namespace UnitTest
             return 0;
         }
 
-        public int IndexOf(object value)
+        public int IndexOf(object? value)
         {
             return 0;
         }
 
-        public void Insert(int index, object value)
+        public void Insert(int index, object? value)
         {
         }
 
-        public void Remove(object value)
+        public void Remove(object? value)
         {
         }
 
@@ -184,10 +186,10 @@ namespace UnitTest
 
         public bool IsNullable => throw new NotImplementedException();
 
-        public string ParameterName { get; set; }
-        public string SourceColumn { get; set; }
+        public string ParameterName { get; set; } = "";
+        public string SourceColumn { get; set; } = "";
         public DataRowVersion SourceVersion { get; set; }
-        public object Value { get; set; }
+        public object? Value { get; set; } = DBNull.Value;
     }
 
     class FakeDbTransaction : IDbTransaction

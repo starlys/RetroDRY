@@ -1,9 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace RetroDRY
 {
+    /// <summary>
+    /// Definition of one daton type
+    /// </summary>
     public class DatonDef
     {
         /// <summary>
@@ -11,12 +13,15 @@ namespace RetroDRY
         /// </summary>
         public Type Type;
 
-        public TableDef MainTableDef;
+        /// <summary>
+        /// Definition of main table
+        /// </summary>
+        public TableDef? MainTableDef;
 
         /// <summary>
         /// For viewons, this may be set to a quasi-table whose columns define the criteria. Otherwise null.
         /// </summary>
-        public TableDef CriteriaDef;
+        public TableDef? CriteriaDef;
 
         /// <summary>
         /// If true, the daton subclass should contain only one or more Lists of rows using nested types; if false,
@@ -32,6 +37,15 @@ namespace RetroDRY
         /// <summary>
         /// Injectable initializer of new datons
         /// </summary>
-        public Func<Daton, Task> Initializer;
+        public Func<Daton, Task>? Initializer;
+
+        /// <summary>
+        /// Create
+        /// </summary>
+        /// <param name="type"></param>
+        public DatonDef(Type type)
+        {
+            Type = type;
+        }
     }
 }

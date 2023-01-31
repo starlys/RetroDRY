@@ -16,14 +16,14 @@ namespace RetroDRY
         /// <summary>
         /// Get the database definition (metadata, schema)
         /// </summary>
-        public DataDictionary DataDictionary { get; private set; }
+        public DataDictionary DataDictionary { get; private set; } = new DataDictionary();
 
         /// <summary>
         /// Injectable language messages by language code, whose message codes match those declared in Constants.EnglishMessages.
         /// If this is nonnull, then any messages here will override the default English messages based on the user's language.
         /// The usage is: LanguageMessages[langCode][messageCode] = message, where langCode may be empty string for the default language.
         /// </summary>
-        public Dictionary<string, Dictionary<string, string>> LanguageMessages;
+        public Dictionary<string, Dictionary<string, string>>? LanguageMessages;
 
         /// <summary>
         /// Page size applied to loading viewons' main table
@@ -43,7 +43,7 @@ namespace RetroDRY
         /// <summary>
         /// data access implmentation for all types; also see SqlOverrides
         /// </summary>
-        private RetroSql DefaultSql;
+        private RetroSql? DefaultSql;
 
         /// <summary>
         /// data access implmentation override by type; indexed by daton type name
@@ -53,14 +53,14 @@ namespace RetroDRY
         /// <summary>
         /// Injected function to get a database connection by environment and database number (for most applications, the number is always 0)
         /// </summary>
-        public Func<int, Task<DbConnection>> GetDbConnection { get; private set; }
+        public Func<int, Task<DbConnection>>? GetDbConnection { get; private set; }
 
         /// <summary>
         /// Injected function to allow host app to fix database exception messages, making them appropriate for use
         /// </summary>
-        public Func<IUser, Exception, string> CleanUpSaveException;
+        public Func<IUser, Exception, string>? CleanUpSaveException;
 
-        internal LockManager LockManager;
+        internal LockManager? LockManager;
 
         /// <summary>
         /// Host app can use this to run background tasks
@@ -70,7 +70,7 @@ namespace RetroDRY
         /// <summary>
         /// Host app can use this to get diagnostic reports
         /// </summary>
-        public Diagnostics Diagnostics;
+        public Diagnostics? Diagnostics;
 
         /// <summary>
         /// Affects some timings to allow integration tests to be able to run mamy clients from one browser
@@ -85,6 +85,10 @@ namespace RetroDRY
         /// Initialize
         /// </summary>
         /// <param name="connectionResolver">Host app function to get an open database connection, which will be disposed after each use</param>
+        /// <param name="dbVendor"></param>
+        /// <param name="ddict"></param>
+        /// <param name="integrationTestMode"></param>
+        /// <param name="lockDatabaseNumber"></param>
         public virtual void Initialize(SqlFlavorizer.VendorKind dbVendor, DataDictionary ddict, Func<int, Task<DbConnection>> connectionResolver,
             int lockDatabaseNumber = 0, bool integrationTestMode = false)
         {
@@ -95,7 +99,7 @@ namespace RetroDRY
             DataDictionary = ddict;
             GetDbConnection = connectionResolver;
             LockManager = new LockManager();
-            LockManager.Initialize(() => GetDbConnection(lockDatabaseNumber), PropogatePersistonChanged);
+            LockManager.Initialize(() => GetDbConnection(lockDatabaseNumber));
             DefaultSql = new RetroSql();
             DefaultSql.Initialize(DatabaseVendor);
             Diagnostics = new Diagnostics(ClientPlex, DatonCache);
@@ -123,6 +127,9 @@ namespace RetroDRY
             BackgroundWorker.Register(DoLockRefresh, interServerInterval); 
         }
 
+        /// <summary>
+        /// Clean up
+        /// </summary>
         public void Dispose()
         {
             BackgroundWorker?.Dispose();
@@ -141,6 +148,7 @@ namespace RetroDRY
         /// Inject the implementation of RetroSql for the given type name
         /// </summary>
         /// <param name="typeName">matches Daton subclass name</param>
+        /// <param name="r">the inhected implementation</param>
         public void OverrideSql(string typeName, RetroSql r)
         {
             r.Initialize(DatabaseVendor);
@@ -172,7 +180,7 @@ namespace RetroDRY
             catch (Exception ex)
             {
                 resp.ErrorCode = Constants.ERRCODE_INTERNAL;
-                Diagnostics.ReportClientCallError?.Invoke(ex.ToString());
+                Diagnostics?.ReportClientCallError?.Invoke(ex.ToString());
             }
             return resp;
         }
@@ -184,6 +192,9 @@ namespace RetroDRY
             {
                 resp.DataDictionary = Retrovert.DataDictionaryToWire(DataDictionary, user, LanguageMessages);
             }
+
+            if (req.SessionKey == null) throw new Exception("Missing session key");
+            if (LockManager == null) throw new Exception("Uninitialized Retroverse");
 
             //load datons
             if (req.GetDatons != null)
@@ -198,6 +209,8 @@ namespace RetroDRY
                     };
                     if (loadResult.Daton != null) //null means it was not found by key, usually
                     {
+                        if (loadResult.Daton.Key == null) 
+                            throw new Exception("Expected daton key in GetDatons");
                         bool doReturnToCaller = loadResult.Daton.Version == null || drequest.KnownVersion != loadResult.Daton.Version; //omit if client already has the current version
                         if (doReturnToCaller)
                         {
@@ -207,7 +220,11 @@ namespace RetroDRY
                             };
                         }
                         if (drequest.DoSubscribe && loadResult.Daton is Persiston)
+                        {
+                            if (loadResult.Daton.Version == null)
+                                throw new Exception("Expected daton version in GetDatons");
                             ClientPlex.ManageSubscribe(req.SessionKey, loadResult.Daton.Key, loadResult.Daton.Version, true);
+                        }
                     }
                     else
                         getResponse.Key = drequest.Key; //only needed if daton is not returned to client
@@ -234,8 +251,9 @@ namespace RetroDRY
                     {
                         IsDeleted = result.IsDeleted,
                         IsSuccess = result.IsSuccess,
-                        OldKey = result.OldKey.ToString(),
+                        OldKey = result.OldKey?.ToString(),
                         NewKey = result.NewKey?.ToString(),
+                        NewVersion = result.NewVersion,
                         Errors = result.Errors
                     });
                 }
@@ -266,7 +284,7 @@ namespace RetroDRY
                     }
 
                     //handle change in lock
-                    string lockErrorCode = "";
+                    string? lockErrorCode = "";
                     bool hasLock = false;
                     if (wantsLock)
                     {
@@ -311,13 +329,14 @@ namespace RetroDRY
             catch (Exception ex)
             {
                 resp.ErrorCode = Constants.ERRCODE_INTERNAL;
-                Diagnostics.ReportClientCallError?.Invoke(ex.ToString());
+                Diagnostics?.ReportClientCallError?.Invoke(ex.ToString());
             }
             return resp;
         }
 
         private async Task<LongResponse> HandleHttpLong(LongRequest req, IUser user)
         {
+            if (req.SessionKey == null) throw new Exception("Missing session key");
 
             //if there is already something to push, then return now, without any awaiting
             var pushGroup = ClientPlex.GetAndClearItemsToPush(req.SessionKey);
@@ -347,9 +366,12 @@ namespace RetroDRY
         /// <param name="user">if null, the return value is a shared guaranteed complete daton; if user is provided,
         /// the return value may be a clone with some rows removed or columns set to null</param>
         /// <param name="forceCheckLatest">if true then checks database to ensure latest version even if it was cached</param>
+        /// <param name="key">identifies daton to get</param>
         /// <returns>object with daton, or readable errors</returns>
-        public virtual async Task<RetroSql.LoadResult> GetDaton(DatonKey key, IUser user, bool forceCheckLatest = false)
+        public virtual async Task<RetroSql.LoadResult> GetDaton(DatonKey key, IUser? user, bool forceCheckLatest = false)
         {
+            if (LockManager == null || GetDbConnection == null) throw new Exception("Uninitialized Retroverse");
+
             //new persiston: return now
             if (key.IsNew)
             {
@@ -362,8 +384,8 @@ namespace RetroDRY
             }
 
             //get from cache if possible, and optionally ignore cached version if it is not the latest
-            string verifiedVersion = null;
-            Daton daton = DatonCache.Get(key);
+            string? verifiedVersion = null;
+            Daton? daton = DatonCache.Get(key);
             if (forceCheckLatest && daton != null)
             {
                 //viewons: always ignore cache; persistons: use cached only if known to be latest
@@ -383,7 +405,8 @@ namespace RetroDRY
             if (daton == null)
             {
                 var sql = GetSqlInstance(key);
-                RetroSql.LoadResult loadResult;
+                if (sql == null) throw new Exception("Cannot resolve RetroSql instance in GetDaton");
+                RetroSql.LoadResult? loadResult;
                 using (var db = await GetDbConnection(datondef.DatabaseNumber))
                     loadResult = await sql.Load(db, DataDictionary, user, key, ViewonPageSize);
                 if (loadResult == null)
@@ -394,7 +417,7 @@ namespace RetroDRY
                     verifiedVersion = await LockManager.GetVersion(key);
                 daton.Version = verifiedVersion;
                 DatonCache.Put(daton);
-                Diagnostics.IncrementLoadCount();
+                Diagnostics?.IncrementLoadCount();
             }
 
             //enforce permissions on the user
@@ -409,12 +432,13 @@ namespace RetroDRY
         }
 
         /// <summary>
-        /// Save one or more persiston changes. This will make any cached versions of the persiston obsolete, but
-        /// will not do anything about the cache, and will not remember the newly assigned version.
-        /// Also note that propogation of changes does not happen until the lock is released (not here).
+        /// Save one or more persiston changes. This will clear those items from cache, and they will have newly assigned version numbers.
+        /// Propogation of changes does not happen until the lock is released (not here).
         /// </summary>
         public virtual async Task<(bool, MultiSaver.Result[])> SaveDatons(string sessionKey, IUser user, PersistonDiff[] diffs)
         {
+            if (LockManager == null) throw new Exception("Uninitialized Retroverse");
+
             //confirm this user has locks
             var keysAndVersions = diffs.Select(d => (d.Key, d.BasedOnVersion));
             var lockError = ConfirmAllLocks(sessionKey, keysAndVersions);
@@ -422,25 +446,49 @@ namespace RetroDRY
                 return (false, new MultiSaver.Result[] { lockError });
 
             //save
-            using (var saver = new MultiSaver(this, user, diffs))
+            using var saver = new MultiSaver(this, user, diffs);
+            bool success = await saver.Save();
+            var saverResults = saver.GetResults();
+
+            //clean cache/locks, assign version numbers, and push changes to other clients
+            if (success)
             {
-                bool success = await saver.Save();
-                return (success, saver.GetResults());
+                foreach (var result in saverResults)
+                {
+                    if (result.NewKey != null)
+                    {
+                        (bool verOk, string? newVersion) = await LockManager.AssignNewVersion(result.NewKey, sessionKey);
+                        result.NewVersion = newVersion;
+                        DatonCache.Remove(result.NewKey);
+
+                        //propagation may reload and therefore re-cache
+                        if (ClientPlex.IsAnyOutOfDate(result.NewKey, result.NewVersion))
+                        {
+                            var daton = (await GetDaton(result.NewKey, null, forceCheckLatest: true))?.Daton;
+                            if (daton != null)
+                                ClientPlex.NotifyClientsOf(DataDictionary, new[] { daton });
+                        }
+                    }
+                }
             }
+
+            return (success, saverResults);
         }
 
         /// <summary>
         /// Check whether the user holds locks on the given datons. If yes, returns null, else returns
         /// an error structure that can be returned to a caller, noting ONLY the first encountered problem.
         /// </summary>
-        public virtual MultiSaver.Result ConfirmAllLocks(string sessionKey, IEnumerable<(DatonKey, string)> datonKeysAndVersions)
+        public virtual MultiSaver.Result? ConfirmAllLocks(string sessionKey, IEnumerable<(DatonKey, string?)> datonKeysAndVersions)
         {
+            if (LockManager == null) throw new Exception("Uninitialized Retroverse");
+
             //Note: The client would already know what locks they have so this would be an 
             //unusual error. 
-            foreach ((var datonKey, string reqVersion) in datonKeysAndVersions)
+            foreach ((var datonKey, string? reqVersion) in datonKeysAndVersions)
             {
                 if (datonKey.IsNew) continue;
-                (_, bool isLockedByMe, string actualVersion) = LockManager.GetLockState(datonKey, sessionKey);
+                (_, bool isLockedByMe, string? actualVersion) = LockManager.GetLockState(datonKey, sessionKey);
                 if (!isLockedByMe)
                     return new MultiSaver.Result { OldKey = datonKey, Errors = new[] { Constants.ERRCODE_LOCK } };
                 if (reqVersion != actualVersion)
@@ -452,7 +500,7 @@ namespace RetroDRY
         /// <summary>
         /// Get the RetroSql instance to use to load/save a daton
         /// </summary>
-        public virtual RetroSql GetSqlInstance(DatonKey key)
+        public virtual RetroSql? GetSqlInstance(DatonKey key)
         {
             if (SqlOverrides.TryGetValue(key.Name, out RetroSql r)) return r;
             return DefaultSql;
@@ -473,23 +521,11 @@ namespace RetroDRY
         /// </summary>
         public async Task DiagnosticCleanup()
         {
+            if (LockManager == null) throw new Exception("Uninitialized Retroverse");
+
             DatonCache.Clean(ClientPlex, secondsOld: 10);
             async Task clientCleanerCallback(string sessionKey) => await LockManager.ReleaseLocksForSession(sessionKey);
             await ClientPlex.Clean(clientCleanerCallback, secondsOld: 10);
-        }
-
-        /// <summary>
-        /// This is ONLY called via LockManager after unlocked, and only when the persiston changed during the lock.
-        /// So it only handles changes made by this server.
-        /// </summary>
-        private async Task PropogatePersistonChanged(DatonKey key, string version) 
-        {
-            if (ClientPlex.IsAnyOutOfDate(key, version))
-            {
-                var daton = (await GetDaton(key, null, forceCheckLatest: true))?.Daton;
-                if (daton != null)
-                    ClientPlex.NotifyClientsOf(DataDictionary, new[] { daton }); 
-            }
         }
 
         /// <summary>
@@ -498,7 +534,7 @@ namespace RetroDRY
         private LongResponse PushGroupToLongResponse(IUser user, ClientPlex.PushGroup pg)
         {
             var wireDatons = new List<CondensedDatonResponse>();
-            if (pg?.Datons != null)
+            if (pg.Datons != null)
             {
                 foreach (var daton in pg.Datons)
                     wireDatons.Add(new CondensedDatonResponse
@@ -524,7 +560,9 @@ namespace RetroDRY
         /// </summary>
         protected async virtual Task DoLockRefresh()
         {
-            List<(DatonKey, string)> otherServerUpdates = await LockManager.InterServerProcess();
+            if (LockManager == null) throw new Exception("Uninitialized Retroverse");
+
+            List<(DatonKey, string?)> otherServerUpdates = await LockManager.InterServerProcess();
             var updatesWithSubscriptions = otherServerUpdates.Where(pair => ClientPlex.IsAnyOutOfDate(pair.Item1, pair.Item2)).ToArray();
             var datonsToPush = new List<Daton>(updatesWithSubscriptions.Length);
             foreach (var pair in updatesWithSubscriptions)

@@ -41,6 +41,7 @@ namespace UnitTest
         { 
             //existing persiston
             var pk = DatonKey.Parse("Emp|=3") as PersistonKey;
+            Assert.IsNotNull(pk);
             Assert.AreEqual("Emp", pk.Name);
             Assert.AreEqual("3", pk.PrimaryKey);
             Assert.IsFalse(pk.WholeTable);
@@ -48,6 +49,7 @@ namespace UnitTest
 
             //new persiston
             pk = DatonKey.Parse("Emp|=-1") as PersistonKey;
+            Assert.IsNotNull(pk);
             Assert.AreEqual("Emp", pk.Name);
             Assert.AreEqual("-1", pk.PrimaryKey);
             Assert.IsFalse(pk.WholeTable);
@@ -55,12 +57,14 @@ namespace UnitTest
 
             //whole table persiston
             pk = DatonKey.Parse("EmpType|+") as PersistonKey;
+            Assert.IsNotNull(pk);
             Assert.AreEqual("EmpType", pk.Name);
             Assert.IsTrue(pk.WholeTable);
             Assert.IsFalse(pk.IsNew);
 
             //viewon without criteria
             var vk = DatonKey.Parse("EmpList") as ViewonKey;
+            Assert.IsNotNull(vk?.Criteria);
             Assert.AreEqual("EmpList", vk.Name);
             Assert.AreEqual(0, vk.PageNumber);
             Assert.IsNull(vk.SortColumnName);
@@ -68,6 +72,7 @@ namespace UnitTest
 
             //viewon with escaped criteria
             vk = DatonKey.Parse(@"CustomerList|code1=\\/|code2=\||code3=a=\|b\|") as ViewonKey;
+            Assert.IsNotNull(vk?.Criteria);
             Assert.AreEqual("CustomerList", vk.Name);
             Assert.AreEqual(3, vk.Criteria.Count());
             var criArray = vk.Criteria.ToArray();
@@ -80,7 +85,9 @@ namespace UnitTest
 
             //with sort and page
             vk = DatonKey.Parse("EmpList|_page=2|_sort=firstName") as ViewonKey;
+            Assert.IsNotNull(vk?.Criteria);
             Assert.AreEqual("EmpList", vk.Name);
+            Assert.IsNotNull(vk);
             Assert.AreEqual(2, vk.PageNumber);
             Assert.AreEqual("firstName", vk.SortColumnName);
             Assert.AreEqual(0, vk.Criteria.Count());

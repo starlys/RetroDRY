@@ -13,12 +13,15 @@ namespace RetroDRY
         /// </summary>
         string Id { get; }
 
+        /// <summary>
+        /// Collection of roles the user has, which define permissions
+        /// </summary>
         RetroRole[] Roles { get; }
 
         /// <summary>
         /// Null for the default language, or a code that matches the code used when adding prompts
         /// </summary>
-        string LangCode { get; }
+        string? LangCode { get; }
     }
 
 }

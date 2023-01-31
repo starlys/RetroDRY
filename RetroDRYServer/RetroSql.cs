@@ -9,15 +9,22 @@ namespace RetroDRY
     /// </summary>
     public partial class RetroSql
     {
-        public const string CUSTOMCOLNAME = "CustomValues";
+        const string CUSTOMCOLNAME = "CustomValues";
 
-        protected SqlFlavorizer SqlFlavor;
+        /// <summary>
+        /// Defines database platform behaviors
+        /// </summary>
+        protected SqlFlavorizer? SqlFlavor;
 
         /// <summary>
         /// incremented when used to generate unique alias names
         /// </summary>
         protected int MaxtDynamicAliasUsed = 0;
 
+        /// <summary>
+        /// Initialize this instance
+        /// </summary>
+        /// <param name="sqlVendor"></param>
         public void Initialize(SqlFlavorizer.VendorKind sqlVendor)
         {
             SqlFlavor = new SqlFlavorizer(sqlVendor);

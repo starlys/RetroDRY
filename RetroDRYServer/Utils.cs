@@ -57,10 +57,12 @@ namespace RetroDRY
         /// Construct a row object and set any custom non-nullable properties to their defaults
         /// </summary>
         /// <param name="tabledef">if null, this behaves like Construct(t)</param>
-        public static Row ConstructRow(Type t, TableDef tabledef) 
+        /// <param name="t">type to construct</param>
+        public static Row ConstructRow(Type t, TableDef? tabledef) 
         {
             if (!typeof(Row).IsAssignableFrom(t)) throw new Exception("Requires Row type");
             var row = Construct(t) as Row;
+            if (row == null) throw new Exception("Could not construct row");
             if (tabledef != null)
             {
                 foreach (var coldef in tabledef.Cols.Where(c => c.IsCustom))
@@ -75,16 +77,19 @@ namespace RetroDRY
         /// </summary>
         public static Daton ConstructDaton(Type t, DatonDef datondef)
         {
-            return ConstructRow(t, datondef.MultipleMainRows ? null : datondef.MainTableDef) as Daton;
+            var d = ConstructRow(t, datondef.MultipleMainRows ? null : datondef.MainTableDef) as Daton;
+            if (d == null) throw new Exception("Could not construct daton");
+            return d;
         }
 
         /// <summary>
         /// Change the value of certain defaults to be more user friendly (namely, non-nullable dates and times)
         /// </summary>
-        /// <param name="d">a newly created persisto</param>
+        /// <param name="d">a newly created persiston</param>
+        /// <param name="datondef">definition of d</param>
         public static void FixTopLevelDefaultsInNewPersiston(DatonDef datondef, Daton d)
         {
-            if (datondef.MultipleMainRows) return;
+            if (datondef.MultipleMainRows || datondef.MainTableDef == null) return;
             foreach (var coldef in datondef.MainTableDef.Cols)
                 if (coldef.CSType == typeof(DateTime))
                 {
@@ -96,7 +101,7 @@ namespace RetroDRY
         /// <summary>
         /// Wrapper to Convert.ChangeType that allows for nullable types, treating empty strings as null
         /// </summary>
-        public static object ChangeType(object value, Type type)
+        public static object? ChangeType(object? value, Type type)
         {
             if (value == null || (value is string vs && vs.Length == 0))
             {
@@ -113,9 +118,9 @@ namespace RetroDRY
         /// type and set it. The generic type T can be identical to the known field type, or an ancestor.
         /// The use case is for daton rows with member List of child rows, to get the child list using IList as the type T.
         /// </summary>
-        public static T CreateOrGetFieldValue<T>(object o, FieldInfo field) where T:class
+        public static T? CreateOrGetFieldValue<T>(object o, FieldInfo field) where T:class
         {
-            T v = field.GetValue(o) as T;
+            T? v = field.GetValue(o) as T;
             if (v == null)
             {
                 v = Construct(field.FieldType) as T;
@@ -128,7 +133,9 @@ namespace RetroDRY
         /// Find the element in the targetList whose value of pkField is pk, and return the index, or -1 if not found
         /// </summary>
         /// <param name="pkField">must be a field defined within the type of the elements of targetList</param>
-        public static int IndexOfPrimaryKeyMatch(IList targetList, FieldInfo pkField, object pk)
+        /// <param name="pk">value to look for</param>
+        /// <param name="targetList">list to look in</param>
+        public static int IndexOfPrimaryKeyMatch(IList targetList, FieldInfo pkField, object? pk)
         {
             int idx = -1;
             foreach (var target in targetList)
@@ -140,7 +147,13 @@ namespace RetroDRY
             return -1;
         }
 
-        public static void AddParameterWithValue(IDbCommand cmd, string name, object value)
+        /// <summary>
+        /// Add a parameter and value to a DbCommand
+        /// </summary>
+        /// <param name="cmd"></param>
+        /// <param name="name"></param>
+        /// <param name="value"></param>
+        public static void AddParameterWithValue(IDbCommand cmd, string name, object? value)
         {
             var p = cmd.CreateParameter();
             p.ParameterName = name;
@@ -149,9 +162,22 @@ namespace RetroDRY
         }
 
         /// <summary>
+        /// DataReader read string value with DBNull conversion to null
+        /// </summary>
+        /// <param name="rdr"></param>
+        /// <param name="idx"></param>
+        /// <returns></returns>
+        public static string? ReadString(IDataReader rdr, int idx)
+        {
+            object value = rdr.GetValue(idx);
+            if (value is DBNull) return null;
+            return (string)value;
+        }
+
+        /// <summary>
         /// DataReader read value with DBNull conversion to default
         /// </summary>
-        public static T Read<T>(IDataReader rdr, int idx)
+        public static T ReadPrimitive<T>(IDataReader rdr, int idx) where T: struct 
         {
             object value = rdr.GetValue(idx);
             if (value is DBNull) return default;
