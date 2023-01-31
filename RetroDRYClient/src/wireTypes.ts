@@ -150,6 +150,7 @@ export interface SavePersistonResponse
 {
     oldKey: string;
     newKey: string;
+    newVersion: string | null;
     errors?: string[];
     isSuccess: boolean;
     isDeleted: boolean;

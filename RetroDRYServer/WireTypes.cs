@@ -453,6 +453,11 @@ namespace RetroDRY
         public string? NewKey { get; set; }
 
         /// <summary>
+        /// New daton version, or null if error
+        /// </summary>
+        public string? NewVersion { get; set; }
+
+        /// <summary>
         /// Any errors
         /// </summary>
         public string[]? Errors { get; set; }

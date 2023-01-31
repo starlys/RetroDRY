@@ -58,6 +58,14 @@ namespace RetroDRY
         }
 
         /// <summary>
+        /// Remove daton from cache, if it is there
+        /// </summary>
+        public void Remove(DatonKey key)
+        {
+            Cache.TryRemove(key, out _);
+        }
+
+        /// <summary>
         /// Clean cache of anything that hasn't been accessed in 2 minutes, but keep anything that a client session has subscribed to
         /// </summary>
         public void Clean(ClientPlex clients, int secondsOld = 120)

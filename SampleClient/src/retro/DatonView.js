@@ -185,13 +185,6 @@ export default React.memo(props => {
                         layer.stackstate.replaceDaton(daton.key, loadResult.daton);
                     }
                     setErrorItems(loadResult.errors);
-                    // const errors = await session.changeSubscribeState([daton], 1);
-                    // const myerrors = errors[daton.key];
-                    // if (myerrors) {
-                    //     setErrorItems([lang.ERRUNLOCK]);
-                    // } else {
-                    //     setErrorItems([]);
-                    // }
                     if (layer.stackstate.onLayerSaved) layer.stackstate.onLayerSaved(daton.key);
                 }
             } else {

@@ -99,7 +99,7 @@ namespace RetroDRY
             DataDictionary = ddict;
             GetDbConnection = connectionResolver;
             LockManager = new LockManager();
-            LockManager.Initialize(() => GetDbConnection(lockDatabaseNumber), PropogatePersistonChanged);
+            LockManager.Initialize(() => GetDbConnection(lockDatabaseNumber));
             DefaultSql = new RetroSql();
             DefaultSql.Initialize(DatabaseVendor);
             Diagnostics = new Diagnostics(ClientPlex, DatonCache);
@@ -253,6 +253,7 @@ namespace RetroDRY
                         IsSuccess = result.IsSuccess,
                         OldKey = result.OldKey?.ToString(),
                         NewKey = result.NewKey?.ToString(),
+                        NewVersion = result.NewVersion,
                         Errors = result.Errors
                     });
                 }
@@ -431,12 +432,13 @@ namespace RetroDRY
         }
 
         /// <summary>
-        /// Save one or more persiston changes. This will make any cached versions of the persiston obsolete, but
-        /// will not do anything about the cache, and will not remember the newly assigned version.
-        /// Also note that propogation of changes does not happen until the lock is released (not here).
+        /// Save one or more persiston changes. This will clear those items from cache, and they will have newly assigned version numbers.
+        /// Propogation of changes does not happen until the lock is released (not here).
         /// </summary>
         public virtual async Task<(bool, MultiSaver.Result[])> SaveDatons(string sessionKey, IUser user, PersistonDiff[] diffs)
         {
+            if (LockManager == null) throw new Exception("Uninitialized Retroverse");
+
             //confirm this user has locks
             var keysAndVersions = diffs.Select(d => (d.Key, d.BasedOnVersion));
             var lockError = ConfirmAllLocks(sessionKey, keysAndVersions);
@@ -446,20 +448,44 @@ namespace RetroDRY
             //save
             using var saver = new MultiSaver(this, user, diffs);
             bool success = await saver.Save();
-            return (success, saver.GetResults());
+            var saverResults = saver.GetResults();
+
+            //clean cache/locks, assign version numbers, and push changes to other clients
+            if (success)
+            {
+                foreach (var result in saverResults)
+                {
+                    if (result.NewKey != null)
+                    {
+                        (bool verOk, string? newVersion) = await LockManager.AssignNewVersion(result.NewKey, sessionKey);
+                        result.NewVersion = newVersion;
+                        DatonCache.Remove(result.NewKey);
+
+                        //propagation may reload and therefore re-cache
+                        if (ClientPlex.IsAnyOutOfDate(result.NewKey, result.NewVersion))
+                        {
+                            var daton = (await GetDaton(result.NewKey, null, forceCheckLatest: true))?.Daton;
+                            if (daton != null)
+                                ClientPlex.NotifyClientsOf(DataDictionary, new[] { daton });
+                        }
+                    }
+                }
+            }
+
+            return (success, saverResults);
         }
 
         /// <summary>
         /// Check whether the user holds locks on the given datons. If yes, returns null, else returns
         /// an error structure that can be returned to a caller, noting ONLY the first encountered problem.
         /// </summary>
-        public virtual MultiSaver.Result? ConfirmAllLocks(string sessionKey, IEnumerable<(DatonKey, string)> datonKeysAndVersions)
+        public virtual MultiSaver.Result? ConfirmAllLocks(string sessionKey, IEnumerable<(DatonKey, string?)> datonKeysAndVersions)
         {
             if (LockManager == null) throw new Exception("Uninitialized Retroverse");
 
             //Note: The client would already know what locks they have so this would be an 
             //unusual error. 
-            foreach ((var datonKey, string reqVersion) in datonKeysAndVersions)
+            foreach ((var datonKey, string? reqVersion) in datonKeysAndVersions)
             {
                 if (datonKey.IsNew) continue;
                 (_, bool isLockedByMe, string? actualVersion) = LockManager.GetLockState(datonKey, sessionKey);
@@ -500,20 +526,6 @@ namespace RetroDRY
             DatonCache.Clean(ClientPlex, secondsOld: 10);
             async Task clientCleanerCallback(string sessionKey) => await LockManager.ReleaseLocksForSession(sessionKey);
             await ClientPlex.Clean(clientCleanerCallback, secondsOld: 10);
-        }
-
-        /// <summary>
-        /// This is ONLY called via LockManager after unlocked, and only when the persiston changed during the lock.
-        /// So it only handles changes made by this server.
-        /// </summary>
-        private async Task PropogatePersistonChanged(DatonKey key, string? version) 
-        {
-            if (ClientPlex.IsAnyOutOfDate(key, version))
-            {
-                var daton = (await GetDaton(key, null, forceCheckLatest: true))?.Daton;
-                if (daton != null)
-                    ClientPlex.NotifyClientsOf(DataDictionary, new[] { daton }); 
-            }
         }
 
         /// <summary>

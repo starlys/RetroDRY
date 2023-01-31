@@ -317,20 +317,19 @@ export default class Session {
             await this.changeSubscribeState(datonsToLock, 1);
         }
 
-        //manage cache changes: forget version numbers but remember the saved version in case it gets displayed immediately after editing
-        //(But note this newly cached saved version can't be edited again; we have to refetch from database for that)
+        //for each, remove from cache if no longer locked, or reload if still locked
         if (saveResponse?.savePersistonsSuccess) {
-            console.log('SAVE CACHE BEFORE', this.datonCache);
+            const keysToRefetch = [];
+            const cache = this.datonCache;
             for (let daton of datons) {
-                delete this.datonCache[daton.key];
-                // delete daton.version;
-                // const parsedkey = parseDatonKey(daton.key);
-                // if (!parsedkey.isNew()) {
-                //     const cacheEntry = this.datonCache[daton.key];
-                //     if (cacheEntry) cacheEntry.daton = daton;
-                // }
+                const wasUnlocked = datonsToLock.indexOf(daton) >= 0;
+                if (wasUnlocked)
+                    delete cache[daton.key];
+                else
+                    keysToRefetch.push(daton.key);
             }
-            console.log('SAVE CACHE AFTER', this.datonCache);
+            if (keysToRefetch.length)
+                await this.getMulti(keysToRefetch, {isForEdit: true, forceCheckVersion: true});
         }
 
         //host app callback

@@ -63,9 +63,10 @@ namespace RetroDRY
         public DatonDef DatonDef { get; protected set; }
 
         /// <summary>
-        /// The persiston version from which this diff was built; it will be a new version once the diff is saved
+        /// The persiston version from which this diff was built; it will be a new version once the diff is saved;
+        /// is null if persiston is new
         /// </summary>
-        public string BasedOnVersion { get; protected set; }
+        public string? BasedOnVersion { get; protected set; }
 
         /// <summary>
         /// Changes on the main table rows, including nested changes in child rows
@@ -80,7 +81,7 @@ namespace RetroDRY
         /// <param name="version">original version before changes (exception on null)</param>
         public PersistonDiff(DatonDef datondef, DatonKey key, string? version)
         {
-            if (version == null) throw new Exception("Expected daton version in PersistonDiff");
+            if (version == null && !key.IsNew) throw new Exception("Expected daton version in PersistonDiff");
             DatonDef = datondef;
             Key = key;
             BasedOnVersion = version;

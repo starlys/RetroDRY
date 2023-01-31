@@ -47,8 +47,6 @@ namespace SampleServer
             {
                 new TablePermission("Customer", PermissionLevel.Modify)
                 {
-                    TableName = "", 
-                    BaseLevel = PermissionLevel.Modify,
                     ColumnOverrides = new List<ColumnPermission>
                     {
                         new ColumnPermission("CustomerId", PermissionLevel.View),
@@ -84,9 +82,9 @@ namespace SampleServer
         public static User[] Users = new[]
         {
             new User("buffy", "spiffy", new[] { AdminRole }, null) { TimeOffsetMinutes = -4 * 60 },
-            new User("buffy", "arfarf", new[] { SalesRole }, null) { TimeOffsetMinutes = -6 * 60 },
-            new User ("buffy", "public", new[] { PublicRole }, null) { TimeOffsetMinutes = -4 * 60 },
-            new User ("buffy", "steno", new[] { PublicRole, CustomerNotesRole }, null) { TimeOffsetMinutes = -4 * 60 }
+            new User("spot", "arfarf", new[] { SalesRole }, null) { TimeOffsetMinutes = -6 * 60 },
+            new User ("public", "public", new[] { PublicRole }, null) { TimeOffsetMinutes = -4 * 60 },
+            new User ("nate", "steno", new[] { PublicRole, CustomerNotesRole }, null) { TimeOffsetMinutes = -4 * 60 }
         };
 
         public static User Buffy_The_Admin => Users[0];

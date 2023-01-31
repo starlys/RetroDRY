@@ -21,21 +21,15 @@ namespace RetroDRY
             public DatonKey DatonKey;
 
             /// <summary>
-            /// The version at the time of the lock
+            /// The version at the time of the lock, which may be updated on save
             /// </summary>
-            public string OldVersion;
+            public string LockVersion;
 
-            /// <summary>
-            /// True if the persiston was actually written while lock was active
-            /// </summary>
-            public bool WasWritten;
-
-            public LockInfo(string sessionKey, DatonKey datonKey, string oldVersion, bool wasWritten)
+            public LockInfo(string sessionKey, DatonKey datonKey, string oldVersion)
             {
                 SessionKey = sessionKey;
                 DatonKey = datonKey;
-                OldVersion = oldVersion;
-                WasWritten = wasWritten;
+                LockVersion = oldVersion;
             }
         }
 
@@ -51,19 +45,15 @@ namespace RetroDRY
 
         private Func<Task<DbConnection>>? GetLockConnection;
 
-        private Func<DatonKey, string?, Task>? ChangePropogator;
-
         private DateTime LastCheckedOtherServers = DateTime.UtcNow;
 
         private DateTime NextCleanup = DateTime.UtcNow.AddHours(1);
 
-        /// <param name="changePropogator">optional function taking key and version, to be called after unlocking when there had been an actual change</param>
         /// <param name="lockDatabaseConnection">function that returns the database connection</param>
-        public void Initialize(Func<Task<DbConnection>> lockDatabaseConnection, Func<DatonKey, string?, Task> changePropogator)
+        public void Initialize(Func<Task<DbConnection>> lockDatabaseConnection)
         {
             GetLockConnection = lockDatabaseConnection;
             ServerLifeNumber = (new Random().Next(10000, 99999));
-            ChangePropogator = changePropogator;
         }
 
         /// <summary>
@@ -76,7 +66,7 @@ namespace RetroDRY
             if (Locks.TryGetValue(datonKey, out LockInfo linfo))
             {
                 bool isLockedByMe = linfo.SessionKey == sessionKey;
-                return (true, isLockedByMe, linfo.OldVersion);
+                return (true, isLockedByMe, linfo.LockVersion);
             }
             return (false, false, null);
         }
@@ -115,7 +105,7 @@ namespace RetroDRY
             if (RetroLock.Lock(lockdb, datonKey, version, sessionKey))
             {
                 //success
-                Locks[datonKey] = new LockInfo(sessionKey, datonKey, version, false);
+                Locks[datonKey] = new LockInfo(sessionKey, datonKey, version);
                 return (true, null);
             }
 
@@ -127,24 +117,25 @@ namespace RetroDRY
         }
 
         /// <summary>
-        /// Notify the lock system that a daton was written to the database. This does not unlock it, but it changes the behavior when unlocked.
+        /// Assigns a new version and keeps a persiston locked. Call this after a successful save.
         /// </summary>
-        /// <returns>true if successful</returns>
-        public bool NotifyDatonWritten(DatonKey datonKey)
+        /// <returns>success flag and the new version</returns>
+        public async Task<(bool, string?)> AssignNewVersion(DatonKey datonKey, string sessionKey)
         {
-            if (Locks.TryGetValue(datonKey, out LockInfo linfo))
-            {
-                linfo.WasWritten = true;
-                return true;
-            }
-            return false;
+            if (GetLockConnection == null) throw new Exception("Uninitialized LockManager");
+            if (!Locks.TryGetValue(datonKey, out LockInfo linfo)) return (false, null);
+            using var lockdb = await GetLockConnection();
+            (bool success, string? newVersion) = RetroLock.AssgnNewVersion(lockdb, datonKey, sessionKey, ServerLifeNumber);
+            if (success && newVersion != null) linfo.LockVersion = newVersion;
+
+            return (success, newVersion);
         }
 
         /// <summary>
         /// Attempt to release a lock
         /// </summary>
-        /// <returns>success flag and new version number (new version only provided if persiston was actually written)</returns>
-        public async Task<(bool, string?)> ReleaseLock(DatonKey datonKey, string sessionKey)
+        /// <returns>success flag</returns>
+        public async Task<bool> ReleaseLock(DatonKey datonKey, string sessionKey)
         {
             if (GetLockConnection == null) throw new Exception("Uninitialized LockManager");
 
@@ -152,20 +143,16 @@ namespace RetroDRY
             if (Locks.TryGetValue(datonKey, out LockInfo linfo))
             {
                 bool isLockedByMe = linfo.SessionKey == sessionKey;
-                if (!isLockedByMe) return (false, null); //can't unlock because someone else on this server has it locked
+                if (!isLockedByMe) return false; //can't unlock because someone else on this server has it locked
             }
-            else return (false, null); //can't unlock because it is not locked by anyone on this server
+            else return false; //can't unlock because it is not locked by anyone on this server
 
             //attempt unlock on database
             using var lockdb = await GetLockConnection();
-            (bool unlockOK, string? newVersion) = RetroLock.Unlock(lockdb, datonKey, sessionKey, linfo.WasWritten, ServerLifeNumber);
+            bool unlockOK = RetroLock.Unlock(lockdb, datonKey, sessionKey, ServerLifeNumber);
             Locks.TryRemove(datonKey, out _); //we forget in memory even if there was a database problem (should not happen)
 
-            //propogate change (this is hooked up to code that pushes the change to subscribed sessions)
-            if (linfo.WasWritten)
-                ChangePropogator?.Invoke(datonKey, newVersion);
-
-            return (unlockOK, newVersion);
+            return unlockOK;
         }
 
         /// <summary>

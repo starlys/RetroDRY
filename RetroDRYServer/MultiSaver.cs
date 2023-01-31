@@ -13,7 +13,7 @@ namespace RetroDRY
     /// </summary>
     /// <remarks>
     /// This is a friend class to Retroverse, as functions in both classes call the other class. 
-    /// It assumes the caller deals with locks.
+    /// It assumes the caller deals with locks and versions.
     /// </remarks>
     public class MultiSaver : IDisposable
     {
@@ -31,6 +31,11 @@ namespace RetroDRY
             /// This key will be different from the requested key for new persistons; may be null on error
             /// </summary>
             public DatonKey? NewKey;
+
+            /// <summary>
+            /// Version assigned on save, or null if error; not set by MultiSaver (see Retroverse)
+            /// </summary>
+            public string? NewVersion; 
 
             /// <summary>
             /// Collection of error messages if save was not successful
@@ -159,13 +164,6 @@ namespace RetroDRY
             {
                 if (anyFailed) trx.Transaction.Rollback();
                 else trx.Transaction.Commit();
-            }
-
-            //update locked flags
-            if (!anyFailed)
-            {
-                foreach (var i in SaveItems)
-                    Retroverse.LockManager.NotifyDatonWritten(i.Diff.Key);
             }
 
             return !anyFailed;

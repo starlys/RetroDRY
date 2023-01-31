@@ -101,31 +101,48 @@ namespace RetroDRY
         }
 
         /// <summary>
-        /// Unlock a daton and optionally assign new version; only has an effect if it was locked by the given session
+        /// Assign new version; only has an effect if it was locked by the given session
         /// </summary>
-        /// <param name="datonWasWritten">pass true if this unlock is following a write, or false if it is an abandoned lock</param>
         /// <param name="db"></param>
         /// <param name="key">identifies daton to unlock</param>
         /// <param name="sessionKey">identifies session that owns the lock</param>
         /// <param name="serverLifeNumber">see RetroLock table</param>
-        /// <returns>success flag and the new version (version only returned if datonWasWritten)</returns>
-        public static (bool, string?) Unlock(DbConnection db, DatonKey key, string sessionKey, bool datonWasWritten, int serverLifeNumber)
+        /// <returns>success flag and the new version</returns>
+        public static (bool, string?) AssgnNewVersion(DbConnection db, DatonKey key, string sessionKey, int serverLifeNumber)
         {
-            string? version = datonWasWritten ? Guid.NewGuid().ToString() : null;
+            string? version = Guid.NewGuid().ToString();
             using var cmd = db.CreateCommand();
-            string versionsql = datonWasWritten ? ",DatonVersion=@v,UpdatedByServer=@u" : "";
-            cmd.CommandText = $"update RetroLock set LockedBy=null,Touched=@t{versionsql} where DatonKey=@k and LockedBy=@s";
+            cmd.CommandText = $"update RetroLock set Touched=@t,DatonVersion=@v,UpdatedByServer=@u where DatonKey=@k and LockedBy=@s";
             Utils.AddParameterWithValue(cmd, "t", DateTime.UtcNow);
             Utils.AddParameterWithValue(cmd, "k", key.ToString());
             Utils.AddParameterWithValue(cmd, "s", sessionKey);
-            if (datonWasWritten)
-            {
-                Utils.AddParameterWithValue(cmd, "v", version);
-                Utils.AddParameterWithValue(cmd, "u", serverLifeNumber);
-            }
+            Utils.AddParameterWithValue(cmd, "v", version);
+            Utils.AddParameterWithValue(cmd, "u", serverLifeNumber);
             int nrows = cmd.ExecuteNonQuery();
             bool success = nrows == 1;
+            if (!success) version = null;
             return (success, version);
+        }
+
+        /// <summary>
+        /// Unlock a daton; only has an effect if it was locked by the given session
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="key">identifies daton to unlock</param>
+        /// <param name="sessionKey">identifies session that owns the lock</param>
+        /// <param name="serverLifeNumber">see RetroLock table</param>
+        /// <returns>success flag</returns>
+        public static bool Unlock(DbConnection db, DatonKey key, string sessionKey, int serverLifeNumber)
+        {
+            using var cmd = db.CreateCommand();
+            cmd.CommandText = $"update RetroLock set LockedBy=null,Touched=@t,UpdatedByServer=@u where DatonKey=@k and LockedBy=@s";
+            Utils.AddParameterWithValue(cmd, "t", DateTime.UtcNow);
+            Utils.AddParameterWithValue(cmd, "k", key.ToString());
+            Utils.AddParameterWithValue(cmd, "s", sessionKey);
+            Utils.AddParameterWithValue(cmd, "u", serverLifeNumber);
+            int nrows = cmd.ExecuteNonQuery();
+            bool success = nrows == 1;
+            return success;
         }
 
         /// <summary>
