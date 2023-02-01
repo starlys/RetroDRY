@@ -26,6 +26,7 @@ namespace RetroDRY
         /// </summary>
         public virtual Daton Clone(DatonDef datondef)
         {
+            if (datondef.MainTableDef == null) throw new Exception("Expected MainTableDef in Clone");
             if (datondef.MultipleMainRows)
             {
                 var target = Utils.Construct(datondef.Type) as Daton;

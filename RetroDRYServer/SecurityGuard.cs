@@ -181,7 +181,7 @@ namespace RetroDRY
             var invisibles = new List<ColDef>();
             foreach (var coldef in r.TableDef.Cols)
             {
-                var colLev = FinalLevel(daton, r.TableDef.Name, coldef.Name);
+                var colLev = FinalLevel(daton, r.TableDef.Name, coldef.FieldName);
                 if (!CanView(colLev)) invisibles.Add(coldef);
             }
             return invisibles;
@@ -204,12 +204,12 @@ namespace RetroDRY
             var unwritableCols = new List<string>();
             foreach (var coldef in tabledef.Cols)
             {
-                if (coldef.Name == tabledef.PrimaryKeyColName) continue;
-                var colLev = FinalLevel(pristineDaton, tabledef.Name, coldef.Name);
+                if (coldef.FieldName == tabledef.PrimaryKeyFieldName) continue;
+                var colLev = FinalLevel(pristineDaton, tabledef.Name, coldef.FieldName);
                 bool canUpdateExisting = CanUpdate(colLev);
                 bool canUpdateNew = pristineDaton == null && CanCreate(colLev); //new row doesn't require edit permission, only create
                 bool canUpdate = canUpdateExisting || canUpdateNew;
-                if (!canUpdate) unwritableCols.Add(coldef.Name);
+                if (!canUpdate) unwritableCols.Add(coldef.FieldName);
             }
             return unwritableCols;
         }

@@ -164,13 +164,13 @@ namespace RetroDRY
         /// <param name="tdata"></param>
         protected async Task TraverseDiffList(TraversalData tdata, Row? singleMainPristineRow, Row? singleMainModifiedRow)
         {
-            var pkField = tdata.TableDef.RowType.GetField(tdata.TableDef.PrimaryKeyColName);
+            var pkField = tdata.TableDef.RowType.GetField(tdata.TableDef.PrimaryKeyFieldName);
 
             foreach (var row in tdata.DiffRowList)
             {
-                if (tdata.TableDef.PrimaryKeyColName == null 
-                    || !row.Columns.TryGetValue(tdata.TableDef.PrimaryKeyColName, out object? rowKey)) 
-                    throw new Exception($"Diff row is missing primary key {tdata.TableDef.PrimaryKeyColName}");
+                if (tdata.TableDef.PrimaryKeyFieldName == null 
+                    || !row.Columns.TryGetValue(tdata.TableDef.PrimaryKeyFieldName, out object? rowKey)) 
+                    throw new Exception($"Diff row is missing primary key {tdata.TableDef.PrimaryKeyFieldName}");
 
                 //find pristine row
                 Row? pristineRow = singleMainPristineRow;

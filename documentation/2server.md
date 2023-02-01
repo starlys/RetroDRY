@@ -114,7 +114,11 @@ Defining the data model using annotated classes
 -   Use these annotations on the Daton class or any nested child row classes (anything that derives from Row)
 
     -   SqlTableName(TableName) - only necessary if the SQL table name is different than the class name
+
+    -   SqlFrom(fromClause) - only for viewons, and only for joined queries. For example, use this to specify a join in the form "x inner join y on x.id=y.id". Then in your list of columns, you need to specify SqlTableName on the columns where the column name exists in both of the join tables.
+
     -   Prompt - defines the default natural language prompt for the daton. For whole-table persistons, it should be plural at the top level (such as "Contact types"); for row declarations within datons, it should be singular, not plural.
+
     -   ParentKey - used to name the colun in this table that matches the primary key of the parent table in the same daton. Required on all tables except the main table. Note that the column should not be declared in the class at all since that would be redundant.
 
 -   Use annotations on columns, from the System.ComponentModel.DataAnnotations namespace
@@ -132,6 +136,10 @@ Defining the data model using annotated classes
 -   Use these annotations on columns, defined by RetroDRY
 
     -   Key - used to indicate the column is the primary key, and whether the database or the client supplies the value
+
+    -   SqlTableName(Tablename) - only necessary if the column is from a table that does not match the default table name
+
+    -   SqlColumnName(Colname) - allows you to use a field name that is different from the SQL column name
 
     -   WireType - Normally you can omit this, and the framework will use the declared field type. In two cases you need to specify the type:
         -   (1) If it is a DateTime, the framework will assume it is date only; if you want time to be included, specify WireType(Constants.TYPE\_DATETIME) or WireType(Constants.TYPE\_NDATETIME)
@@ -507,6 +515,7 @@ retroverse.OverrideSql("Customer", new CustomerSql()); //CustomerSql is a class 
     -   Load() - Override this to load the daton by key value, and bypass all default behavior. Or you can call the base behavior and add some post-loading behavior after that.
     -   LoadTable() - Override this to change the loading behavior for one table. The default behavior loads the rows related to the daton at once even if it is a child table that cannot select by a single parent key. The return value from this method is a structure of lists of rows indexed by the parent key value, so that the framework can distribute those rows to their parents.
     -   MainTableWhereClause() - Override this to change the where-clause on the main table's load. There are two overloads of the method, one for persistons and one for viewons. A typical use for this is to define your own special criteria that don't map to column names. In this case, you can all the base implementation then modify the where clause to include your implementation of the special criteria, if present.
+    -   CustomizeWhereClause() - Override this to change each where-clause expression, one at a time. This is called for main table and child tables of persistons and viewons. You must call the base implementation for default behavior.
     -   SqlColumnExpression() - Override this to change the column name or expression to use to load a column.
 
 -   Overridable methods for saving:

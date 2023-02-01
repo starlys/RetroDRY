@@ -24,7 +24,7 @@ namespace SampleServer.Schema
             [SortColumn(false)]
             public string? FirstName;
 
-            [SortColumn(true)]
+            [SortColumn]
             public string? LastName;
 
             [ForeignKey(typeof(Employee))]
@@ -199,6 +199,38 @@ namespace SampleServer.Schema
 
             [ForeignKey(typeof(SaleStatusLookup))]
             public short? Status;
+        }
+    }
+
+    /// <summary>
+    /// List of sales joined with customers (demonstrates inner join)
+    /// </summary>
+    public class SaleCustomerList : Viewon
+    {
+        public List<TopRow> Sale = new();
+
+        [SqlFrom("Sale inner join Customer on Sale.CustomerId=Customer.CustomerId")]
+        public class TopRow : Row
+        {
+            [PrimaryKey(true), ForeignKey(typeof(Sale))]
+            public int SaleId;
+
+            public string? Company;
+
+            [SortColumn, WireType(Constants.TYPE_DATETIME)]
+            public DateTime SaleDate;
+
+            [ForeignKey(typeof(SaleStatusLookup)), SortColumn(false)]
+            public short Status;
+
+            [SqlTableName("Customer"), Prompt("Cust notes")]
+            public string? Notes;
+        }
+
+        [Criteria]
+        public abstract class Criteria
+        {
+            public DateTime? SaleDate;
         }
     }
 }

@@ -67,7 +67,7 @@ namespace RetroDRY
             {
                 foreach (var coldef in tabledef.Cols.Where(c => c.IsCustom))
                     if (coldef.CSType.IsValueType && Nullable.GetUnderlyingType(coldef.CSType) == null)
-                        row.SetCustom(coldef.Name, Activator.CreateInstance(coldef.CSType));
+                        row.SetCustom(coldef.FieldName, Activator.CreateInstance(coldef.CSType));
             }
             return row;
         }
@@ -93,7 +93,7 @@ namespace RetroDRY
             foreach (var coldef in datondef.MainTableDef.Cols)
                 if (coldef.CSType == typeof(DateTime))
                 {
-                    var field = datondef.Type.GetField(coldef.Name);
+                    var field = datondef.Type.GetField(coldef.FieldName);
                     field.SetValue(d, DateTime.UtcNow);
                 }
         }

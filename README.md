@@ -32,8 +32,9 @@ Multi-tier framework in C#/React for handling load/save data, replication across
 
 ## Version notes
 
-* Version 1.5.0 contains breaking changes both client side and server side:
-  * The C# code was updated to use nullable semantics, which changed a few function signatures.
+* Version 1.5.0 contains many breaking changes both client side and server side:
+  * The C# code base was updated to use nullable semantics, which changed a few function signatures.
+  * The ColDef and TableDef classes have new member names to reflect the difference between SQL column names and in-memory field names.
   * RetroLock and LockManager now assign a new version number at the time a save is committed, rather than when the lock is released.
   * The client must provide a version number when subscribing to a daton.
 

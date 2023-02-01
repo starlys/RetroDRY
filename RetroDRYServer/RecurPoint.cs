@@ -144,8 +144,8 @@ namespace RetroDRY
 
         private FieldInfo GetPrimaryKeyField()
         {
-            var pkField = TableDef.RowType.GetField(TableDef.PrimaryKeyColName);
-            if (pkField == null) throw new Exception($"{TableDef.PrimaryKeyColName} not found in {TableDef.Name}");
+            var pkField = TableDef.RowType.GetField(TableDef.PrimaryKeyFieldName);
+            if (pkField == null) throw new Exception($"{TableDef.PrimaryKeyFieldName} not found in {TableDef.Name}");
             return pkField;
         }
 

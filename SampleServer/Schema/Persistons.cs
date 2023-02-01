@@ -221,7 +221,7 @@ namespace SampleServer.Schema
             public int Quantity;
 
             [Prompt("Var-ID")]
-            [SelectBehavior(typeof(ItemVariantList), AutoCriterionName ="ItemId", AutoCriterionValueColumnName = "ItemId", ViewonValueColumnName = "ItemVariantId", UseDropdown = true)]
+            [SelectBehavior(typeof(ItemVariantList), AutoCriterionName ="ItemId", AutoCriterionValueFieldName = "ItemId", ViewonValueFieldName = "ItemVariantId", UseDropdown = true)]
             public int? ItemVariantId;
 
             [Prompt("Ext Price")]
@@ -237,8 +237,8 @@ namespace SampleServer.Schema
                 [Prompt("ID")]
                 public int? SaleItemNoteId;
 
-                [StringLength(4000), WireType(Constants.TYPE_NSTRING)]
-                public string? Note;
+                [StringLength(4000), WireType(Constants.TYPE_NSTRING), SqlColumnName("Note")]
+                public string? Comment;
             }
         }
     }

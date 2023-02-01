@@ -96,6 +96,13 @@ namespace UnitTest
 
         [StringLength(50, MinimumLength = 3), Prompt("DEFAULTLANG")]
         public string? FirstName;
+
+        public string? LastName;
+
+        public int? SupervisorId;
+
+        [LeftJoin("SupervisorId", "LastName"), Prompt("Supervisor")]
+        public string? SupervisorLastName;
     }
 
     class EmployeeList : Viewon

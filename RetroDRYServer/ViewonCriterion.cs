@@ -30,9 +30,10 @@ namespace RetroDRY
         /// <summary>
         /// Modify where clause to add conditions for each criterion
         /// </summary>
+        /// <param name="sql">the calling RetroSql, which may override where-clause behavior</param>
         /// <param name="w"></param>
         /// <param name="sqlFlavor"></param>
-        public void ExportWhereClause(SqlSelectBuilder.Where w, SqlFlavorizer sqlFlavor)
+        public void ExportWhereClause(RetroSql sql, SqlSelectBuilder.Where w, SqlFlavorizer sqlFlavor)
         {
             //numeric ranges
             if (Utils.IsSupportedNumericType(ColDef.CSType))
@@ -43,12 +44,12 @@ namespace RetroDRY
                     if (lo != null)
                     {
                         decimal dlo = decimal.Parse(lo);
-                        w.AddWhere($"{ColDef.Name}>={w.NextParameterName()}", dlo);
+                        sql.CustomizeWhereClause(w, $"{ColDef.SqlExpression}>={w.NextParameterName()}", dlo);
                     }
                     if (hi != null)
                     {
                         decimal dhi = decimal.Parse(hi);
-                        w.AddWhere($"{ColDef.Name}<={w.NextParameterName()}", dhi);
+                        sql.CustomizeWhereClause(w, $"{ColDef.SqlExpression}<={w.NextParameterName()}", dhi);
                     }
                 }
                 catch
@@ -65,12 +66,12 @@ namespace RetroDRY
                 if (lo != null)
                 {
                     var dlo = Retrovert.ParseRetroDateTime(lo, isDateOnly); 
-                    w.AddWhere($"{ColDef.Name}>={w.NextParameterName()}", dlo);
+                    sql.CustomizeWhereClause(w, $"{ColDef.SqlExpression}>={w.NextParameterName()}", dlo);
                 }
                 if (hi != null)
                 {
                     var dhi = Retrovert.ParseRetroDateTime(hi, isDateOnly);
-                    w.AddWhere($"{ColDef.Name}<={w.NextParameterName()}", dhi);
+                    sql.CustomizeWhereClause(w, $"{ColDef.SqlExpression}<={w.NextParameterName()}", dhi);
                 }
             }
 
@@ -80,13 +81,12 @@ namespace RetroDRY
                 if (PackedValue == "0") b = false;
                 else if (PackedValue == "1") b = true;
                 else throw new Exception($"Boolean parameter must be 0 or 1: {PackedValue}");
-                w.AddWhere($"{ColDef.Name}={w.NextParameterName()}", b);
+                sql.CustomizeWhereClause(w, $"{ColDef.SqlExpression}={w.NextParameterName()}", b);
             }
 
             else if (ColDef.CSType == typeof(string))
             {
-                
-                w.AddWhere($"{ColDef.Name} {sqlFlavor.LikeOperator()} {w.NextParameterName()}", sqlFlavor.LikeParamValue(PackedValue));
+                sql.CustomizeWhereClause(w, $"{ColDef.SqlExpression} {sqlFlavor.LikeOperator()} {w.NextParameterName()}", sqlFlavor.LikeParamValue(PackedValue));
             }
 
             else throw new Exception($"Type {ColDef.CSType.Name} not supported as a viewon parameter");

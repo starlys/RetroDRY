@@ -140,7 +140,7 @@ namespace RetroDRY
             var datondef = dbdef.FindDef(datonKey);
             var diff = new PersistonDiff(datondef, datonKey, jroot.Value<string>("version"));
 
-            if (datondef.MainTableDef?.PrimaryKeyColName == null) throw new Exception("Missing primary key in FromDiff");
+            if (datondef.MainTableDef?.PrimaryKeyFieldName == null) throw new Exception("Missing primary key in FromDiff");
 
             ReadJsonDiffRowArray(jroot, datondef.MainTableDef, diff.MainTable);
 
@@ -148,12 +148,12 @@ namespace RetroDRY
             if (!datondef.MultipleMainRows)
             {
                 var mainDiffRow = diff.MainTable.First();
-                if (!mainDiffRow.Columns.ContainsKey(datondef.MainTableDef.PrimaryKeyColName))
+                if (!mainDiffRow.Columns.ContainsKey(datondef.MainTableDef.PrimaryKeyFieldName))
                 {
-                    var pkColdef = datondef.MainTableDef.FindCol(datondef.MainTableDef.PrimaryKeyColName);
+                    var pkColdef = datondef.MainTableDef.FindColDefOrThrow(datondef.MainTableDef.PrimaryKeyFieldName);
                     var pk = Utils.ChangeType(((PersistonKey)datonKey).PrimaryKey, pkColdef.CSType);
                     if (pk == null) throw new Exception("Could not change key type in FromDiff");
-                    mainDiffRow.Columns[datondef.MainTableDef.PrimaryKeyColName] = pk;
+                    mainDiffRow.Columns[datondef.MainTableDef.PrimaryKeyFieldName] = pk;
                 }
             }
 
@@ -258,7 +258,7 @@ namespace RetroDRY
         {
             void ParseArray(string arrayName, DiffKind kind, bool allowChildren, bool fillInMissingNegativeKey) 
             {
-                if (tableDef.PrimaryKeyColName == null) throw new Exception("Missing primary key in ReadJsonDiffRowArray");
+                if (tableDef.PrimaryKeyFieldName == null) throw new Exception("Missing primary key in ReadJsonDiffRowArray");
 
                 var rows = parent[arrayName];
                 if (rows == null) return;
@@ -271,11 +271,11 @@ namespace RetroDRY
                     ReadJsonDiffRow(childObject, target, tableDef, allowChildren);
 
                     //if the client omits -1 primary key value on new rows, add it here; the save logic needs it but it is redundant from the client perspective
-                    if (fillInMissingNegativeKey && !target.Columns.ContainsKey(tableDef.PrimaryKeyColName))
+                    if (fillInMissingNegativeKey && !target.Columns.ContainsKey(tableDef.PrimaryKeyFieldName))
                     {
-                        var newRowPK = Utils.ChangeType(-1, tableDef.FindCol(tableDef.PrimaryKeyColName).CSType);
+                        var newRowPK = Utils.ChangeType(-1, tableDef.FindColDefOrThrow(tableDef.PrimaryKeyFieldName).CSType);
                         if (newRowPK == null) throw new Exception("Could not conver type in ReadJsonDiffRowArray");
-                        target.Columns[tableDef.PrimaryKeyColName] = newRowPK;
+                        target.Columns[tableDef.PrimaryKeyFieldName] = newRowPK;
                     }
                 }
             }
@@ -293,12 +293,12 @@ namespace RetroDRY
             foreach (var colDef in tableDef.Cols)
             {
                 //get json value or skip
-                var jtoken = node.GetValue(colDef.Name, StringComparison.OrdinalIgnoreCase);
+                var jtoken = node.GetValue(colDef.FieldName, StringComparison.OrdinalIgnoreCase);
                 if (jtoken == null) continue;
 
                 //copy
                 var value = ParseNode(jtoken, colDef.CSType);
-                target.Columns[colDef.Name] = value;
+                target.Columns[colDef.FieldName] = value;
             }
 
             //recursively copy child rows
@@ -338,17 +338,17 @@ namespace RetroDRY
             foreach (var colDef in tableDef.Cols)
             {
                 //get value from json or skip
-                var jtoken = node.GetValue(colDef.Name, StringComparison.OrdinalIgnoreCase);
+                var jtoken = node.GetValue(colDef.FieldName, StringComparison.OrdinalIgnoreCase);
                 if (jtoken == null) continue;
                 var value = ParseNode(jtoken, colDef.CSType);
 
                 //write to row
                 if (colDef.IsCustom)
-                    targetRow.SetCustom(colDef.Name, value);
+                    targetRow.SetCustom(colDef.FieldName, value);
                 else
                 {
-                    var targetField = tableDef.RowType.GetField(colDef.Name);
-                    if (targetField == null) throw new Exception($"Expected {colDef.Name} to be a member of {tableDef.RowType.Name}");
+                    var targetField = tableDef.RowType.GetField(colDef.FieldName);
+                    if (targetField == null) throw new Exception($"Expected {colDef.FieldName} to be a member of {tableDef.RowType.Name}");
                     targetField.SetValue(targetRow, value);
                 }
             }
@@ -414,7 +414,7 @@ namespace RetroDRY
             writer.WriteStartObject();
             foreach (var coldef in rr.TableDef.Cols)
             {
-                writer.WritePropertyName(CamelCasify(coldef.Name) ?? "");
+                writer.WritePropertyName(CamelCasify(coldef.FieldName) ?? "");
                 WriteColValue(writer, rr.TableDef.RowType, rr.Row, coldef);
             }
             foreach (var rt in rr.GetChildren())
@@ -440,8 +440,8 @@ namespace RetroDRY
         private static void WriteColValue(JsonTextWriter writer, Type rowType, Row row, ColDef coldef)
         {
             object? value;
-            if (coldef.IsCustom) value = row.GetCustom(coldef.Name); 
-            else value = rowType.GetField(coldef.Name).GetValue(row);
+            if (coldef.IsCustom) value = row.GetCustom(coldef.FieldName); 
+            else value = rowType.GetField(coldef.FieldName).GetValue(row);
             string jsonValue = FormatRawJsonValue(coldef, value);
             writer.WriteRawValue(jsonValue);
         }
@@ -494,7 +494,7 @@ namespace RetroDRY
                 Name = CamelCasify(source.Name),
                 PermissionLevel = (int)guard.FinalLevel(null, source.Name, null),
                 Cols = source.Cols.Select(c => ToWire(guard, source, c, user)).ToList(),
-                PrimaryKeyColName = CamelCasify(source.PrimaryKeyColName),
+                PrimaryKeyColName = CamelCasify(source.PrimaryKeyFieldName),
                 Prompt = DataDictionary.ResolvePrompt(source.Prompt, user, source.Name),
                 IsCriteria = isCriteria,
                 Children = source.Children?.Select(t => ToWire(guard, t, user, false)).ToList()
@@ -505,10 +505,10 @@ namespace RetroDRY
         //see DataDictionaryToWire
         private static ColDefResponse ToWire(SecurityGuard guard, TableDef source, ColDef c, IUser user)
         {
-            bool isDBAssignedKey = source.PrimaryKeyColName == c.Name && source.DatabaseAssignsKey;
+            bool isDBAssignedKey = source.PrimaryKeyFieldName == c.FieldName && source.DatabaseAssignsKey;
             return new ColDefResponse
             {
-                PermissionLevel = (int)guard.FinalLevel(null, source.Name, c.Name),
+                PermissionLevel = (int)guard.FinalLevel(null, source.Name, c.FieldName),
                 AllowSort = c.AllowSort,
                 ForeignKeyDatonTypeName = c.ForeignKeyDatonTypeName,
                 LeftJoin = ToWire(c.LeftJoin),
@@ -522,8 +522,8 @@ namespace RetroDRY
                 MaxNumberValue = c.MaxNumberValue,
                 MinLength = c.MinLength,
                 MinNumberValue = c.MinNumberValue,
-                Name = CamelCasify(c.Name),
-                Prompt = DataDictionary.ResolvePrompt(c.Prompt, user, c.Name),
+                Name = CamelCasify(c.FieldName),
+                Prompt = DataDictionary.ResolvePrompt(c.Prompt, user, c.FieldName),
                 RangeValidationMessage = DataDictionary.ResolvePrompt(c.RangeValidationMessage, user, defaultValue: null),
                 Regex = c.Regex,
                 RegexValidationMessage = DataDictionary.ResolvePrompt(c.RegexValidationMessage, user, defaultValue: null),
@@ -536,8 +536,8 @@ namespace RetroDRY
             if (lji == null) return null;
             return new ColDef.LeftJoinInfo
             {
-                ForeignKeyColumnName = CamelCasify(lji.ForeignKeyColumnName),
-                RemoteDisplayColumnName = CamelCasify(lji.RemoteDisplayColumnName)
+                ForeignKeyFieldName = CamelCasify(lji.ForeignKeyFieldName),
+                RemoteDisplaySqlColumnName = CamelCasify(lji.RemoteDisplaySqlColumnName)
             };
         }
 
@@ -546,11 +546,11 @@ namespace RetroDRY
             if (sbi == null) return null;
             return new ColDef.SelectBehaviorInfo
             {
-                AutoCriterionName = sbi.AutoCriterionName,
-                AutoCriterionValueColumnName = CamelCasify(sbi.AutoCriterionValueColumnName),
+                AutoCriterionFieldName = sbi.AutoCriterionFieldName,
+                AutoCriterionValueFieldName = CamelCasify(sbi.AutoCriterionValueFieldName),
                 UseDropdown = sbi.UseDropdown,
                 ViewonTypeName = sbi.ViewonTypeName,
-                ViewonValueColumnName = CamelCasify(sbi.ViewonValueColumnName)
+                ViewonValueFieldName = CamelCasify(sbi.ViewonValueFieldName)
             };
         }
 

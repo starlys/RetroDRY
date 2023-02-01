@@ -32,9 +32,9 @@ namespace RetroDRY
         public List<TableDef>? Children; 
 
         /// <summary>
-        /// The column name of the primary key in this table
+        /// The field name of the primary key in this table
         /// </summary>
-        public string? PrimaryKeyColName;
+        public string? PrimaryKeyFieldName;
 
         /// <summary>
         /// True if the database assigns the primary key when the row is inserted; false if the client has to supply the value
@@ -42,19 +42,25 @@ namespace RetroDRY
         public bool DatabaseAssignsKey;
 
         /// <summary>
-        /// The column name of default ordering in this table (also see ColDef.AllowSort)
+        /// The field name of default ordering in this table (also see ColDef.AllowSort)
         /// </summary>
-        public string? DefaulSortColName;
+        public string? DefaulSortFieldName;
 
         /// <summary>
         /// Column name of the parent key in this table, or null if this is a main table.
         /// </summary>
-        public string? ParentKeyColumnName;
+        public string? ParentKeySqlColumnName;
 
         /// <summary>
         /// The SQL table name (which is often the same as Name)
         /// </summary>
-        public string? SqlTableName; 
+        public string SqlTableName;
+
+        /// <summary>
+        /// The optional overridden FROM clause, for specifying inner joins. When specified for a viewon,
+        /// this overrides SqlTableName. Not allowed for persistons.
+        /// </summary>
+        public string? SqlFromClause;
 
         /// <summary>
         /// Table prompt in natural language indexed by language code (index is "" for default language);
@@ -68,23 +74,34 @@ namespace RetroDRY
         public bool HasCustomColumns { get; private set; }
 
         /// <summary>
-        /// Create
+        /// Create, setting the name and sql table name to the same
         /// </summary>
         /// <param name="name"></param>
         /// <param name="rowType"></param>
         public TableDef(string name, Type rowType)
         {
-            Name = name;
+            Name = SqlTableName = name;
             RowType = rowType;
         }
 
         /// <summary>
-        /// Convenience method to get the column by name or null 
+        /// Convenience method to get the column by name; returns null if not found
         /// </summary>
-        public ColDef FindCol(string? name, bool caseSensitive = true)
+        public ColDef? FindColDefOrNull(string? name, bool caseSensitive = true)
         {
-            if (caseSensitive) return Cols.FirstOrDefault(c => c.Name == name);
-            return Cols.FirstOrDefault(c => string.Compare(c.Name, name, true, CultureInfo.InvariantCulture) == 0);
+            if (name == null) return null;
+            if (caseSensitive) return Cols.FirstOrDefault(c => c.FieldName == name);
+            return Cols.FirstOrDefault(c => string.Compare(c.FieldName, name, true, CultureInfo.InvariantCulture) == 0);
+        }
+
+        /// <summary>
+        /// Convenience method to get the column by name; throws exception if not found
+        /// </summary>
+        public ColDef FindColDefOrThrow(string? name, bool caseSensitive = true)
+        {
+            var cd = FindColDefOrNull(name, caseSensitive);
+            if (cd == null) throw new Exception($"Cannot find field {name} in {Name}");
+            return cd;
         }
 
         /// <summary>

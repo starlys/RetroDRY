@@ -111,13 +111,13 @@ namespace RetroDRY
             {
                 (var sourceTabledef, var _) = FindInheritanceSource(inherit.SourceName, false);
                 if (sourceTabledef == null) throw new Exception($"Inheritance of {targetTabledef.Name} could not be resolved.");
-                targetTabledef.ParentKeyColumnName ??= sourceTabledef.ParentKeyColumnName;
-                targetTabledef.PrimaryKeyColName ??= sourceTabledef.PrimaryKeyColName;
+                targetTabledef.ParentKeySqlColumnName ??= sourceTabledef.ParentKeySqlColumnName;
+                targetTabledef.PrimaryKeyFieldName ??= sourceTabledef.PrimaryKeyFieldName;
                 targetTabledef.Prompt ??= sourceTabledef.Prompt;
                 targetTabledef.SqlTableName ??= sourceTabledef.SqlTableName;
                 foreach (var targetColdef in targetTabledef.Cols)
                 {
-                    var sourceColdef = sourceTabledef.FindCol(targetColdef.Name);
+                    var sourceColdef = sourceTabledef.FindColDefOrThrow(targetColdef.FieldName);
                     if (sourceColdef == null || sourceColdef.IsCustom) continue;
                     CopyColumnInheritance(sourceColdef, targetColdef);
                 }
@@ -127,7 +127,7 @@ namespace RetroDRY
                 {
                     foreach (var sourceColdef in sourceTabledef.Cols.Where(c => c.IsCustom))
                     {
-                        var targetColdef = targetTabledef.AddCustomColum(sourceColdef.Name, sourceColdef.CSType, sourceColdef.WireType);
+                        var targetColdef = targetTabledef.AddCustomColum(sourceColdef.FieldName, sourceColdef.CSType, sourceColdef.WireType);
                         CopyColumnInheritance(sourceColdef, targetColdef);
                     }
                 }
@@ -147,7 +147,7 @@ namespace RetroDRY
                 if (coldef.SelectBehavior?.ViewonTypeName == null) continue;
                 if (DatonDefs.TryGetValue(coldef.SelectBehavior.ViewonTypeName, out var viewonDef))
                 {
-                    coldef.SelectBehavior.ViewonValueColumnName = viewonDef.MainTableDef?.PrimaryKeyColName;
+                    coldef.SelectBehavior.ViewonValueFieldName = viewonDef.MainTableDef?.PrimaryKeyFieldName;
                 }
             }
 
@@ -204,13 +204,19 @@ namespace RetroDRY
 
             var customSqlName = rowType.GetCustomAttribute<SqlTableNameAttribute>();
             if (customSqlName != null) tabledef.SqlTableName = customSqlName.Name;
-            else tabledef.SqlTableName = tabledef.Name;
-          
+
+            var customFrom = rowType.GetCustomAttribute<SqlFromAttribute>();
+            if (customFrom != null)
+            {
+                if (!isViewon) throw new Exception("SqlFromAttribute only allowed for viewons");
+                tabledef.SqlFromClause = customFrom.FromClause;
+            }
+
             var prompt = rowType.GetCustomAttribute<PromptAttribute>();
             if (prompt != null) tabledef.Prompt = DataDictionary.SetPrompt(tabledef.Prompt, prompt.Prompt);
 
             var parentKey = rowType.GetCustomAttribute<ParentKeyAttribute>();
-            if (parentKey != null) tabledef.ParentKeyColumnName = parentKey.ColumnName;
+            if (parentKey != null) tabledef.ParentKeySqlColumnName = parentKey.FieldName;
 
             var inherit = rowType.GetCustomAttribute<InheritFromAttribute>();
             if (inherit != null) TableInheritances.Add((tabledef, inherit));
@@ -255,13 +261,14 @@ namespace RetroDRY
                     else
                     {
                         if (tabledef == null) throw new Exception("Expected tabledef in PopulateFieldAnnotations");
+                     
                         //this is an actual child table
                         tabledef.Children ??= new List<TableDef>();
                         tabledef.Children.Add(childTabledef);
                         PopulateTableAnnotations(isViewon, childTabledef.RowType, childTabledef);
 
                         //validate
-                        if (childTabledef.ParentKeyColumnName == null) throw new Exception($"ParentKey attribute missing from child table {field.Name}");
+                        if (childTabledef.ParentKeySqlColumnName == null) throw new Exception($"ParentKey attribute missing from child table {field.Name}");
                     }
                 }
                 else
@@ -274,6 +281,9 @@ namespace RetroDRY
                     var coldef = new ColDef(field.Name, "", field.FieldType);
                     tabledef.Cols.Add(coldef);
 
+                    var sqlColName = field.GetCustomAttribute<SqlColumnNameAttribute>();
+                    if (sqlColName != null) coldef.SqlColumnName = sqlColName.Name;
+
                     var wiretype = field.GetCustomAttribute<WireTypeAttribute>();
                     if (wiretype != null)
                         coldef.WireType = wiretype.TypeName;
@@ -283,11 +293,14 @@ namespace RetroDRY
                     var key = field.GetCustomAttribute<PrimaryKeyAttribute>();
                     if (key != null)
                     {
-                        if (tabledef.PrimaryKeyColName != null) throw new Exception($"PrimaryKey attribute may not be used on more than one field member of {tabledef.Name}");
-                        tabledef.PrimaryKeyColName = field.Name;
+                        if (tabledef.PrimaryKeyFieldName != null) throw new Exception($"PrimaryKey attribute may not be used on more than one field member of {tabledef.Name}");
+                        tabledef.PrimaryKeyFieldName = field.Name;
                         tabledef.DatabaseAssignsKey = key.DatabaseAssigned;
                     }
-                    
+
+                    var sqlTableName = field.GetCustomAttribute<SqlTableNameAttribute>();
+                    if (sqlTableName != null) coldef.SqlTableName = sqlTableName.Name;
+
                     var stringlength = field.GetCustomAttribute<StringLengthAttribute>();
                     if (stringlength != null)
                     {
@@ -314,7 +327,7 @@ namespace RetroDRY
                         }
                         catch
                         {
-                            throw new Exception($"Range validation on {coldef.Name} must use integer or decimal values");
+                            throw new Exception($"Range validation on {coldef.FieldName} must use integer or decimal values");
                         }
                     }
                     
@@ -328,11 +341,11 @@ namespace RetroDRY
                         {
                             ViewonTypeName = selectBehavior.ViewonType.Name,
                             UseDropdown = selectBehavior.UseDropdown,
-                            ViewonValueColumnName = selectBehavior.ViewonValueColumnName,
-                            AutoCriterionName = selectBehavior.AutoCriterionName,
-                            AutoCriterionValueColumnName = selectBehavior.AutoCriterionValueColumnName
+                            ViewonValueFieldName = selectBehavior.ViewonValueFieldName,
+                            AutoCriterionFieldName = selectBehavior.AutoCriterionName,
+                            AutoCriterionValueFieldName = selectBehavior.AutoCriterionValueFieldName
                         };
-                        if (coldef.SelectBehavior.ViewonValueColumnName == null) IncompleteSelectBehaviors.Add(coldef); //to be fixed during finalization
+                        if (coldef.SelectBehavior.ViewonValueFieldName == null) IncompleteSelectBehaviors.Add(coldef); //to be fixed during finalization
                     }
 
                     var prompt = field.GetCustomAttribute<PromptAttribute>();
@@ -354,7 +367,7 @@ namespace RetroDRY
                     if (sort != null)
                     {
                         coldef.AllowSort = true;
-                        if (sort.IsDefault) tabledef.DefaulSortColName = coldef.Name;
+                        if (sort.IsDefault) tabledef.DefaulSortFieldName = coldef.FieldName;
                     }
 
                     var leftjoin = field.GetCustomAttribute<LeftJoinAttribute>();
@@ -362,8 +375,8 @@ namespace RetroDRY
                     {
                         coldef.LeftJoin = new ColDef.LeftJoinInfo
                         {
-                            ForeignKeyColumnName = leftjoin.ForeignKeyColumnName,
-                            RemoteDisplayColumnName = leftjoin.DisplayColumnName
+                            ForeignKeyFieldName = leftjoin.ForeignKeyFieldName,
+                            RemoteDisplaySqlColumnName = leftjoin.DisplaySqlColumnName
                         };
                     }
 
@@ -376,9 +389,9 @@ namespace RetroDRY
             if (tabledef == null) throw new Exception("Expected tabledef in PopulateFieldAnnotations");
             bool hasChildTables = tabledef.Children != null && tabledef.Children.Count > 0;
             bool canOmitPK = isViewon && !hasChildTables;
-            if (!canOmitPK && tabledef.PrimaryKeyColName == null) 
+            if (!canOmitPK && tabledef.PrimaryKeyFieldName == null) 
                 throw new Exception($"PrimaryKey attribute must be set on a field member of {tabledef.Name}");
-            tabledef.DefaulSortColName ??= tabledef.PrimaryKeyColName;
+            tabledef.DefaulSortFieldName ??= tabledef.PrimaryKeyFieldName;
         }
 
         /// <summary>
@@ -412,7 +425,7 @@ namespace RetroDRY
             ColDef? coldef = null;
             if (forColumn)
             {
-                coldef = tabledef?.FindCol(colName);
+                coldef = tabledef?.FindColDefOrNull(colName);
                 if (coldef == null) throw new Exception($"InheritFrom syntax '{sourceName}' does not refer to any known column name; {colName} is unknown");
             }
 

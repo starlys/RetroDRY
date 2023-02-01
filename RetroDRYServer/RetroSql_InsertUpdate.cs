@@ -17,8 +17,9 @@ namespace RetroDRY
         /// <returns>database assigned parent key (only if changed) else null</returns>
         protected async Task<object?> InsertUpdateRow(IDbConnection db, RowChangingData cdata)
         {
-            if (cdata.TableDef.SqlTableName == null || cdata.TableDef.PrimaryKeyColName == null || SqlFlavor == null)
-                throw new Exception("Must initialize TableDef.SqlTableName and PrimaryKeyColName, and RetroSql.SqlFlavor");
+            if (cdata.TableDef.PrimaryKeyFieldName == null || SqlFlavor == null)
+                throw new Exception("Must initialize TableDef.PrimaryKeyFieldName and RetroSql.SqlFlavor");
+            var primaryKeyField = cdata.TableDef.FindColDefOrThrow(cdata.TableDef.PrimaryKeyFieldName);
 
             if (cdata.DiffRow.Kind == DiffKind.NewRow)
             {
@@ -28,9 +29,9 @@ namespace RetroDRY
                 var builder = new SqlInsertBuilder(SqlFlavor, CustomizeSqlStatement);
                 bool dbAssignsKey = cdata.TableDef.DatabaseAssignsKey;
                 PopulateWriterColumns(builder, cdata, !dbAssignsKey);
-                if (cdata.TableDef.ParentKeyColumnName != null)
-                    builder.AddNonKey(cdata.TableDef.ParentKeyColumnName, null, cdata.ParentKey);
-                var newKeyValue = await builder.Execute(db, cdata.TableDef.SqlTableName, cdata.TableDef.PrimaryKeyColName, dbAssignsKey);
+                if (cdata.TableDef.ParentKeySqlColumnName != null)
+                    builder.AddNonKey(cdata.TableDef.ParentKeySqlColumnName, null, cdata.ParentKey);
+                var newKeyValue = await builder.Execute(db, cdata.TableDef.SqlTableName, primaryKeyField.SqlColumnName, dbAssignsKey);
 
                 //populate the new key value in Modified persiston's row
                 if (newKeyValue != null)
@@ -44,10 +45,10 @@ namespace RetroDRY
             {
                 var builder = new SqlUpdateBuilder(SqlFlavor, CustomizeSqlStatement);
                 PopulateWriterColumns(builder, cdata, false);
-                if (!cdata.DiffRow.Columns.TryGetValue(cdata.TableDef.PrimaryKeyColName, out object? pkValue))
+                if (!cdata.DiffRow.Columns.TryGetValue(cdata.TableDef.PrimaryKeyFieldName, out object? pkValue))
                     throw new Exception($"Cannot update row in {cdata.TableDef.Name} because no primary key was found in diff");
                 if (builder.NonKeyCount > 0)
-                    await builder.Execute(db, cdata.TableDef.SqlTableName, cdata.TableDef.PrimaryKeyColName, pkValue);
+                    await builder.Execute(db, cdata.TableDef.SqlTableName, primaryKeyField.SqlColumnName, pkValue);
             }
             return null;
         }
@@ -63,12 +64,12 @@ namespace RetroDRY
             foreach (var coldef in cdata.TableDef.Cols)
             {
                 if (coldef.IsComputedOrJoined) continue;
-                if (!includePrimaryKey && coldef.Name == cdata.TableDef.PrimaryKeyColName) continue;
-                if (!cdata.DiffRow.Columns.TryGetValue(coldef.Name, out object? value)) continue;
+                if (!includePrimaryKey && coldef.FieldName == cdata.TableDef.PrimaryKeyFieldName) continue;
+                if (!cdata.DiffRow.Columns.TryGetValue(coldef.FieldName, out object? value)) continue;
                 if (coldef.IsCustom)
-                    customColValues[coldef.Name] = value;
+                    customColValues[coldef.FieldName] = value;
                 else
-                    builder.AddNonKey(coldef.Name, coldef.WireType, value);
+                    builder.AddNonKey(coldef.SqlColumnName, coldef.WireType, value);
             }
 
             //if any custom columns are to be written, include CustomValues column with old and new values/
@@ -79,8 +80,8 @@ namespace RetroDRY
                 {
                     foreach (var coldef in cdata.TableDef.Cols.Where(c => c.IsCustom))
                     {
-                        if (customColValues.ContainsKey(coldef.Name)) continue; //don't overwrite old over new
-                        customColValues[coldef.Name] = cdata.PristineRow.GetCustom(coldef.Name);
+                        if (customColValues.ContainsKey(coldef.FieldName)) continue; //don't overwrite old over new
+                        customColValues[coldef.FieldName] = cdata.PristineRow.GetCustom(coldef.FieldName);
                     }
                 }
                 string json = CustomValuesToJson(cdata.TableDef, customColValues);
@@ -99,8 +100,8 @@ namespace RetroDRY
             writer.WriteStartObject();
             foreach (var coldef in tabldef.Cols.Where(c => c.IsCustom))
             {
-                if (!values.TryGetValue(coldef.Name, out object? value)) continue;
-                writer.WritePropertyName(coldef.Name);
+                if (!values.TryGetValue(coldef.FieldName, out object? value)) continue;
+                writer.WritePropertyName(coldef.FieldName);
                 writer.WriteRawValue(Retrovert.FormatRawJsonValue(coldef, value));
             }
             writer.WriteEndObject();
