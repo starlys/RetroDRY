@@ -102,7 +102,7 @@ namespace RetroDRY
         public bool IsCustom;
 
         /// <summary>
-        /// If true, the column is declared with the computed attribute, and   won't be loaded and saved by default SQL, and won't be editable on clients
+        /// If true, the column is declared with the computed attribute, and won't be loaded and saved by default SQL, and won't be editable on clients
         /// </summary>
         public bool IsComputed;
 

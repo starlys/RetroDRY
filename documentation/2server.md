@@ -349,6 +349,7 @@ Computed column details
 -   As noted above use the ComputedColumn attribute to note that a column is computed.
 -   Then in the Row class, override Recompute to set values on that row.
 -   Recompute is called by the framework after rows are loaded from the database or deserialized from a client; you can also call the method from other places.
+-   Consider also using RecomputeAll (see Load and Save Overrides section)
 
 REST-style endpoints
 --------------------
@@ -517,6 +518,7 @@ retroverse.OverrideSql("Customer", new CustomerSql()); //CustomerSql is a class 
     -   MainTableWhereClause() - Override this to change the where-clause on the main table's load. There are two overloads of the method, one for persistons and one for viewons. A typical use for this is to define your own special criteria that don't map to column names. In this case, you can all the base implementation then modify the where clause to include your implementation of the special criteria, if present.
     -   CustomizeWhereClause() - Override this to change each where-clause expression, one at a time. This is called for main table and child tables of persistons and viewons. You must call the base implementation for default behavior.
     -   SqlColumnExpression() - Override this to change the column name or expression to use to load a column.
+    -   RecomputeAll() - Override this to perform post-load operations on the whole daton. You can also override Recompute() to recompute for each row.
 
 -   Overridable methods for saving:
 

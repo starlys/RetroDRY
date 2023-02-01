@@ -147,6 +147,7 @@ namespace RetroDRY
 
             daton.Key = key;
             daton.Recompute(datondef);
+            daton.RecomputeAll(datondef);
             return new LoadResult { Daton = daton };
         }
 

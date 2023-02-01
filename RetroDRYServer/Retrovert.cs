@@ -128,6 +128,7 @@ namespace RetroDRY
             }
 
             daton.Recompute(datondef);
+            daton.RecomputeAll(datondef);
             return daton;
         }
 

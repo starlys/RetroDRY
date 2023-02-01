@@ -225,12 +225,38 @@ namespace SampleServer.Schema
 
             [SqlTableName("Customer"), Prompt("Cust notes")]
             public string? Notes;
+
+            [ComputedColumn]
+            public int RowInfo1; //# chars in Company name
+
+            [ComputedColumn]
+            public int RowInfo2; //running total of RowInfo1
+
+            public override void Recompute(Daton daton)
+            {
+                RowInfo1 = (Company ?? "").Length;
+            }
         }
 
         [Criteria]
         public abstract class Criteria
         {
             public DateTime? SaleDate;
+        }
+
+        /// <summary>
+        /// Demonstrates how row recompute is done for the whole daton, then RecomputeAll can use the
+        /// values computed for each row
+        /// </summary>
+        /// <param name="datondef"></param>
+        public override void RecomputeAll(DatonDef datondef)
+        {
+            int running = 0;
+            foreach (var row in Sale)
+            {
+                running += row.RowInfo1;
+                row.RowInfo2 = running;
+            }
         }
     }
 }
