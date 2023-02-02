@@ -54,6 +54,11 @@ namespace RetroDRY
         public JObject[]? SaveDatons { get; set; }
 
         /// <summary>
+        /// When present, this is a request to get an exported daton
+        /// </summary>
+        public ExportRequest? ExportRequest { get; set; }
+
+        /// <summary>
         /// When true, this is a request to end the session
         /// </summary>
         public bool DoQuit { get; set; }
@@ -68,6 +73,27 @@ namespace RetroDRY
         /// language code as defined by containing app
         /// </summary>
         public string? LanguageCode { get; set; }
+    }
+
+    /// <summary>
+    /// A request for streamed exported data
+    /// </summary>
+    public class ExportRequest
+    {
+        /// <summary>
+        /// One of the supported format codes. Currently only "CSV" is supported.
+        /// </summary>
+        public string? Format { get; set; }
+
+        /// <summary>
+        /// Maximum number of rows in each table to include. Numbers over 1 million will be treated as 1 million.
+        /// </summary>
+        public int MaxRows { get; set; }
+
+        /// <summary>
+        /// string version of DatonKey
+        /// </summary>
+        public string? DatonKey { get; set; }
     }
 
     /// <summary>
@@ -158,6 +184,11 @@ namespace RetroDRY
         /// True when a save was successful
         /// </summary>
         public bool SavePersistonsSuccess { get; set; }
+
+        /// <summary>
+        /// When the request contained an export request, this will hold the key to use for the GET http request for the actual data
+        /// </summary>
+        public string? ExportRequestKey { get; set; }
     }
 
     /// <summary>

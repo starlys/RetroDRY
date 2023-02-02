@@ -16,7 +16,15 @@ export interface MainRequest extends RetroRequest
     getDatons?: GetDatonRequest[];
     manageDatons?: ManageDatonRequest[];
     saveDatons?: SaveDatonRequest[];
+    exportRequest?: ExportRequest;
     doQuit?: boolean;
+}
+
+export interface ExportRequest
+{
+    format: string;
+    maxRows: number;
+    datonKey: string;
 }
 
 export interface InitializeRequest
@@ -56,6 +64,7 @@ export interface MainResponse extends RetroResponse
     manageDatons?: ManageDatonResponse[];
     savedPersistons?: SavePersistonResponse[];
     savePersistonsSuccess?: boolean;
+    exportRequestKey?: string;
 }
 
 export interface LongResponse extends RetroResponse

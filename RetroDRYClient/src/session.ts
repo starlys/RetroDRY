@@ -79,6 +79,24 @@ export default class Session {
         return undefined;
     }
 
+    //cause the browser to download a file containing the given daton's main table as CSV
+    async exportAsCsv(datonKey: string): Promise<any> {
+        const request = { 
+            sessionKey: this.sessionKey, 
+            environment: this.environment,
+            exportRequest: {
+                format: 'CSV',
+                maxRows: 50000,
+                datonKey
+            }
+        };
+        const response = await NetUtils.httpMain(this.baseServerUrl(), request);
+        if (!response) throw new Error('Get failed');
+        if (response.exportRequestKey)
+            window.open(this.baseServerUrl() + 'retro/export?key=' + response.exportRequestKey);
+        console.log('DEBUG1', this.baseServerUrl() + 'retro/export?key=' + response.exportRequestKey);
+    }
+
     //create a valid empty viewon locally (use this for seeding a searchable viewon for display without loading all rows)
     createEmptyViewon(datonType: string): any {
         return {

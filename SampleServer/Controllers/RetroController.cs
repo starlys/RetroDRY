@@ -1,6 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
 using RetroDRY;
 
 namespace SampleServer.Controllers
@@ -19,6 +24,15 @@ namespace SampleServer.Controllers
         public Task<LongResponse> Long(LongRequest req)
         {
             return GetRetroverse().HandleHttpLong(req);
+        }
+
+        [HttpGet("export")]
+        public async Task Export(string key) 
+        {
+            Response.Headers.Add(HeaderNames.ContentType, "text/plain");
+            //DEBUG REMOVE Response.Headers.Add(HeaderNames.ContentDisposition, "attachment; filename=data.csv");
+
+            await GetRetroverse().HandleHttpExport(Response.Body, key);
         }
 
         /// <summary>

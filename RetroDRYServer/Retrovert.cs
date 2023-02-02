@@ -44,7 +44,7 @@ namespace RetroDRY
             /// <param name="serializer"></param>
             public override void WriteJson(JsonWriter writer, CondensedDatonResponse? value, JsonSerializer serializer)
             {
-                if (value != null) 
+                if (value != null)
                     writer.WriteRawValue(value.CondensedDatonJson);
             }
         }
@@ -215,7 +215,7 @@ namespace RetroDRY
         /// </summary>
         /// <param name="value">any supported value or null</param>
         /// <param name="coldef">definition of column</param>
-        public static string FormatRawJsonValue(ColDef coldef, object? value) 
+        public static string FormatRawJsonValue(ColDef coldef, object? value)
         {
             static string jsonQuote(string s) => JsonConvert.ToString(s);
 
@@ -237,9 +237,9 @@ namespace RetroDRY
             if (value is string vs) return jsonQuote(vs);
 
             //date and datetime
-            if(value is DateTime vdate)
+            if (value is DateTime vdate)
             {
-                if (coldef.WireType == Constants.TYPE_DATE || coldef.WireType == Constants.TYPE_NDATE) 
+                if (coldef.WireType == Constants.TYPE_DATE || coldef.WireType == Constants.TYPE_NDATE)
                     return jsonQuote(vdate.Date.ToString("yyyyMMdd"));
                 else return jsonQuote(vdate.ToString("yyyyMMddHHmm"));
             }
@@ -249,6 +249,23 @@ namespace RetroDRY
 
             //unknown
             throw new Exception($"Type {value.GetType().Name} not supported");
+        }
+
+        /// <summary>
+        /// Format a value for exported raw output
+        /// </summary>
+        /// <param name="value">any supported value or null</param>
+        /// <param name="coldef">definition of column</param>
+        public static string FormatRawExportValue(ColDef coldef, object? value)
+        {
+            //null
+            if (value == null) return "";
+
+            //bool
+            if (value is bool vbool) return vbool ? "1" : "0";
+
+            //all others same as json
+            return FormatRawJsonValue(coldef, value);
         }
 
         /// <summary>

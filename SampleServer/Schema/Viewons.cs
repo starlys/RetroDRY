@@ -24,7 +24,7 @@ namespace SampleServer.Schema
             [SortColumn(false)]
             public string? FirstName;
 
-            [SortColumn]
+            [SortColumn, SqlTableName("Employee")]
             public string? LastName;
 
             [ForeignKey(typeof(Employee))]

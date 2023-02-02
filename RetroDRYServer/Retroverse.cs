@@ -2,7 +2,10 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace RetroDRY
@@ -66,6 +69,11 @@ namespace RetroDRY
         /// Host app can use this to run background tasks
         /// </summary>
         public BackgroundWorker BackgroundWorker = new BackgroundWorker();
+
+        /// <summary>
+        /// Pending export requests
+        /// </summary>
+        public PendingExports PendingExports = new PendingExports();
 
         /// <summary>
         /// Host app can use this to get diagnostic reports
@@ -306,6 +314,14 @@ namespace RetroDRY
                 resp.ManageDatons = manageResponses.ToArray();
             }
 
+            //export 1 dayon
+            if (req.ExportRequest != null)
+            {
+                if (req.ExportRequest.Format != "CSV") throw new Exception("Unknown format");
+                string key = PendingExports.StoreRequest(user, DatonKey.Parse(req.ExportRequest.DatonKey), req.ExportRequest.MaxRows);
+                resp.ExportRequestKey = key;
+            }
+
             //quit - free up locks and memory
             if (req.DoQuit)
             {
@@ -429,6 +445,58 @@ namespace RetroDRY
             }
 
             return new RetroSql.LoadResult { Daton = daton };
+        }
+
+        /// <summary>
+        /// Host app must call this when receiving http request on GET /api/retro/export;
+        /// returns stream of exported data
+        /// </summary>
+        public async Task HandleHttpExport(Stream responseBody, string requestKey)
+        {
+            var pusher = new PushStreamContent(async (stream, content, context) =>
+            {
+                using var wri = new StreamWriter(stream);
+                try
+                {
+                    (IUser? user, DatonKey datonKey, int maxRows) = PendingExports.RetrieveRequest(requestKey);
+                    var result = await GetDaton(datonKey, user);
+                    if (result.Daton != null)
+                    {
+                        var datondef = DataDictionary.FindDef(result.Daton);
+                        await CsvConverter.Convert(datondef, result.Daton, wri);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Diagnostics?.ReportClientCallError?.Invoke(ex.ToString());
+                    wri.WriteLine($"Internal error: {ex.Message}");
+                }
+                await stream.FlushAsync();
+            });
+            await pusher.CopyToAsync(responseBody);
+        }
+
+        //DEBUG REMOVE NEXT
+        /// <summary>
+        /// Host app must call this when receiving http request on GET /api/retro/export;
+        /// </summary>
+        public async Task HandleHttpExport(string requestKey, StreamWriter wri)
+        {
+            try
+            {
+                (IUser? user, DatonKey datonKey, int maxRows) = PendingExports.RetrieveRequest(requestKey);
+                var result = await GetDaton(datonKey, user);
+                if (result.Daton != null)
+                {
+                    var datondef = DataDictionary.FindDef(result.Daton);
+                    await CsvConverter.Convert(datondef, result.Daton, wri);
+                }
+            }
+            catch (Exception ex)
+            {
+                Diagnostics?.ReportClientCallError?.Invoke(ex.ToString());
+                throw;
+            }
         }
 
         /// <summary>

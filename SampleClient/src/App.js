@@ -60,6 +60,7 @@ export default function App() {
           <button onClick={() => addToStack('Item|=-1')}>Item</button>
           <button onClick={() => addToStack('Sale|=-1')}>Sale</button>
           <h3>Custom features</h3>
+          <button onClick={() => globals.session.exportAsCsv('SaleList')}>DEBUG CSV</button>
           <div>
             <input type="checkbox" onClick={pointOfSaleVisibilityToggle}/> Show custom point of sale inputs
           </div>
