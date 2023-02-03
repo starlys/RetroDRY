@@ -86,7 +86,8 @@ namespace RetroDRY
         public string? Format { get; set; }
 
         /// <summary>
-        /// Maximum number of rows in each table to include. Numbers over 1 million will be treated as 1 million.
+        /// Maximum number of rows in each table to include. Numbers over the systemwide max won't be honored (
+        /// (max is 500k by default)
         /// </summary>
         public int MaxRows { get; set; }
 

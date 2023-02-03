@@ -83,7 +83,8 @@ namespace RetroDRY
 
         /// <summary>
         /// When overridden, recomputes all rows. Use in conjuction with Row.Recompute.
-        /// Called after daton is loaded or expanded from wire data. (Recompute is called for each row, then RecomputeAll is called)
+        /// Called after daton is loaded or expanded from wire data. (Recompute is called for each row, then RecomputeAll is called,
+        /// but RecomputeALl is not called at all a streaming export context)
         /// </summary>
         public virtual void RecomputeAll(DatonDef datondef) { }
     }

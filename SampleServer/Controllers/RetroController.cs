@@ -30,7 +30,7 @@ namespace SampleServer.Controllers
         public async Task Export(string key) 
         {
             Response.Headers.Add(HeaderNames.ContentType, "text/plain");
-            //DEBUG REMOVE Response.Headers.Add(HeaderNames.ContentDisposition, "attachment; filename=data.csv");
+            Response.Headers.Add(HeaderNames.ContentDisposition, "attachment; filename=data.csv");
 
             await GetRetroverse().HandleHttpExport(Response.Body, key);
         }

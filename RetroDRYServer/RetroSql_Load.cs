@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -152,6 +153,70 @@ namespace RetroDRY
         }
 
         /// <summary>
+        /// Load the main table only of a viewon, using deferred execution. Used for large data sets for export.
+        /// Warning: database connection stays open until final result, or explicitly canceled.
+        /// Instead of returning readable errors, always throws exceptions.
+        /// Limitations: Must be a viewon; key must be for page 0.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="dbdef"></param>
+        /// <param name="user"></param>
+        /// <param name="key"></param>
+        /// <param name="pageSize"></param>
+        /// <returns></returns>
+        public virtual async IAsyncEnumerable<Row> LoadForExport(IDbConnection db, DataDictionary dbdef, IUser? user, DatonKey key, int pageSize)
+        {
+            if (SqlFlavor == null) throw new Exception("Must initialize RetroSql.SqlFlavor");
+
+            //enforce limitations of this method
+            var datondef = dbdef.FindDef(key);
+            if (datondef.MainTableDef == null) throw new Exception("Expected main table to be defined in Load");
+            if (!(key is ViewonKey vkey2)) throw new Exception("Expected viewon key");
+            if (vkey2.PageNumber != 0) throw new Exception("Expected page number 0");
+
+            //validation
+            var validator = new Validator(user);
+            await validator.ValidateCriteria(datondef, vkey2);
+            if (validator.Errors.Any()) throw new Exception($"Load errors: {string.Join(';', validator.Errors)}");
+
+            //handle ordering and where clause
+            string? sortFieldName = vkey2.SortFieldName ?? datondef.MainTableDef.DefaulSortFieldName;
+            var sortField = datondef.MainTableDef.FindColDefOrThrow(sortFieldName);
+            var whereClause = MainTableWhereClause(datondef.MainTableDef, key);
+
+            //build sql
+            var tabledef = datondef.MainTableDef;
+            var colInfos = BuildColumnsToLoadList(dbdef, tabledef);
+            var columnNames = colInfos.Select(c => c.SqlExpression).ToList();
+            int customColIndex = -1;
+            if (tabledef.HasCustomColumns)
+            {
+                customColIndex = columnNames.Count;
+                columnNames.Add(CUSTOMCOLNAME);
+            }
+            string fromClause = tabledef.SqlFromClause ?? tabledef.SqlTableName;
+            var sql = new SqlSelectBuilder(SqlFlavor, fromClause, sortField.SqlExpression, columnNames)
+            {
+                PageSize = pageSize
+            };
+            if (whereClause != null) sql.WhereClause = whereClause;
+
+            //read and yield rows
+            using var cmd = db.CreateCommand();
+            cmd.CommandText = CustomizeSqlStatement(sql.ToString());
+            whereClause?.ExportParameters(cmd);
+            using var reader = cmd.ExecuteReader();
+            int rowsLoaded = 0;
+            while (reader.Read())
+            {
+                if (++rowsLoaded > pageSize && pageSize > 0) break;
+                var row = ReadRow(tabledef, colInfos, customColIndex, reader);
+                row.Recompute(null);
+                yield return row;
+            }
+        }
+
+        /// <summary>
         /// Get where clause for main table, or null if none
         /// </summary>
         protected SqlSelectBuilder.Where? MainTableWhereClause(TableDef tabledef, DatonKey key)
@@ -275,16 +340,7 @@ namespace RetroDRY
                         pk = reader.GetValue(parentKeyColIndex);
 
                     //read remaining values
-                    var row = Utils.Construct(tabledef.RowType) as Row ?? throw new Exception("Cannot construct row in LoadTable"); ;
-                    SetRowFromReader(colInfos, reader, row);
-
-                    //read custom values
-                    if (tabledef.HasCustomColumns)
-                    {
-                        string? json = (string?)Utils.ChangeType(reader.GetValue(customColIndex), typeof(string));
-                        if (!string.IsNullOrEmpty(json))
-                            SetRowFromCustomValues(json, tabledef, row);
-                    }
+                    var row = ReadRow(tabledef, colInfos, customColIndex, reader);
 
                     //store in return dict
                     if (!rowsByParentKey.ContainsKey(pk)) rowsByParentKey[pk] = new List<Row>();
@@ -408,7 +464,30 @@ namespace RetroDRY
         }
 
         /// <summary>
-        /// Set fields in target to values from datareader
+        /// Read the standard and custom values into a new typed Row object from the current row in an IDataReader
+        /// </summary>
+        /// <param name="tabledef"></param>
+        /// <param name="colInfos"></param>
+        /// <param name="customColIndex">index of the JSON col for custom values</param>
+        /// <param name="reader"></param>
+        protected virtual Row ReadRow(TableDef tabledef, List<LoadColInfo> colInfos, int customColIndex, IDataReader reader)
+        {
+            //read remaining values
+            var row = Utils.Construct(tabledef.RowType) as Row ?? throw new Exception("Cannot construct row in ReadRow"); ;
+            SetRowFromReader(colInfos, reader, row);
+
+            //read custom values
+            if (tabledef.HasCustomColumns)
+            {
+                string? json = (string?)Utils.ChangeType(reader.GetValue(customColIndex), typeof(string));
+                if (!string.IsNullOrEmpty(json))
+                    SetRowFromCustomValues(json, tabledef, row);
+            }
+            return row;
+        }
+
+        /// <summary>
+        /// Set fields in target row to values from datareader; does not handle custom columns
         /// </summary>
         protected void SetRowFromReader(IEnumerable<LoadColInfo> colInfos, IDataReader reader, Row target)
         {

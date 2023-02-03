@@ -83,6 +83,9 @@ export default React.memo(props => {
     });
 
     //event handlers
+    const doExport = () => {
+        props.session.exportAsCsv(daton.key);
+    };
     const editingNearingTimeout = () => {
         const lang = session.dataDictionary.messageConstants;
         setErrorItems([lang.INFOTIMEOUT]);
@@ -324,7 +327,7 @@ export default React.memo(props => {
     return (
         <div className="daton" ref={domElement}>
             <DatonBanner datonDef={datonDef} editState={bannerState} parsedDatonKey={parsedDatonKey} editClicked={editClicked} saveClicked={saveClicked} 
-                cancelClicked={cancelClicked} removeClicked={removeClicked} deleteClicked={deleteClicked} session={session}/>
+                cancelClicked={cancelClicked} removeClicked={removeClicked} deleteClicked={deleteClicked} doExport={doExport} session={session}/>
             {errorItems.length > 0 && <ul className="daton-errors">
                 {errorItems.map((s, idx3) => <li key={idx3}>{s}</li>)}
             </ul>}

@@ -45,7 +45,7 @@ export default class DropdownState {
                 if (this.colDef.selectBehavior.autoCriterionName && this.colDef.selectBehavior.autoCriterionValueColumnName) {
                     this.isDynamic = true;
                     let name = this.colDef.selectBehavior.autoCriterionName;
-                    name = name[0].toUpperCase() + name.substr(1);
+                    name = name[0].toUpperCase() + name.substring(1);
                     let criValue = this.row[this.colDef.selectBehavior.autoCriterionValueColumnName];
                     if (criValue === undefined || criValue === null) criValue = '-1';
                     if (criValue !== this.priorCriValue) criValueChanged = true;

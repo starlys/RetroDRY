@@ -55,7 +55,8 @@ namespace RetroDRY
         /// <summary>
         /// When overridden, computes values of computed columns in the row
         /// </summary>
-        public virtual void Recompute(Daton daton) { }
+        /// <param name="daton">will be set normally, but null in an export streaming context</param>
+        public virtual void Recompute(Daton? daton) { }
 
         /// <summary>
         /// Clone all fields and child rows declared in tabledef

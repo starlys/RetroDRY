@@ -16,7 +16,7 @@ function parseSegments(s: string) {
         let segi = segments[i].replace(/\\\\/g, '\x01');
         if (segi[segi.length - 1] === '\\')
         {
-            segi = segi.substr(0, segi.length - 1) + '|' + segments[i + 1];
+            segi = segi.substring(0, segi.length - 1) + '|' + segments[i + 1];
             segments.splice(i + 1, 1);
         }
         segments[i] = segi.replace(/\x01/g, '\\');
@@ -67,7 +67,7 @@ export default class DatonKey {
         if (this.otherSegments.length != 1) return '';
         const seg = this.otherSegments[0];
         if (seg[0] !== '=') return ''; //malformed persiston key
-        return seg.substr(1);
+        return seg.substring(1);
     }
 
     persistonKeyAsInt(): number {

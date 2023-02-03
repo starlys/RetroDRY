@@ -23,7 +23,7 @@ namespace UnitTest
 
         public List<PaymentMethodRow> PaymentMethod = new();
 
-        public override void Recompute(Daton daton)
+        public override void Recompute(Daton? daton)
         {
             FormattedMoney = $"{Money} gold pieces";
         }
@@ -39,7 +39,7 @@ namespace UnitTest
             [ComputedColumn]
             public string? AngryMethod;
 
-            public override void Recompute(Daton daton)
+            public override void Recompute(Daton? daton)
             {
                 AngryMethod = $"Arrg, I'll pay with {Method}";
             }

@@ -9,6 +9,7 @@ import {securityUtil} from 'retrodryclient';
 //props.cancelClicked is the handler for cancel button
 //props.removeClicked is the handler for remove button (meaning remove daton from stack)
 //props.deleteClicked is the handler for deleting a persiston (only called after this component handles confirmation)
+//props.doExport is the handler for export (optional)
 //props.parsedDatonKey
 //props.session is the Session object for language strings 
 const Component = (props) => {
@@ -49,6 +50,7 @@ const Component = (props) => {
                     <button className="btn-delete-row" onClick={props.deleteClicked}>{lang.BTNDELETE}</button>
                     <button onClick={deleteCanceled}>{lang.BTNKEEP}</button>
                 </>}
+                {props.doExport && <button onClick={props.doExport}>csv</button>}
             </div>
             {editState !== 2 && <button onClick={props.removeClicked}> X </button>}
             {title}

@@ -379,11 +379,12 @@ REST-style endpoints
         -   In Startup class, add static method InitializeRetroDRY (It doesn't have to be here and you can name it something different if needed)
         -   Call the intitialization method from Program.Main (or wherever your startup code is) - which can be done before the CreateHostBuilder line.
         -   Refer to the initialization section below for advice on what to code inside that function.
-    -   Create a controller with two endpoints.
+    -   Create a controller with three endpoints.
         -   The typical class and file name is Controllers/RetroController.cs
         -   The typical endpoints are:
             -   POST /api/retro/main
             -   POST /api/retro/long
+            -   GET /api/retro/export
         -   Refer to sample code for the implementation.
 
 ### Get and modify persistons/viewons (optional)

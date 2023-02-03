@@ -105,6 +105,11 @@ SaleItemNoteId serial primary key,
 SaleItemId int not null references SaleItem,
 Note varchar(4000)
 );
+
+create table BigTable(
+name varchar
+);
+create index BigTable_Name on BigTable(name);
 ```
 
 Server side setup

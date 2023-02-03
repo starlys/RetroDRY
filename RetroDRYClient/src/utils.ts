@@ -18,7 +18,7 @@ export function getInvalidMemberName(colDef: ColDefResponse): string {
 //get the base type name for a nullable or non-nullable type. For example given nstring, returns string
 export function getBaseType(wireTypeName: string): string {
     let baseType = wireTypeName;
-    if (baseType[0] === 'n') baseType = baseType.substr(1); 
+    if (baseType[0] === 'n') baseType = baseType.substring(1); 
     return baseType;
 }
 
@@ -34,11 +34,11 @@ export function pad2(n: number){
 function wireDateTimeToNumbers(session: Session, wire: string): number[] {
     //implementation notes: The point in time represented by the
     //Date instance is "wrong" because we're avoiding any browser zone conversons.
-    const yr = parseInt(wire.substr(0, 4));
-    const mo = parseInt(wire.substr(4, 2));
-    const dy = parseInt(wire.substr(6, 2));
-    const hr = parseInt(wire.substr(8, 2));
-    const mi = parseInt(wire.substr(10, 2));
+    const yr = parseInt(wire.substring(0, 4));
+    const mo = parseInt(wire.substring(4, 6));
+    const dy = parseInt(wire.substring(6, 8));
+    const hr = parseInt(wire.substring(8, 10));
+    const mi = parseInt(wire.substring(10, 12));
     const d = new Date(Date.UTC(yr, mo - 1, dy, hr, mi + session.timeZoneOffset, 0, 0));
     return [
         d.getUTCFullYear(),
@@ -69,7 +69,7 @@ export function wireDateTimeToReadable(session: Session, wire: string|null): str
 //convert a wire date (YYYYMMDD) to a date suitable for an input control; returns empty string if invalid or empty
 export function wireDateToInput(wire: string|null): string {
     if (!wire || wire.length !== 8) return '';
-    return wire.substr(0, 4) + '-' + wire.substr(4, 2) + '-' + wire.substr(6, 2);    
+    return wire.substring(0, 4) + '-' + wire.substring(4, 6) + '-' + wire.substring(6, 8);    
 }
 
 //convert a wire datetime (YYYYMMDDHHMM) to a date suitable for an input control and a time suitable for an input control; returns empty string if invalid or empty
@@ -400,8 +400,8 @@ function getLocalValidationErrors_table(rt: TableRecurPoint, errors: string[]) {
 export function splitOnTilde(s: string) {
     let h = s.indexOf('~');
     if (h < 0) return[s, s];
-    let lo: string|null = s.substr(0, h);
-    let hi: string|null = s.substr(h + 1);
+    let lo: string|null = s.substring(0, h);
+    let hi: string|null = s.substring(h + 1);
     if (lo.length === 0) lo = null;
     if (hi.length === 0) hi = null;
     return [lo, hi];

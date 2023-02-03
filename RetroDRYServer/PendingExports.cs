@@ -42,6 +42,10 @@ namespace RetroDRY
                 var tooOld = DateTime.UtcNow.AddMinutes(-2);
                 for (int i = items.Count - 1; i >= 0; i--) if (items[i].CreatedAtUtc < tooOld) items.RemoveAt(i);
 
+                //fix key so that it does not have a pageno
+                if (datonKey is ViewonKey viewonKey)
+                    datonKey = new ViewonKey(viewonKey.Name, viewonKey.Criteria, viewonKey.SortFieldName, 0);
+
                 //store request
                 var item = new Item(user, datonKey, maxRows);
                 items.Add(item);

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
-using NuGet.ContentModel;
 using RetroDRY;
 
 namespace SampleServer.Schema
@@ -232,7 +231,7 @@ namespace SampleServer.Schema
             [ComputedColumn]
             public int RowInfo2; //running total of RowInfo1
 
-            public override void Recompute(Daton daton)
+            public override void Recompute(Daton? daton)
             {
                 RowInfo1 = (Company ?? "").Length;
             }
@@ -257,6 +256,26 @@ namespace SampleServer.Schema
                 running += row.RowInfo1;
                 row.RowInfo2 = running;
             }
+        }
+    }
+
+    /// <summary>
+    /// List of BigTable
+    /// </summary>
+    public class BigTableList : Viewon
+    {
+        public List<TopRow> BigTable = new();
+
+        public class TopRow : Row
+        {
+            [SortColumn(true), PrimaryKey(true)]
+            public string? Name;
+        }
+
+        [Criteria]
+        public abstract class Criteria
+        {
+            public string? Name;
         }
     }
 }

@@ -54,13 +54,13 @@ export default function App() {
           <button onClick={() => addToStack('SaleList', true)}>Sales</button>
           <button onClick={() => addToStack('SaleList|SaleDate=20200801~20200901', false)}>August Sales</button>
           <button onClick={() => addToStack('SaleCustomerList', true)}>Sales w/ Customer notes</button>
+          <button onClick={() => addToStack('BigTableList', true)}>Large random data set</button>
           <h3>Create new..</h3>
           <button onClick={() => addToStack('Employee|=-1')}>Employee</button>
           <button onClick={() => addToStack('Customer|=-1')}>Customer</button>
           <button onClick={() => addToStack('Item|=-1')}>Item</button>
           <button onClick={() => addToStack('Sale|=-1')}>Sale</button>
           <h3>Custom features</h3>
-          <button onClick={() => globals.session.exportAsCsv('SaleList')}>DEBUG CSV</button>
           <div>
             <input type="checkbox" onClick={pointOfSaleVisibilityToggle}/> Show custom point of sale inputs
           </div>

@@ -34,6 +34,11 @@ namespace RetroDRY
         public int ViewonPageSize = 500;
 
         /// <summary>
+        /// Max rows for exports
+        /// </summary>
+        public int MaxExportRows = 500000;
+
+        /// <summary>
         /// All connected clients
         /// </summary>
         private readonly ClientPlex ClientPlex = new ClientPlex();
@@ -314,7 +319,7 @@ namespace RetroDRY
                 resp.ManageDatons = manageResponses.ToArray();
             }
 
-            //export 1 dayon
+            //export 1 daton
             if (req.ExportRequest != null)
             {
                 if (req.ExportRequest.Format != "CSV") throw new Exception("Unknown format");
@@ -449,21 +454,58 @@ namespace RetroDRY
 
         /// <summary>
         /// Host app must call this when receiving http request on GET /api/retro/export;
-        /// returns stream of exported data
+        /// adds exported data to the given stream
         /// </summary>
         public async Task HandleHttpExport(Stream responseBody, string requestKey)
         {
+            if (GetDbConnection == null) throw new Exception("Uninitialized Retroverse");
+   
+            //get info about what to export
+            (IUser? user, DatonKey datonKey, int maxRows) = PendingExports.RetrieveRequest(requestKey);
+            maxRows = Math.Min(maxRows, MaxExportRows);
+
+            //initailize resolver for lookup values
+            var lookupResolver = new LookupResolver(async datonKey =>
+            {
+                var result = await GetDaton(datonKey, user);
+                if (result.Daton == null) return (null, null);
+                return (DataDictionary.FindDef(result.Daton), result.Daton);
+            });
+
             var pusher = new PushStreamContent(async (stream, content, context) =>
             {
                 using var wri = new StreamWriter(stream);
                 try
                 {
-                    (IUser? user, DatonKey datonKey, int maxRows) = PendingExports.RetrieveRequest(requestKey);
-                    var result = await GetDaton(datonKey, user);
-                    if (result.Daton != null)
+                    //if viewon, use specialized technique for large result sets
+                    if ((datonKey is ViewonKey viewonKey) && viewonKey.PageNumber == 0)
                     {
-                        var datondef = DataDictionary.FindDef(result.Daton);
-                        await CsvConverter.Convert(datondef, result.Daton, wri);
+                        var datondef = DataDictionary.FindDef(viewonKey);
+                        var sql = GetSqlInstance(viewonKey);
+                        using var db = await GetDbConnection(datondef.DatabaseNumber);
+                        if (sql == null) throw new Exception("Cannot resolve RetroSql instance in HandleHttpExport");
+
+                        var csvConverter = new CsvConverter(DataDictionary, lookupResolver, datondef);
+                        csvConverter.WriteHeaderRow(wri);
+                        int rowNo = 0;
+                        await foreach (var row in sql.LoadForExport(db, DataDictionary, user, viewonKey, maxRows))
+                        {
+                            if (row == null) continue;
+                            await csvConverter.WriteRow(row, ++rowNo, wri);
+                        }
+                    }
+
+                    //in all other cases load in memory then stream out
+                    else
+                    {
+                        var result = await GetDaton(datonKey, user);
+                        if (result.Daton != null)
+                        {
+                            var datondef = DataDictionary.FindDef(result.Daton);
+                            var csvConverter = new CsvConverter(DataDictionary, lookupResolver, datondef);
+                            csvConverter.WriteHeaderRow(wri);
+                            await csvConverter.WriteAllRows(result.Daton, wri);
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -474,29 +516,6 @@ namespace RetroDRY
                 await stream.FlushAsync();
             });
             await pusher.CopyToAsync(responseBody);
-        }
-
-        //DEBUG REMOVE NEXT
-        /// <summary>
-        /// Host app must call this when receiving http request on GET /api/retro/export;
-        /// </summary>
-        public async Task HandleHttpExport(string requestKey, StreamWriter wri)
-        {
-            try
-            {
-                (IUser? user, DatonKey datonKey, int maxRows) = PendingExports.RetrieveRequest(requestKey);
-                var result = await GetDaton(datonKey, user);
-                if (result.Daton != null)
-                {
-                    var datondef = DataDictionary.FindDef(result.Daton);
-                    await CsvConverter.Convert(datondef, result.Daton, wri);
-                }
-            }
-            catch (Exception ex)
-            {
-                Diagnostics?.ReportClientCallError?.Invoke(ex.ToString());
-                throw;
-            }
         }
 
         /// <summary>
