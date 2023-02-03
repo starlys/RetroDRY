@@ -46,8 +46,8 @@ export default class Session {
     //if set, Session will call this whenever a daton was received from the server because this session or another session edited it
     onSubscriptionUpdate?: (daton: any) => void;
 
-    //set by session (only after start called) to the time of the latest keystroke; can be used by UI to handle lock timeouts
-    //todo lastActivityMillis: number = 0;
+    //max rows for all exports; note that server side has a different higher default
+    maxExportRows = 200000;
 
     private serverIdx: number = 0;
 
@@ -77,6 +77,23 @@ export default class Session {
         if (responses.length === 1)
             return responses[0].daton;
         return undefined;
+    }
+
+    //cause the browser to download a file containing the given daton's main table as CSV
+    async exportAsCsv(datonKey: string): Promise<any> {
+        const request = { 
+            sessionKey: this.sessionKey, 
+            environment: this.environment,
+            exportRequest: {
+                format: 'CSV',
+                maxRows: this.maxExportRows,
+                datonKey
+            }
+        };
+        const response = await NetUtils.httpMain(this.baseServerUrl(), request);
+        if (!response) throw new Error('Get failed');
+        if (response.exportRequestKey)
+            window.open(this.baseServerUrl() + 'retro/export?key=' + response.exportRequestKey);
     }
 
     //create a valid empty viewon locally (use this for seeding a searchable viewon for display without loading all rows)
@@ -402,7 +419,6 @@ export default class Session {
         //free up memory and reset so that it could be initialized again
         this.datonCache = {};
         this.dataDictionary = undefined;
-        //todo document.removeEventListener('keydown', this.keyDownHandler);
 
         const request = { 
             sessionKey: this.sessionKey, 

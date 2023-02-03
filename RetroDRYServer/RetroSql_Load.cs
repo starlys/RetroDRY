@@ -2,12 +2,12 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using static RetroDRY.RetroSql;
 
 namespace RetroDRY
 {
@@ -102,19 +102,20 @@ namespace RetroDRY
             }
 
             //handle viewon paging and ordering
-            string? sortColName = datondef.MainTableDef.DefaulSortColName;
+            string? sortFieldName = datondef.MainTableDef.DefaulSortFieldName;
             int pageNo = 0;
             if (key is ViewonKey vkey)
             {
                 pageNo = vkey.PageNumber;
-                if (vkey.SortColumnName != null)
-                    sortColName = vkey.SortColumnName;
+                if (vkey.SortFieldName != null)
+                    sortFieldName = vkey.SortFieldName;
             }
             else pageSize = 0; //prohibit paging in persistons
 
             //load main table
             var whereClause = MainTableWhereClause(datondef.MainTableDef, key);
-            var loadResult = await LoadTable(db, dbdef, datondef.MainTableDef, whereClause, sortColName, pageSize, pageNo);
+            var sortField = datondef.MainTableDef.FindColDefOrThrow(sortFieldName);
+            var loadResult = await LoadTable(db, dbdef, datondef.MainTableDef, whereClause, sortField, pageSize, pageNo);
             if (loadResult.RowsByParentKey == null) throw new Exception("Expected LoadTable to yield rows");
             loadResult.RowsByParentKey.TryGetValue("", out var rowsForParent);
 
@@ -147,7 +148,72 @@ namespace RetroDRY
 
             daton.Key = key;
             daton.Recompute(datondef);
+            daton.RecomputeAll(datondef);
             return new LoadResult { Daton = daton };
+        }
+
+        /// <summary>
+        /// Load the main table only of a viewon, using deferred execution. Used for large data sets for export.
+        /// Warning: database connection stays open until final result, or explicitly canceled.
+        /// Instead of returning readable errors, always throws exceptions.
+        /// Limitations: Must be a viewon; key must be for page 0.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="dbdef"></param>
+        /// <param name="user"></param>
+        /// <param name="key"></param>
+        /// <param name="pageSize"></param>
+        /// <returns></returns>
+        public virtual async IAsyncEnumerable<Row> LoadForExport(IDbConnection db, DataDictionary dbdef, IUser? user, DatonKey key, int pageSize)
+        {
+            if (SqlFlavor == null) throw new Exception("Must initialize RetroSql.SqlFlavor");
+
+            //enforce limitations of this method
+            var datondef = dbdef.FindDef(key);
+            if (datondef.MainTableDef == null) throw new Exception("Expected main table to be defined in Load");
+            if (!(key is ViewonKey vkey2)) throw new Exception("Expected viewon key");
+            if (vkey2.PageNumber != 0) throw new Exception("Expected page number 0");
+
+            //validation
+            var validator = new Validator(user);
+            await validator.ValidateCriteria(datondef, vkey2);
+            if (validator.Errors.Any()) throw new Exception($"Load errors: {string.Join(';', validator.Errors)}");
+
+            //handle ordering and where clause
+            string? sortFieldName = vkey2.SortFieldName ?? datondef.MainTableDef.DefaulSortFieldName;
+            var sortField = datondef.MainTableDef.FindColDefOrThrow(sortFieldName);
+            var whereClause = MainTableWhereClause(datondef.MainTableDef, key);
+
+            //build sql
+            var tabledef = datondef.MainTableDef;
+            var colInfos = BuildColumnsToLoadList(dbdef, tabledef);
+            var columnNames = colInfos.Select(c => c.SqlExpression).ToList();
+            int customColIndex = -1;
+            if (tabledef.HasCustomColumns)
+            {
+                customColIndex = columnNames.Count;
+                columnNames.Add(CUSTOMCOLNAME);
+            }
+            string fromClause = tabledef.SqlFromClause ?? tabledef.SqlTableName;
+            var sql = new SqlSelectBuilder(SqlFlavor, fromClause, sortField.SqlExpression, columnNames)
+            {
+                PageSize = pageSize
+            };
+            if (whereClause != null) sql.WhereClause = whereClause;
+
+            //read and yield rows
+            using var cmd = db.CreateCommand();
+            cmd.CommandText = CustomizeSqlStatement(sql.ToString());
+            whereClause?.ExportParameters(cmd);
+            using var reader = cmd.ExecuteReader();
+            int rowsLoaded = 0;
+            while (reader.Read())
+            {
+                if (++rowsLoaded > pageSize && pageSize > 0) break;
+                var row = ReadRow(tabledef, colInfos, customColIndex, reader);
+                row.Recompute(null);
+                yield return row;
+            }
         }
 
         /// <summary>
@@ -166,13 +232,13 @@ namespace RetroDRY
         protected virtual SqlSelectBuilder.Where? MainTableWhereClause(TableDef tabledef, PersistonKey key)
         {
             if (key.WholeTable) return null;
-            var pkType = tabledef.FindCol(tabledef.PrimaryKeyColName).CSType;
+            var pkType = tabledef.FindColDefOrThrow(tabledef.PrimaryKeyFieldName).CSType;
             object? pk = key.PrimaryKey; //always string here
             if (pkType != typeof(string))
                 pk = Utils.ChangeType(pk, pkType);
             if (pk == null) throw new Exception("Could not change type of key in MainTableWhereClause");
             var w = new SqlSelectBuilder.Where();
-            w.AddWhere($"{tabledef.PrimaryKeyColName}={w.NextParameterName()}", pk);
+            CustomizeWhereClause(w, $"{tabledef.PrimaryKeyFieldName}={w.NextParameterName()}", pk);
             return w;
         }
 
@@ -188,14 +254,26 @@ namespace RetroDRY
             if (key.Criteria != null)
                 foreach (var cri in key.Criteria)
                 {
-                    var coldef = tabledef.FindCol(cri.Name);
+                    var coldef = tabledef.FindColDefOrNull(cri.Name);
                     if (coldef != null)
                     {
                         var crihelper = new ViewonCriterion(coldef, cri.PackedValue);
-                        crihelper.ExportWhereClause(w, SqlFlavor);
+                        crihelper.ExportWhereClause(this, w, SqlFlavor);
                     }
                 }
             return w;
+        }
+
+        /// <summary>
+        /// Base implementation adds the clause with parameters to the given Where instance. Overrides could modify the string
+        /// or params and then call the base version.
+        /// </summary>
+        /// <param name="where"></param>
+        /// <param name="clause"></param>
+        /// <param name="_params"></param>
+        public virtual void CustomizeWhereClause(SqlSelectBuilder.Where where, string clause, params object[] _params)
+        {
+            where.AddWhere(clause, _params);
         }
 
         /// <summary>
@@ -209,22 +287,22 @@ namespace RetroDRY
         /// <param name="whereClause">can be null</param>
         /// <param name="dbdef"></param>
         /// <param name="db"></param>
-        /// <param name="sortColName">name of column for order-by clause</param>
+        /// <param name="sortCol"></param>
         /// <param name="tabledef"></param>
         protected virtual Task<SingleLoadResult> LoadTable(IDbConnection db, DataDictionary dbdef, TableDef tabledef, SqlSelectBuilder.Where? whereClause,
-            string? sortColName, int pageSize, int pageNo)
+            ColDef sortCol, int pageSize, int pageNo)
         {
-            if (tabledef.SqlTableName == null || SqlFlavor == null)
-                throw new Exception("Must initialize TableDef.SqlTableName and RetroSql.SqlFlavor");
+            if (SqlFlavor == null)
+                throw new Exception("Must initialize RetroSql.SqlFlavor");
 
             var colInfos = BuildColumnsToLoadList(dbdef, tabledef);
-            string? parentKeyColName = tabledef.ParentKeyColumnName;
+            string? parentKeySqlColumnName = tabledef.ParentKeySqlColumnName;
             int parentKeyColIndex = -1;
             var columnNames = colInfos.Select(c => c.SqlExpression).ToList();
-            if (parentKeyColName != null)
+            if (parentKeySqlColumnName != null)
             {
                 parentKeyColIndex = columnNames.Count;
-                columnNames.Add(parentKeyColName);
+                columnNames.Add(parentKeySqlColumnName);
             }
             int customColIndex = -1;
             if (tabledef.HasCustomColumns)
@@ -232,7 +310,8 @@ namespace RetroDRY
                 customColIndex = columnNames.Count;
                 columnNames.Add(CUSTOMCOLNAME);
             }
-            var sql = new SqlSelectBuilder(SqlFlavor, tabledef.SqlTableName, sortColName, columnNames) {
+            string fromClause = tabledef.SqlFromClause ?? tabledef.SqlTableName;
+            var sql = new SqlSelectBuilder(SqlFlavor, fromClause, sortCol.SqlExpression, columnNames) {
                 PageSize = pageSize,
                 PageNo = pageNo
             };
@@ -261,16 +340,7 @@ namespace RetroDRY
                         pk = reader.GetValue(parentKeyColIndex);
 
                     //read remaining values
-                    var row = Utils.Construct(tabledef.RowType) as Row ?? throw new Exception("Cannot construct row in LoadTable"); ;
-                    SetRowFromReader(colInfos, reader, row);
-
-                    //read custom values
-                    if (tabledef.HasCustomColumns)
-                    {
-                        string? json = (string?)Utils.ChangeType(reader.GetValue(customColIndex), typeof(string));
-                        if (!string.IsNullOrEmpty(json))
-                            SetRowFromCustomValues(json, tabledef, row);
-                    }
+                    var row = ReadRow(tabledef, colInfos, customColIndex, reader);
 
                     //store in return dict
                     if (!rowsByParentKey.ContainsKey(pk)) rowsByParentKey[pk] = new List<Row>();
@@ -309,8 +379,9 @@ namespace RetroDRY
             {
                 //get rows - where clause is "parentkey in (...)" 
                 var whereClause = new SqlSelectBuilder.Where();
-                whereClause.AddWhere($"{childTabledef.ParentKeyColumnName} in({parentKeyListFormatted})");
-                var loadResult = await LoadTable(db, dbdef, childTabledef, whereClause, childTabledef.DefaulSortColName, 0, 0);
+                var sortField = childTabledef.FindColDefOrThrow(childTabledef.DefaulSortFieldName);
+                CustomizeWhereClause(whereClause, $"{childTabledef.ParentKeySqlColumnName} in({parentKeyListFormatted})");
+                var loadResult = await LoadTable(db, dbdef, childTabledef, whereClause, sortField, 0, 0);
                 var rowdict = loadResult.RowsByParentKey;
                 if (rowdict == null) throw new Exception("Expected RowsByParentKey in LoadChildTablesRecursive");
 
@@ -336,7 +407,7 @@ namespace RetroDRY
         /// </summary>
         protected static Dictionary<object, Row> RestructureByPrimaryKey(TableDef tabledef, Dictionary<object, List<Row>> rowdict)
         {
-            var pkField = tabledef.RowType.GetField(tabledef.PrimaryKeyColName);
+            var pkField = tabledef.RowType.GetField(tabledef.PrimaryKeyFieldName);
             var flattenedRows = rowdict.Values.SelectMany(x => x);
             var rowsByPK = new Dictionary<object, Row>();
             foreach (var row in flattenedRows)
@@ -357,14 +428,15 @@ namespace RetroDRY
             foreach (var coldef in tabledef.Cols)
             {
                 if (coldef.IsCustom || coldef.IsComputed) continue;
-                ret.Add(new LoadColInfo(++colIdx, tabledef.RowType.GetField(coldef.Name), SqlColumnExpression(dbdef, tabledef, coldef)));
+                ret.Add(new LoadColInfo(++colIdx, tabledef.RowType.GetField(coldef.FieldName), SqlColumnExpression(dbdef, tabledef, coldef)));
             }
             return ret;
         }
 
         /// <summary>
-        /// Generate the expression to use in the SELECT clause. For regular columns this is just the column name. For left-joined
-        /// columns, this is a sub-select statement.
+        /// Generate the expression to use in the SELECT clause. For regular columns this is just the column name. 
+        /// The table name may be added if SqlTableName is defined in the ColDef.
+        /// For left-joined columns, this is a sub-select statement.
         /// </summary>
         /// <param name="dbdef"></param>
         /// <param name="tabledef"></param>
@@ -375,23 +447,47 @@ namespace RetroDRY
             //auto-left-joined col
             if (coldef.LeftJoin != null)
             {
-                var fkCol = tabledef.FindCol(coldef.LeftJoin.ForeignKeyColumnName);
-                if (fkCol == null) throw new Exception($"Invalid foreign key column name in LeftJoin info on {coldef.Name}; it must be the name of a column in the same table");
-                if (fkCol.ForeignKeyDatonTypeName == null) throw new Exception($"Invalid use of foreign key column in LeftJoin; {fkCol.Name} must use a ForeignKey annotation to identify the foriegn table");
+                var fkCol = tabledef.FindColDefOrNull(coldef.LeftJoin.ForeignKeyFieldName);
+                if (fkCol == null) throw new Exception($"Invalid foreign key column name in LeftJoin info on {coldef.FieldName}; it must be the name of a column in the same table");
+                if (fkCol.ForeignKeyDatonTypeName == null) throw new Exception($"Invalid use of foreign key column in LeftJoin; {fkCol.FieldName} must use a ForeignKey annotation to identify the foriegn table");
                 var foreignTabledef = dbdef.FindDef(fkCol.ForeignKeyDatonTypeName).MainTableDef;
                 if (foreignTabledef == null) throw new Exception("Expected main table to be defined in SqlColumExpression");
+                var foreignKey = foreignTabledef.FindColDefOrThrow(foreignTabledef.PrimaryKeyFieldName);
                 string tableAlias = "_t_" + (++MaxtDynamicAliasUsed);
-                return $"(select {coldef.LeftJoin.RemoteDisplayColumnName} from {foreignTabledef.SqlTableName} {tableAlias} where {tableAlias}.{foreignTabledef.PrimaryKeyColName}={tabledef.SqlTableName}.{fkCol.Name})";
+                return $"(select {coldef.LeftJoin.RemoteDisplaySqlColumnName} from {foreignTabledef.SqlTableName} {tableAlias} where {tableAlias}.{foreignKey.SqlColumnName}={tabledef.SqlTableName}.{fkCol.SqlColumnName})";
             }
 
             if (coldef.IsCustom || coldef.IsComputedOrJoined) throw new Exception("Cannot load custom or computed column from database");
 
             //regular col
-            return coldef.Name;
+            return coldef.SqlExpression;
         }
 
         /// <summary>
-        /// Set fields in target to values from datareader
+        /// Read the standard and custom values into a new typed Row object from the current row in an IDataReader
+        /// </summary>
+        /// <param name="tabledef"></param>
+        /// <param name="colInfos"></param>
+        /// <param name="customColIndex">index of the JSON col for custom values</param>
+        /// <param name="reader"></param>
+        protected virtual Row ReadRow(TableDef tabledef, List<LoadColInfo> colInfos, int customColIndex, IDataReader reader)
+        {
+            //read remaining values
+            var row = Utils.Construct(tabledef.RowType) as Row ?? throw new Exception("Cannot construct row in ReadRow"); ;
+            SetRowFromReader(colInfos, reader, row);
+
+            //read custom values
+            if (tabledef.HasCustomColumns)
+            {
+                string? json = (string?)Utils.ChangeType(reader.GetValue(customColIndex), typeof(string));
+                if (!string.IsNullOrEmpty(json))
+                    SetRowFromCustomValues(json, tabledef, row);
+            }
+            return row;
+        }
+
+        /// <summary>
+        /// Set fields in target row to values from datareader; does not handle custom columns
         /// </summary>
         protected void SetRowFromReader(IEnumerable<LoadColInfo> colInfos, IDataReader reader, Row target)
         {
@@ -413,10 +509,10 @@ namespace RetroDRY
             if (customs == null) throw new Exception("Expected to deserialize json in SetRowFromCustomValues");
             foreach (var coldef in tabledef.Cols.Where(c => c.IsCustom))
             {
-                var node = customs[coldef.Name];
+                var node = customs[coldef.FieldName];
                 if (node == null) continue;
                 object? value = Retrovert.ParseNode(node, coldef.CSType);
-                row.SetCustom(coldef.Name, value);
+                row.SetCustom(coldef.FieldName, value);
             }
         }
     }

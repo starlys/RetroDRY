@@ -119,6 +119,7 @@ public class Startup
     /// </summary>
     static void InitializeRetroDRYIntegrationTesting(DataDictionary ddict, Func<int, Task<DbConnection>> dbResolver)
     {
+        //set up multiple parallel "servers"
         Globals.Retroverse.ViewonPageSize = 500;
         Globals.TestingRetroverse[0] = Globals.Retroverse;
         Globals.TestingRetroverse[1]?.Dispose();
@@ -127,5 +128,16 @@ public class Startup
         Globals.TestingRetroverse[2]?.Dispose();
         Globals.TestingRetroverse[2] = new Retroverse();
         Globals.TestingRetroverse[2].Initialize(SqlFlavorizer.VendorKind.PostgreSQL, ddict, dbResolver, integrationTestMode: true);
+
+        //ensure BigTable has lots of rows in it
+        using var db = Globals.Retroverse!.GetDbConnection!(0).Result;
+        using var cmd = db.CreateCommand();
+        cmd.CommandText = "select count(*) from BigTable";
+        long rowCount = Convert.ToInt64(cmd.ExecuteScalar());
+        while (rowCount++ < 500100)
+        {
+            cmd.CommandText = $"insert into BigTable(name) values('{Guid.NewGuid()}')";
+            cmd.ExecuteNonQuery();
+        }
     }
 }

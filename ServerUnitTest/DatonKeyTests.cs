@@ -22,7 +22,7 @@ namespace UnitTest
                 new ViewonKey.Criterion("Region", "NE"),
                 new ViewonKey.Criterion("Funny", "1")
             };
-            k = new ViewonKey("EmpList", criteria, sortColumnName: "LastName", pageNo: 2);
+            k = new ViewonKey("EmpList", criteria, sortFieldName: "LastName", pageNo: 2);
             Assert.AreEqual("EmpList|_page=2|_sort=LastName|Funny=1|Region=NE", k.ToString());
 
             //now with crazy characters 
@@ -67,7 +67,7 @@ namespace UnitTest
             Assert.IsNotNull(vk?.Criteria);
             Assert.AreEqual("EmpList", vk.Name);
             Assert.AreEqual(0, vk.PageNumber);
-            Assert.IsNull(vk.SortColumnName);
+            Assert.IsNull(vk.SortFieldName);
             Assert.AreEqual(0, vk.Criteria.Count());
 
             //viewon with escaped criteria
@@ -89,7 +89,7 @@ namespace UnitTest
             Assert.AreEqual("EmpList", vk.Name);
             Assert.IsNotNull(vk);
             Assert.AreEqual(2, vk.PageNumber);
-            Assert.AreEqual("firstName", vk.SortColumnName);
+            Assert.AreEqual("firstName", vk.SortFieldName);
             Assert.AreEqual(0, vk.Criteria.Count());
         }
     }

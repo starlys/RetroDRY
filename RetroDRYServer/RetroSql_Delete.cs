@@ -20,18 +20,19 @@ namespace RetroDRY
             }
 
             //delete this row
-            if (tabledef.SqlTableName == null || tabledef.PrimaryKeyColName == null) throw new Exception("Missing table name or key column anme in DeleteRowWithCascade");
-            await DeleteSingleRow(db, tabledef.SqlTableName, tabledef.PrimaryKeyColName, p0.GetPrimaryKey());
+            if (tabledef.SqlTableName == null || tabledef.PrimaryKeyFieldName == null) throw new Exception("Missing table name or key column anme in DeleteRowWithCascade");
+            var keyCol = tabledef.FindColDefOrThrow(tabledef.PrimaryKeyFieldName);
+            await DeleteSingleRow(db, tabledef.SqlTableName, keyCol.SqlColumnName, p0.GetPrimaryKey());
         }
 
         /// <summary>
         /// Issue SQL to delete one row from database; no recursion
         /// </summary>
-        protected virtual Task DeleteSingleRow(IDbConnection db, string tableName, string keyColumnName, object key)
+        protected virtual Task DeleteSingleRow(IDbConnection db, string sqlTableName, string keySqlColumnName, object key)
         {
             using (var cmd = db.CreateCommand())
             {
-                cmd.CommandText = $"delete from {tableName} where {keyColumnName}=@pk";
+                cmd.CommandText = $"delete from {sqlTableName} where {keySqlColumnName}=@pk";
                 cmd.CommandText = CustomizeSqlStatement(cmd.CommandText);
                 Utils.AddParameterWithValue(cmd, "pk", key);
                 cmd.ExecuteNonQuery();

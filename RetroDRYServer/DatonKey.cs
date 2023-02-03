@@ -202,9 +202,9 @@ namespace RetroDRY
         public IEnumerable<Criterion>? Criteria => _Criteria;
 
         /// <summary>
-        /// Name of column for order-by clause
+        /// Name of field for order-by clause
         /// </summary>
-        public readonly string? SortColumnName;
+        public readonly string? SortFieldName;
 
         /// <summary>
         /// 0-based page number
@@ -231,7 +231,7 @@ namespace RetroDRY
 
                 //this segment could be a criteria or sort order
                 if (nam == SORTID)
-                    SortColumnName = val;
+                    SortFieldName = val;
                 else if (nam == PAGEID)
                     int.TryParse(val, out PageNumber);
                 else
@@ -247,11 +247,11 @@ namespace RetroDRY
         /// </summary>
         /// <param name="criteria">values indexed by column name; each value has to be inthe packed format defined by ViewonCriterion</param>
         /// <param name="pageNo">0-baed page of results</param>
-        /// <param name="sortColumnName">column name for order-by clause</param>
+        /// <param name="sortFieldName">field name for order-by clause</param>
         /// <param name="viewonName">name of Daton type</param>
-        public ViewonKey(string viewonName, IEnumerable<Criterion>? criteria = null, string? sortColumnName = null, int pageNo = 0) : base(viewonName)
+        public ViewonKey(string viewonName, IEnumerable<Criterion>? criteria = null, string? sortFieldName = null, int pageNo = 0) : base(viewonName)
         {
-            SortColumnName = sortColumnName;
+            SortFieldName = sortFieldName;
             PageNumber = pageNo;
             if (criteria == null || criteria.Count() == 0)
                 _Criteria = null;
@@ -268,8 +268,8 @@ namespace RetroDRY
             if (_Criteria != null)
                 foreach (var cri in _Criteria)
                     segments.Add(cri.Name + "=" + Escape(cri.PackedValue));
-            if (!string.IsNullOrEmpty(SortColumnName))
-                segments.Add($"{SORTID}={SortColumnName}");
+            if (!string.IsNullOrEmpty(SortFieldName))
+                segments.Add($"{SORTID}={SortFieldName}");
             if (PageNumber != 0)
                 segments.Add($"{PAGEID}={PageNumber}");
             segments.Sort();

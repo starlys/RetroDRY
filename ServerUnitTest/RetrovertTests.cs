@@ -49,7 +49,7 @@ namespace UnitTest
 
             string json = Retrovert.ToWire(ddict, jill, true);
             //expected has single quotes so the source code is more readable
-            string expected = "{'key':'Employee|=9','version':'v2','employee':{'empId':9,'firstName':'Jill'}}";
+            string expected = "{'key':'Employee|=9','version':'v2','employee':{'empId':9,'firstName':'Jill','lastName':null,'supervisorId':null,'supervisorLastName':null}}";
             Assert.AreEqual(expected.Replace('\'', '"'), json);
 
             json = Retrovert.ToWire(ddict, elist, true);
@@ -103,7 +103,7 @@ namespace UnitTest
 
             string json = Retrovert.ToWire(ddict, jill, false);
             //expected has single quotes so the source code is more readable
-            string expected = "{'key':'Employee|=9','version':'v2','content':[[9,'Jill']]}";
+            string expected = "{'key':'Employee|=9','version':'v2','content':[[9,'Jill',null,null,null]]}";
             Assert.AreEqual(expected.Replace('\'', '"'), json);
 
             json = Retrovert.ToWire(ddict, elist, false);
@@ -209,7 +209,7 @@ namespace UnitTest
             var ddict = new DataDictionary();
             ddict.AddDatonUsingClassAnnotation(typeof(Employee));
             var datondef = ddict.DatonDefs["Employee"];
-            var firstnamedef = datondef.MainTableDef!.FindCol("FirstName");
+            var firstnamedef = datondef.MainTableDef!.FindColDefOrThrow("FirstName");
             firstnamedef.SetPrompt("de", "ERSTE");
             firstnamedef.SetPrompt("fr", "PREMIER");
             Assert.AreEqual(3, firstnamedef.Prompt!.Count);

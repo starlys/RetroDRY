@@ -30,6 +30,24 @@ export default class NetUtils {
         const response = await NetUtils.httpPost<MainResponse>(baseServerUrl + 'retro/main', request);
         return response;
     }
+
+    // static async httpExport(baseServerUrl: string, eRequest: ExportRequest): Promise<any> {
+    //     const args: RequestInit = { 
+    //         method: "post", 
+    //         body: JSON.stringify(eRequest),
+    //         mode: 'cors',
+    //         headers: {
+    //             'Content-Type': 'application/json'
+    //         }
+    //     };
+    //     try {
+    //         const response: Response = await fetch(baseServerUrl + 'retro/export', args);
+    //         if (!response.ok) throw new Error(response.statusText);
+    //     } catch {
+    //         //network failure
+    //         console.log('Export failed');
+    //     }
+    // }
 }
 
 export interface HttpResponse<T> extends Response {

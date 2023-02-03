@@ -23,7 +23,7 @@ namespace UnitTest
 
         public List<PaymentMethodRow> PaymentMethod = new();
 
-        public override void Recompute(Daton daton)
+        public override void Recompute(Daton? daton)
         {
             FormattedMoney = $"{Money} gold pieces";
         }
@@ -39,7 +39,7 @@ namespace UnitTest
             [ComputedColumn]
             public string? AngryMethod;
 
-            public override void Recompute(Daton daton)
+            public override void Recompute(Daton? daton)
             {
                 AngryMethod = $"Arrg, I'll pay with {Method}";
             }
@@ -96,6 +96,13 @@ namespace UnitTest
 
         [StringLength(50, MinimumLength = 3), Prompt("DEFAULTLANG")]
         public string? FirstName;
+
+        public string? LastName;
+
+        public int? SupervisorId;
+
+        [LeftJoin("SupervisorId", "LastName"), Prompt("Supervisor")]
+        public string? SupervisorLastName;
     }
 
     class EmployeeList : Viewon

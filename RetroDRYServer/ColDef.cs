@@ -15,7 +15,7 @@ namespace RetroDRY
         public class ImageInfo
         {
             /// <summary>
-            /// The column name in the same row whose value will be set to the URL of the image
+            /// The FieldName in the same row whose value will be set to the URL of the image
             /// </summary>
             public string? UrlColumName;
         }
@@ -29,12 +29,12 @@ namespace RetroDRY
             /// <summary>
             /// The foreign key column in this same table
             /// </summary>
-            public string? ForeignKeyColumnName;
+            public string? ForeignKeyFieldName;
 
             /// <summary>
             /// The column in the joined table to join in (usually a name or description column)
             /// </summary>
-            public string? RemoteDisplayColumnName;
+            public string? RemoteDisplaySqlColumnName;
         }
 
         /// <summary>
@@ -51,18 +51,18 @@ namespace RetroDRY
             /// <summary>
             /// If set, the viewon will be seeded with a value for this criterion
             /// </summary>
-            public string? AutoCriterionName { get; set; }
+            public string? AutoCriterionFieldName { get; set; }
 
             /// <summary>
-            /// When used with AutoCriterionName, the viewon's criteria value is taken from the value of this column in the local row
+            /// When used with AutoCriterionFieldName, the viewon's criteria value is taken from the value of this field in the local row
             /// </summary>
-            public string? AutoCriterionValueColumnName { get; set; }
+            public string? AutoCriterionValueFieldName { get; set; }
 
             /// <summary>
             /// The value in the viewon's main result table to be copied back into the column being edited; if omitted, the Key column
             /// of the viewon will be used.
             /// </summary>
-            public string? ViewonValueColumnName { get; set; }
+            public string? ViewonValueFieldName { get; set; }
 
             /// <summary>
             /// If true, all possible values from the viewon are shown as a dropdown list (only use if you know the number of options will be reasonable);
@@ -72,9 +72,19 @@ namespace RetroDRY
         }
 
         /// <summary>
-        /// SQL column name and name of Field in the containing Row class
+        /// Name of Field in the containing Row class
         /// </summary>
-        public string Name;
+        public string FieldName;
+
+        /// <summary>
+        /// If provided, the table prefix to use in sql loads; if missing, uses no prefix (default for single-table select statements)
+        /// </summary>
+        public string? SqlTableName;
+
+        /// <summary>
+        /// SQL column name (normally set the same as FieldName)
+        /// </summary>
+        public string SqlColumnName;
 
         /// <summary>
         /// One of the official wire type names (bool, int16, nint16, string, etc) for cross platform use; see Constants
@@ -92,7 +102,7 @@ namespace RetroDRY
         public bool IsCustom;
 
         /// <summary>
-        /// If true, the column is declared with the computed attribute, and   won't be loaded and saved by default SQL, and won't be editable on clients
+        /// If true, the column is declared with the computed attribute, and won't be loaded and saved by default SQL, and won't be editable on clients
         /// </summary>
         public bool IsComputed;
 
@@ -186,17 +196,22 @@ namespace RetroDRY
         public bool IsComputedOrJoined => IsComputed || LeftJoin != null;
 
         /// <summary>
-        /// Create
+        /// Create, setting the sql column name and field name to the same
         /// </summary>
         /// <param name="name"></param>
         /// <param name="wireType"></param>
         /// <param name="cSType"></param>
         public ColDef(string name, string wireType, Type cSType)
         {
-            Name = name;
+            SqlColumnName = FieldName = name;
             WireType = wireType;
             CSType = cSType;
         }
+
+        /// <summary>
+        /// qualified table.col name for SQL load expressions
+        /// </summary>
+        public string SqlExpression => SqlTableName == null ? SqlColumnName : $"{SqlTableName}.{SqlColumnName}";
 
         /// <summary>
         /// Convenience method to ensure Prompt is non null while setting a prompt for the given language.
@@ -224,7 +239,7 @@ namespace RetroDRY
 
             //criteria can't use nullables
             if (isCriteria && Nullable.GetUnderlyingType(CSType) != null)
-                throw new Exception("Cannot use nullable value types in criteria tables: " + Name);
+                throw new Exception("Cannot use nullable value types in criteria tables: " + FieldName);
         }
     }
 }

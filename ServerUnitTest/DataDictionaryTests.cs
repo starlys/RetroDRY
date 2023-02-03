@@ -17,7 +17,7 @@ namespace UnitTest
             Assert.AreEqual(typeof(Customer), customerdef.Type);
             Assert.AreEqual(typeof(Customer), customerdef.MainTableDef!.RowType);
             Assert.AreEqual(6, customerdef.DatabaseNumber);
-            Assert.AreEqual("CustomerId", customerdef.MainTableDef.PrimaryKeyColName);
+            Assert.AreEqual("CustomerId", customerdef.MainTableDef.PrimaryKeyFieldName);
             Assert.IsNull(customerdef.MainTableDef.Children);
             Assert.AreEqual(5, customerdef.MainTableDef.Cols.Count);
         }
@@ -42,7 +42,7 @@ namespace UnitTest
             var viewondef = ddict.DatonDefs["EmployeeList"];
             Assert.IsNotNull(viewondef?.CriteriaDef);
             Assert.AreEqual(1, viewondef.CriteriaDef.Cols.Count);
-            Assert.AreEqual("LastName", viewondef.CriteriaDef.Cols[0].Name);
+            Assert.AreEqual("LastName", viewondef.CriteriaDef.Cols[0].FieldName);
         }
 
         [TestMethod]
@@ -53,7 +53,7 @@ namespace UnitTest
             ddict.AddDatonUsingClassAnnotation(typeof(EmployeeList));
             ddict.FinalizeInheritance();
             var viewondef = ddict.DatonDefs["EmployeeList"];
-            var firstnamedef = viewondef.MainTableDef!.Cols.FirstOrDefault(c => c.Name == "FirstName");
+            var firstnamedef = viewondef.MainTableDef!.Cols.FirstOrDefault(c => c.FieldName == "FirstName");
             Assert.IsNotNull(firstnamedef);
             Assert.AreEqual(50, firstnamedef.MaxLength); //this is inherited
             Assert.AreEqual(0, firstnamedef.MinLength); //this is not inherited

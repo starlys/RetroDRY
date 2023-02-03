@@ -260,8 +260,8 @@ namespace RetroDRY
             var r = RecurPoint.FromDaton(item.DatonDef, item.Modified);
             if (r is RowRecurPoint rr)
             {
-                object pk = mainTdef.RowType.GetField(mainTdef.PrimaryKeyColName).GetValue(rr.Row);
-                var pkdef = mainTdef.Cols.Single(c => c.Name == mainTdef.PrimaryKeyColName);
+                object pk = mainTdef.RowType.GetField(mainTdef.PrimaryKeyFieldName).GetValue(rr.Row);
+                var pkdef = mainTdef.Cols.Single(c => c.FieldName == mainTdef.PrimaryKeyFieldName);
                 string pkString = Retrovert.FormatRawJsonValue(pkdef, pk);
                 item.Modified.Key = new PersistonKey(item.Modified.Key.Name, pkString, false);
                 return;

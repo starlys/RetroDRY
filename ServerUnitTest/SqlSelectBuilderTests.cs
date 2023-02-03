@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Data;
-using System.Data.Common;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Npgsql;
 using RetroDRY;
@@ -22,12 +20,12 @@ namespace UnitTest
             var cmd = new NpgsqlCommand();
             builder.WhereClause.ExportParameters(cmd);
             Assert.AreEqual("Ohio", cmd.Parameters[0].Value);
-            Assert.AreEqual("select f1,f2 from Emp where IsActive<>0 and State=@p0 order by Emp.LastName", builder.ToString());
+            Assert.AreEqual("select f1,f2 from Emp where IsActive<>0 and State=@p0 order by LastName", builder.ToString());
 
             //with paging
             builder.PageSize = 100;
             builder.PageNo = 1;
-            Assert.AreEqual("select f1,f2 from Emp where IsActive<>0 and State=@p0 order by Emp.LastName limit 101 offset 100", builder.ToString());
+            Assert.AreEqual("select f1,f2 from Emp where IsActive<>0 and State=@p0 order by LastName limit 101 offset 100", builder.ToString());
         }
 
         [TestMethod]

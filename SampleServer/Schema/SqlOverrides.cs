@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using RetroDRY;
 
@@ -27,7 +28,13 @@ namespace SampleServer.Schema
 
             //change the Notes value during RetroDRY saving
             if (cdata.ModifiedRow is Customer cust)
-                builder.ChangeValue("Notes", ">" + cust.Notes);
+                builder.ChangeOrAddNonKey("Notes", Constants.TYPE_STRING, ">" + cust.Notes);
+        }
+
+        public override void CustomizeWhereClause(SqlSelectBuilder.Where where, string clause, params object[] _params)
+        {
+            if (clause.StartsWith("CustomerId=")) Debug.WriteLine(clause);
+            base.CustomizeWhereClause(where, clause, _params);
         }
     }
 }

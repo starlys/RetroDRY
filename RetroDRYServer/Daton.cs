@@ -26,6 +26,7 @@ namespace RetroDRY
         /// </summary>
         public virtual Daton Clone(DatonDef datondef)
         {
+            if (datondef.MainTableDef == null) throw new Exception("Expected MainTableDef in Clone");
             if (datondef.MultipleMainRows)
             {
                 var target = Utils.Construct(datondef.Type) as Daton;
@@ -60,6 +61,7 @@ namespace RetroDRY
 
         /// <summary>
         /// Calls Recompute on each row in the daton
+        /// Called after daton is loaded or expanded from wire data. (Recompute is called for each row, then RecomputeAll is called)
         /// </summary>
         public void Recompute(DatonDef datondef)
         {
@@ -78,5 +80,12 @@ namespace RetroDRY
             rr.Row.Recompute(this);
             foreach (var rt in rr.GetChildren()) Recompute(rt);
         }
+
+        /// <summary>
+        /// When overridden, recomputes all rows. Use in conjuction with Row.Recompute.
+        /// Called after daton is loaded or expanded from wire data. (Recompute is called for each row, then RecomputeAll is called,
+        /// but RecomputeALl is not called at all a streaming export context)
+        /// </summary>
+        public virtual void RecomputeAll(DatonDef datondef) { }
     }
 }

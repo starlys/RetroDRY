@@ -137,14 +137,14 @@ namespace RetroDRY
         private bool ApplyDiffRowToList(TableDef tabledef, DiffRow source, IList targetList)
         {
             bool anyChanges = false;
-            if (tabledef.PrimaryKeyColName == null) throw new Exception("Primary key not defined");
+            if (tabledef.PrimaryKeyFieldName == null) throw new Exception("Primary key not defined");
             var itemType = targetList.GetType().GenericTypeArguments[0];
-            var pkField = itemType.GetField(tabledef.PrimaryKeyColName);
+            var pkField = itemType.GetField(tabledef.PrimaryKeyFieldName);
             if (pkField == null) throw new Exception($"Primary key field not found in type {itemType.Name}");
 
             if (source.Kind == DiffKind.DeletedRow)
             {
-                if (!source.Columns.TryGetValue(tabledef.PrimaryKeyColName, out object? pkToDelete)) throw new Exception("Deleted row in diff needs primary key member");
+                if (!source.Columns.TryGetValue(tabledef.PrimaryKeyFieldName, out object? pkToDelete)) throw new Exception("Deleted row in diff needs primary key member");
                 int idxToDelete = Utils.IndexOfPrimaryKeyMatch(targetList, pkField, pkToDelete);
                 if (idxToDelete >= 0)
                 {
@@ -165,7 +165,7 @@ namespace RetroDRY
                 }
                 else
                 {
-                    if (!source.Columns.TryGetValue(tabledef.PrimaryKeyColName, out object? pkToUpdate)) throw new Exception("Updated row in diff needs primary key member");
+                    if (!source.Columns.TryGetValue(tabledef.PrimaryKeyFieldName, out object? pkToUpdate)) throw new Exception("Updated row in diff needs primary key member");
                     int idxToUpdate = Utils.IndexOfPrimaryKeyMatch(targetList, pkField, pkToUpdate);
                     if (idxToUpdate < 0) throw new Exception("Row to update is not found");
                     target = targetList[idxToUpdate] as Row
@@ -188,7 +188,7 @@ namespace RetroDRY
         /// <returns>true if it was a real change; false if same value</returns>
         private bool SetValue(TableDef tabledef, DiffRow source, string colName, Row target)
         {
-            var coldef = tabledef.FindCol(colName);
+            var coldef = tabledef.FindColDefOrNull(colName);
             if (coldef != null)
             {
                 var oldValue = target.GetValue(coldef);

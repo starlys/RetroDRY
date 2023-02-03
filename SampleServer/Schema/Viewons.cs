@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Threading.Tasks;
-using NuGet.ContentModel;
 using RetroDRY;
 
 namespace SampleServer.Schema
@@ -24,7 +23,7 @@ namespace SampleServer.Schema
             [SortColumn(false)]
             public string? FirstName;
 
-            [SortColumn(true)]
+            [SortColumn, SqlTableName("Employee")]
             public string? LastName;
 
             [ForeignKey(typeof(Employee))]
@@ -199,6 +198,84 @@ namespace SampleServer.Schema
 
             [ForeignKey(typeof(SaleStatusLookup))]
             public short? Status;
+        }
+    }
+
+    /// <summary>
+    /// List of sales joined with customers (demonstrates inner join)
+    /// </summary>
+    public class SaleCustomerList : Viewon
+    {
+        public List<TopRow> Sale = new();
+
+        [SqlFrom("Sale inner join Customer on Sale.CustomerId=Customer.CustomerId")]
+        public class TopRow : Row
+        {
+            [PrimaryKey(true), ForeignKey(typeof(Sale))]
+            public int SaleId;
+
+            public string? Company;
+
+            [SortColumn, WireType(Constants.TYPE_DATETIME)]
+            public DateTime SaleDate;
+
+            [ForeignKey(typeof(SaleStatusLookup)), SortColumn(false)]
+            public short Status;
+
+            [SqlTableName("Customer"), Prompt("Cust notes")]
+            public string? Notes;
+
+            [ComputedColumn]
+            public int RowInfo1; //# chars in Company name
+
+            [ComputedColumn]
+            public int RowInfo2; //running total of RowInfo1
+
+            public override void Recompute(Daton? daton)
+            {
+                RowInfo1 = (Company ?? "").Length;
+            }
+        }
+
+        [Criteria]
+        public abstract class Criteria
+        {
+            public DateTime? SaleDate;
+        }
+
+        /// <summary>
+        /// Demonstrates how row recompute is done for the whole daton, then RecomputeAll can use the
+        /// values computed for each row
+        /// </summary>
+        /// <param name="datondef"></param>
+        public override void RecomputeAll(DatonDef datondef)
+        {
+            int running = 0;
+            foreach (var row in Sale)
+            {
+                running += row.RowInfo1;
+                row.RowInfo2 = running;
+            }
+        }
+    }
+
+    /// <summary>
+    /// List of BigTable
+    /// </summary>
+    public class BigTableList : Viewon
+    {
+        public List<TopRow> BigTable = new();
+
+        public class TopRow : Row
+        {
+            [SortColumn(true), PrimaryKey(true)]
+            public string? Name;
+        }
+
+        [Criteria]
+        public abstract class Criteria
+        {
+            public string? Name;
         }
     }
 }

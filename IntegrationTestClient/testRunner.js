@@ -103,7 +103,7 @@ const integrationTestContainer = {
         const session = await this.startSession([this.sampleApi0], sessionKey);
         if (!session) this.fail('Expected successful session start');
         const numDatons = session.dataDictionary.datonDefs.length;
-        if (numDatons !== 11) this.fail('Wrong number of datons in data dict');
+        if (numDatons !== 13) this.fail('Wrong number of datons in data dict');
         this.session1 = session;
     },
     

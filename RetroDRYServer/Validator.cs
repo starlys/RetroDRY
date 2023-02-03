@@ -53,7 +53,7 @@ namespace RetroDRY
             if (viewonKey.Criteria != null) {
                 foreach (var cri in viewonKey.Criteria)
                 {
-                    var coldef = datondef.CriteriaDef?.FindCol(cri.Name);
+                    var coldef = datondef.CriteriaDef?.FindColDefOrNull(cri.Name);
                     if (coldef == null)
                         Errors.Add("Unknown parameter: " + cri.Name);
                     else
@@ -91,7 +91,7 @@ namespace RetroDRY
         private void ValidateCol(ColDef coldef, object? value, bool isCriterion)
         {
             string valueS = value == null ? "" : value.ToString();
-            string? prompt = DataDictionary.ResolvePrompt(coldef.Prompt, User, coldef.Name);
+            string? prompt = DataDictionary.ResolvePrompt(coldef.Prompt, User, coldef.FieldName);
 
             //string length
             if (coldef.CSType == typeof(string))

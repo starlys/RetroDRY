@@ -37,8 +37,8 @@ namespace RetroDRY
         /// </summary>
         public object? GetValue(ColDef coldef)
         {
-            if (coldef.IsCustom) return GetCustom(coldef.Name);
-            return GetType().GetField(coldef.Name).GetValue(this);
+            if (coldef.IsCustom) return GetCustom(coldef.FieldName);
+            return GetType().GetField(coldef.FieldName).GetValue(this);
         }
 
         /// <summary>
@@ -48,14 +48,15 @@ namespace RetroDRY
         /// <param name="coldef"></param>
         public void SetValue(ColDef coldef, object? value)
         {
-            if (coldef.IsCustom) SetCustom(coldef.Name, value);
-            else GetType().GetField(coldef.Name).SetValue(this, value);
+            if (coldef.IsCustom) SetCustom(coldef.FieldName, value);
+            else GetType().GetField(coldef.FieldName).SetValue(this, value);
         }
 
         /// <summary>
         /// When overridden, computes values of computed columns in the row
         /// </summary>
-        public virtual void Recompute(Daton daton) { }
+        /// <param name="daton">will be set normally, but null in an export streaming context</param>
+        public virtual void Recompute(Daton? daton) { }
 
         /// <summary>
         /// Clone all fields and child rows declared in tabledef
@@ -72,7 +73,7 @@ namespace RetroDRY
             foreach (var colDef in tableDef.Cols)
             {
                 if (colDef.IsCustom) continue;
-                var targetField = tableDef.RowType.GetField(colDef.Name);
+                var targetField = tableDef.RowType.GetField(colDef.FieldName);
                 if (targetField == null) continue;
                 var value = targetField.GetValue(this); 
                 targetField.SetValue(target, value);

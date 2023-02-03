@@ -116,10 +116,24 @@ namespace RetroDRY
         }
 
         /// <summary>
+        /// Change a column value, or if not found then add it (meant to be used by custom overrides, not used in framework)
+        /// </summary>
+        /// <param name="wiretype">can be null; if not set, then nullable logic is bypassed</param>
+        /// <param name="name">name for Col instance</param>
+        /// <param name="value"></param>
+        public void ChangeOrAddNonKey(string name, string? wiretype, object? value)
+        {
+            if (ChangeValue(name, value)) return;
+            AddNonKey(name, wiretype, value);
+        }
+
+        /// <summary>
         /// Change a column value (meant to be used by custom overrides, not used in framework)
         /// </summary>
         /// <returns>true if found</returns>
-        public bool ChangeValue(string name, object value)
+        /// <param name="name">name for Col instance</param>
+        /// <param name="value"></param>
+        public bool ChangeValue(string name, object? value)
         {
             var col = Cols.FirstOrDefault(c => c.Name == name);
             if (col == null) return false;

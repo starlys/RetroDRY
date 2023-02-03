@@ -13,13 +13,34 @@ namespace RetroDRY
     }
 
     /// <summary>
-    /// If applied, changes the SQL table name of the row class; if missing, uses the name of the List member
+    /// If applied to a viewon row class, changes the SQL FROM expression to this exact string; if missing, uses SqlTableName
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
+    public class SqlFromAttribute : Attribute
+    {
+        public string FromClause { get; set; }
+        public SqlFromAttribute(string fromClause) { FromClause = fromClause; }
+    }
+
+    /// <summary>
+    /// If applied, changes the SQL table name of the row class or the name of the column; if missing for a row class, uses the name of the List member;
+    /// if missing for a column, uses no table name
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
     public class SqlTableNameAttribute : Attribute
     {
         public string Name { get; set; }
         public SqlTableNameAttribute(string name) { Name = name; }
+    }
+
+    /// <summary>
+    /// If applied, changes the SQL column name of the column; if missing, uses the field name
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false, Inherited = false)]
+    public class SqlColumnNameAttribute : Attribute
+    {
+        public string Name { get; set; }
+        public SqlColumnNameAttribute(string name) { Name = name; }
     }
 
     /// <summary>
@@ -98,13 +119,14 @@ namespace RetroDRY
     }
 
     /// <summary>
-    /// Specifies the column in a child table that contains the reference to the primary key of its parent table
+    /// Specifies the SQL column name in a child table that contains the reference to the primary key of its parent table.
+    /// When using this attribute, do not also declare the field in the child table.
     /// </summary>
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = false)]
     public class ParentKeyAttribute : Attribute
     {
-        public string ColumnName { get; set; }
-        public ParentKeyAttribute(string colname) { ColumnName = colname; }
+        public string FieldName { get; set; }
+        public ParentKeyAttribute(string fname) { FieldName = fname; }
     }
 
     /// <summary>
@@ -136,13 +158,13 @@ namespace RetroDRY
         /// <summary>
         /// When used with AutoCriterionName, the viewon's criteria value is taken from the value of this column in the local row
         /// </summary>
-        public string? AutoCriterionValueColumnName { get; set; }
+        public string? AutoCriterionValueFieldName { get; set; }
 
         /// <summary>
         /// The value in the viewon's main result table to be copied back into the column being edited; if omitted, the Key column
         /// of the viewon will be used.
         /// </summary>
-        public string? ViewonValueColumnName { get; set; }
+        public string? ViewonValueFieldName { get; set; }
 
         /// <summary>
         /// If true, all possible values from the viewon are shown as a dropdown list (only use if you know the number of options will be reasonable);
@@ -210,19 +232,19 @@ namespace RetroDRY
     public class LeftJoinAttribute : Attribute
     {
         /// <summary>
-        /// Specifies the name of a column in this same row that references some foreign table (the ForeignKey attribute must be set on that column)
+        /// Specifies the name of a field in this same row that references some foreign table (the ForeignKey attribute must be set on that field)
         /// </summary>
-        public string ForeignKeyColumnName { get; set; }
+        public string ForeignKeyFieldName { get; set; }
 
         /// <summary>
-        /// Specifies a column in the foreign table whose value should be loaded into this column
+        /// Specifies a SQL column name in the foreign table whose value should be loaded into this column
         /// </summary>
-        public string DisplayColumnName { get; set; }
+        public string DisplaySqlColumnName { get; set; }
 
-        public LeftJoinAttribute(string fkColName, string displayColName)
+        public LeftJoinAttribute(string fkFieldName, string displayFieldName)
         {
-            ForeignKeyColumnName = fkColName;
-            DisplayColumnName = displayColName;
+            ForeignKeyFieldName = fkFieldName;
+            DisplaySqlColumnName = displayFieldName;
         }
     }
 }

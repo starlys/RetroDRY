@@ -78,9 +78,9 @@ namespace RetroDRY
         public Where WhereClause = new Where();
 
         /// <summary>
-        /// Column name for order-by clause
+        /// Column name for order-by clause (may include complex, qualified names like "emp.lastname, emp.dept desc")
         /// </summary>
-        public string? SortColumnName;
+        public string? SortColumnExpression;
 
         /// <summary>
         /// zero for unlimited or the page size to load; the query will be set up to actually return one more row than the number here, so
@@ -93,7 +93,7 @@ namespace RetroDRY
         /// </summary>
         public int PageNo;
 
-        private readonly string MainTable;
+        private readonly string FromClause;
         private readonly List<string> ReturnColumnNames;
         private readonly SqlFlavorizer SqlFlavor;
 
@@ -101,14 +101,14 @@ namespace RetroDRY
         /// Initialize
         /// </summary>
         /// <param name="returnColumnNames">if null or empty, will select all columns</param>
-        /// <param name="mainTable">main table name</param>
-        /// <param name="sortColName">column to use for order by clause</param>
+        /// <param name="fromClause">main table name, or an inner join expression</param>
+        /// <param name="sortColExpression">column to use for order by clause</param>
         /// <param name="sqlFlavor">identifies vendor syntax exceptions</param>
-        public SqlSelectBuilder(SqlFlavorizer sqlFlavor, string mainTable, string? sortColName, List<string> returnColumnNames)
+        public SqlSelectBuilder(SqlFlavorizer sqlFlavor, string fromClause, string sortColExpression, List<string> returnColumnNames)
         {
             SqlFlavor = sqlFlavor;
-            MainTable = mainTable;
-            SortColumnName = sortColName;
+            FromClause = fromClause;
+            SortColumnExpression = sortColExpression;
             ReturnColumnNames = returnColumnNames;
             if (ReturnColumnNames == null || ReturnColumnNames.Count == 0) ReturnColumnNames = new[] { "*" }.ToList();
         }
@@ -120,10 +120,10 @@ namespace RetroDRY
         public override string ToString()
         {
             //validate
-            if (SortColumnName == null) throw new Exception("Sort column must be defined");
+            if (SortColumnExpression == null) throw new Exception("Sort column must be defined");
 
             string retCols = string.Join(",", ReturnColumnNames);
-            string sql = $"select {retCols} from {MainTable} {WhereClause.ToString() ?? ""} order by {MainTable}.{SortColumnName}";
+            string sql = $"select {retCols} from {FromClause} {WhereClause.ToString() ?? ""} order by {SortColumnExpression}";
             if (PageSize > 0) sql += SqlFlavor.BuildPagingClause(PageNo, PageSize);
             return sql;
         }
