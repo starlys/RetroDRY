@@ -7,7 +7,7 @@ import PointOfSaleEntry from './PointOfSaleEntry';
 import './App.css';
 
 export default function App() {
-  const [stackstate, setStackState] = useState(null);
+  const [stackstate, setStackState] = useState<DatonStackState>();
   const [customPointOfSaleVisible, setCustomPointOfSaleVisible] = useState(false);
   if (!globals.session) return <div>Initializing session...</div>;
 
@@ -28,7 +28,7 @@ export default function App() {
       return null;
   }
 
-  const addToStack = (datonKey, asEmpty, businessContext) => {
+  const addToStack = (datonKey: string, asEmpty = false, businessContext?: string) => {
     if (asEmpty)
       stackstate.addEmptyViewon(datonKey, businessContext);
     else

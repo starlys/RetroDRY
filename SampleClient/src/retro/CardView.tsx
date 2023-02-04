@@ -1,13 +1,14 @@
-import React, { useState, useReducer } from 'react';
+import React, { useState, useReducer, ReactElement } from 'react';
 import DisplayValue from './DisplayValue';
 import CardView from './CardView';
 import GridView from './GridView';
 import EditValue from './EditValue';
-import {securityUtil} from 'retrodryclient';
+import {ColDefResponse, DatonDefResponse, PanelLayout, securityUtil, Session, TableDefResponse} from 'retrodryclient';
+import { DatonStackLayer } from './DatonStackState';
 
 //get width in em units for a colDef
 //forcedWidth is optional string width specified in layout; if missing it uses the colun type and length
-function widthByType(colDef, forcedWidth) {
+function widthByType(colDef: ColDefResponse, forcedWidth?: string) {
     if (forcedWidth) {
         const w2 = parseInt(forcedWidth);
         if (w2 && !isNaN(w2)) return w2;
@@ -18,7 +19,7 @@ function widthByType(colDef, forcedWidth) {
 }
 
 //determine if column is editable in this row (row can be falsy if criteria editing)
-function isEditable(row, colDef) {
+function isEditable(row: any, colDef: ColDefResponse) {
     if (colDef.isComputed || colDef.leftJoin) return false;
     if (row && securityUtil.isRowCreatedOnClient(row))
         return securityUtil.canEditColDefInNewRow(colDef);
@@ -36,18 +37,32 @@ function isEditable(row, colDef) {
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
 //props.showChildTables is true if you want to show child tables (the default when shown in a stack)
 //props.isNested is true for nested CardViews; should be omitted from user code
-const Component = props => {
+interface TProps {
+    session: Session;
+    row?: any;
+    criset?: {[name: string]: string};
+    overrideCard?: PanelLayout;
+    datonDef: DatonDefResponse;
+    tableDef: TableDefResponse;
+    edit?: boolean;
+    layer?: DatonStackLayer;
+    showChildTables?: boolean;
+    isNested?: boolean;
+    validationCount?: number; //not documented
+}
+const Component = (props: TProps) => {
     const {session, overrideCard, row, criset, datonDef, tableDef, edit, layer, isNested, showChildTables} = props;
-    const [cardLayout, setCardLayout] = useState(null);
+    const [cardLayout, setCardLayout] = useState<PanelLayout|null>(null);
     const [, incrementCardRenderCount] = useReducer(x => x + 1, 0); 
 
     //determine layout
-    let card = overrideCard;
+    let card: PanelLayout|undefined|null = overrideCard;
     if (!card) {
         card = cardLayout;
         if (!card) {
             let businessContext = layer ? layer.businessContext : '';
             card = session.layouts.getCard(datonDef.name, tableDef.name, businessContext);
+            if (!card) return null;
             setCardLayout(card);
         }
         if (!card) return null;
@@ -58,34 +73,34 @@ const Component = props => {
     let maxWidth = 0;
     const isCriteria = !row;
 
-    const children = card.content.map((item, idx1) => {
-        let child = null;
+    const children = card.content?.map((item, idx1) => {
+        let child: ReactElement|null = null;
         let totalWidth = 0;
 
         //if item is one or more colum names, set child to the prompt and display value(s)
         if (typeof item === 'string') {
             const colNamesAndWidths = item.split(' ');
-            const colInfos = []; //members are {colDef, emw, width} where emw is numeric width is in em units, and width is css string
+            const colInfos: {colDef: ColDefResponse, emw: number, width?: string}[] = []; //members are {colDef, emw, width} where emw is numeric width is in em units, and width is css string
             for (let colNameAndWidth of colNamesAndWidths) {
-                let [colName, width] = colNameAndWidth.split(':'); //width can be missing
+                let [colName, widthS] = colNameAndWidth.split(':'); //width can be missing
                 const colDef = tableDef.cols.find(c => c.name === colName);
                 if (colDef) {
-                    width = widthByType(colDef, width);
+                    let width = widthByType(colDef, widthS);
                     totalWidth += width;
                     colInfos.push({colDef: colDef, emw: width});
                 }
             }
             for (let c of colInfos) c.width = ((c.emw / totalWidth) * 100) + '%';
             if (colInfos.length) {
-                let cells = [];
+                let cells: ReactElement[] = [];
                 for (let idx2 = 0; idx2 < colInfos.length; ++idx2) {
                     const c = colInfos[idx2];
                     const editableCol = isEditable(row, c.colDef);
                     if (isCriteria || (edit && editableCol))
                         cells.push(<EditValue key={idx2} tableDef={tableDef} colDef={c.colDef} isCriterion={isCriteria}
-                            row={row || criset} width={c.width} session={session} layer={layer} onChanged={incrementCardRenderCount}/>);
+                            row={row || criset} width={c.width!} session={session} layer={layer} onChanged={incrementCardRenderCount}/>);
                     else
-                        cells.push(<DisplayValue key={idx2} session={session} colDef={c.colDef} row={row || criset} width={c.width} />);
+                        cells.push(<DisplayValue key={idx2} session={session} colDef={c.colDef} row={row || criset} width={c.width!} />);
                 }
                 child = <>
                     <span className="card-label">{colInfos[0].colDef.prompt}</span>
@@ -106,8 +121,8 @@ const Component = props => {
         }
 
         maxWidth = Math.max(maxWidth, totalWidth);
-        const divClass = card.horizontal ? 'card-horz' : 'card-vert';
-        const divStyle = {};
+        const divClass = card?.horizontal ? 'card-horz' : 'card-vert';
+        const divStyle: any = {};
         if (!isCriteria) {
             divStyle.maxWidth = '100%';
             if (totalWidth) divStyle.width = totalWidth + 'em';
@@ -116,7 +131,7 @@ const Component = props => {
     });
 
     //add GridView elements for each child table
-    let childGridElements = null;
+    let childGridElements: ReactElement[]|null = null;
     if (showChildTables && !isNested && !isCriteria && tableDef.children) {
         childGridElements = [];
         for (let i = 0; i < tableDef.children.length; ++i) {
@@ -128,7 +143,7 @@ const Component = props => {
             }
             if (edit || childRows.length)
                 childGridElements.push(<GridView key={'g' + i} session={session} rows={childRows} datonDef={datonDef} tableDef={childTableDef} 
-                    edit={edit} layer={layer} />);
+                    edit={edit ?? false} layer={layer} />);
         }
         childGridElements.push(<hr key={'hr_end'} />);
     }

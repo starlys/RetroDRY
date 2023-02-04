@@ -35,6 +35,9 @@ namespace SampleServer.Schema
             public bool IsToxic;
 
             public int NeatDeskRating;
+
+            public DateTime HireDate; //DEBUG
+
         }
 
         [Criteria, InheritFrom("Employee")]

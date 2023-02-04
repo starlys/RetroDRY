@@ -1,6 +1,6 @@
 import { DataDictionaryResponse, GetDatonRequest, LongResponse, DatonDefResponse, MainResponse } from "./wireTypes";
 import { Retrovert } from "./retrovert";
-import DiffTool from "./diffTool";
+import {DiffTool} from "./diffTool";
 import {parseDatonKey} from "./datonKey";
 import SaveInfo from "./saveInfo";
 import NetUtils from "./netUtils";

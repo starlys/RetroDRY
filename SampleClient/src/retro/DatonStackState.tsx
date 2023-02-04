@@ -1,47 +1,49 @@
-import {parseDatonKey, afterSetRowValue} from 'retrodryclient';
+import {parseDatonKey, afterSetRowValue, DatonKey, DatonDefResponse, ColDefResponse, Session, TableDefResponse} from 'retrodryclient';
+
+export interface DatonStackLayer {
+    stackstate: DatonStackState; //reference to owning object
+    rerender: () => void; // convenience function to increment renderCount and call changed function
+    renderCount: number; //integer, incremented to cause the DatonView to be rerendered
+    mountCount: number; //integer, incremented to cause the DatonView to be remounted
+    datonKey: string;
+    parsedDatonKey: DatonKey;
+    edit: boolean; //true if edit mode 
+    daton: any; //noneditable daton version
+    datonDef: DatonDefResponse;
+    businessContext: string; // '' for default or an app-defined context; affects layout selection
+    lookupSelected?: (row: any, colDef: ColDefResponse) => Promise<boolean>; //optional function when this layer is a viewon used for lookup; called when item selected; defined in startLookup()
+    propagateSaveToViewon?: (viewon: any) => void; //optional function when this layer is a persiston that was opened from a viewon; reflects persison changes in the displayed viewon; defined in gridKeyClicked
+
+}
 
 //Nonvisual container for the state of a daton stack.
 //To use, pass new instance as props to a DatonStack, then after the stack is rendered, any
 //other code may call the other methods to manipulate the stack state.
 export default class DatonStackState {
     //function to notify DatonStack owner that the stack state changed
-    onChanged;
+    onChanged?: () => void;
 
     //retrodry session
-    session;
+    session?: Session;
 
-    //each layer consists of {
-    //  stackstate //reference to owning object
-    //  rerender - convenience function to increment renderCount and call changed function
-    //  renderCount //integer, incremented to cause the DatonView to be rerendered
-    //  mountCount //integer, incremented to cause the DatonView to be remounted
-    //  datonKey
-    //  parsedDatonKey
-    //  edit //true if edit mode 
-    //  daton //noneditable daton version
-    //  datonDef 
-    //  businessContext // '' for default or an app-defined context; affects layout selection
-    //  lookupSelected //optional function when this layer is a viewon used for lookup; called when item selected; defined in startLookup()
-    //  propagateSaveToViewon //optional function when this layer is a persiston that was opened from a viewon; reflects persison changes in the displayed viewon; defined in gridKeyClicked
-    //}
-    layers = [];
+    layers: DatonStackLayer[] = [];
 
     //if set by host app, DatonView will call this after a successful save, passing args: (datonkey string)
-    onLayerSaved;
+    onLayerSaved?: (datonKey:string) => void;
 
     //if set by host app, the lookup button will call this function; the function should return the viewon key to use for lookup
     //or null to prevent lookup, or false to revert to noncustom behavior. 
-    //The injected function gets passed parameters (editingLayer, editingTableDef, editingRow, editingColDef)
-    onCustomLookup;
+    //The injected function gets passed parameters 
+    onCustomLookup?: (editingLayer: DatonStackLayer, editingTableDef: TableDefResponse, editingRow: any, editingColDef: ColDefResponse) => string|boolean|null;
 
     //called only by DatonStack in its initialization
-    initialize(session, onChanged) { 
+    initialize(session: Session, onChanged: () => void) { 
         this.session = session;
         this.onChanged = onChanged; 
     }
 
     //create layer object; caller should add this to layers array
-    createLayer(datonDef, datonKey, parsedDatonKey, daton) {
+    createLayer(datonDef: DatonDefResponse, datonKey: string, parsedDatonKey: DatonKey, daton: any): DatonStackLayer {
         return {
             stackstate: this,
             renderCount: 0,
@@ -58,7 +60,9 @@ export default class DatonStackState {
 
     //add a layer by daton key, optionally in initial edit mode; return layer;
     //businessContext will be set to default ('') if missing
-    async add(key, edit, businessContext) {
+    async add(key: string, edit: boolean, businessContext?: string) {
+        if (!this.session) return;
+
         //if already there, exit
         const existingIdx = this.layers.findIndex(x => x.datonKey === key);
         if (existingIdx >= 0) return this.layers[existingIdx];
@@ -67,7 +71,7 @@ export default class DatonStackState {
         const parsedKey = parseDatonKey(key);
         const datonDef = this.session.getDatonDef(parsedKey.typeName);
         const daton = await this.session.get(key, {isForEdit: parsedKey.isPersiston()});
-        if (!daton) return;
+        if (!daton || !datonDef) return;
 
         //add layer
         const layer = this.createLayer(datonDef, key, parsedKey, daton);
@@ -80,11 +84,14 @@ export default class DatonStackState {
 
     //add a layer by viewon type name (having no initial rows); return layer
     //businessContext will be set to default ('') if missing
-    addEmptyViewon(datonType, businessContext) {
+    async addEmptyViewon(datonType: string, businessContext?: string): Promise<any> {
+        if (!this.session) return;
+
         //if already there, exit
         const existingIdx = this.layers.findIndex(x => x.datonKey === datonType);
         if (existingIdx >= 0) return this.layers[existingIdx];
         const datonDef = this.session.getDatonDef(datonType);
+        if (!datonDef) return;
 
         //add layer
         const viewon = this.session.createEmptyViewon(datonType);
@@ -96,7 +103,9 @@ export default class DatonStackState {
     }
 
     //remove a layer by its daton key and optionally unsubscribe
-    removeByKey(key, doUnsubscribe) {
+    removeByKey(key: string, doUnsubscribe: boolean) {
+        if (!this.session) return;
+
         const idx = this.layers.findIndex(x => x.datonKey === key);
         if (idx >= 0) {
             if (doUnsubscribe) {
@@ -109,13 +118,15 @@ export default class DatonStackState {
 
     //replace a viewon key, which performs a search on the new criteria;
     //OR replace a new persiston key with the actual key
-    async replaceKey(oldKey, newKey, forceLoad) {
+    async replaceKey(oldKey: string, newKey: string, forceLoad: boolean) {
+        if (!this.session) return;
+
         const daton = await this.session.get(newKey, {forceCheckVersion: forceLoad});
         this.replaceDaton(oldKey, daton);
     }
 
     //replace a daton in the stack with a different, already-loaded daton
-    replaceDaton(oldKey, daton) {
+    replaceDaton(oldKey: string, daton: any) {
         if (!daton) return;
         const idx = this.layers.findIndex(x => x.datonKey === oldKey);
         if (idx < 0) return;
@@ -129,11 +140,11 @@ export default class DatonStackState {
     }
 
     //called when column header clicked on main viewon table
-    async doSort(layer, colName) {
+    async doSort(layer: DatonStackLayer, colName: string) {
         //if we can sort in memory, do that
         if (layer.daton.isComplete) {
             const rows = layer.daton[layer.datonDef.mainTableDef.name];
-            rows.sort((a, b) => a[colName] === b[colName] ? 0 : (a[colName] < b[colName] ? -1 : +1));
+            rows.sort((a:any, b:any) => a[colName] === b[colName] ? 0 : (a[colName] < b[colName] ? -1 : +1));
             layer.rerender();
         }
 
@@ -150,7 +161,7 @@ export default class DatonStackState {
     }
 
     //called when a page button clicked on main viewon table
-    async goToPage(layer, pageNo) {
+    async goToPage(layer: DatonStackLayer, pageNo: number) {
         const keyWithPage = parseDatonKey(layer.datonKey);
         const pageSegIdx = keyWithPage.otherSegments.findIndex(s => s.indexOf('_page=') === 0);
         if (pageSegIdx >= 0) keyWithPage.otherSegments.splice(pageSegIdx, 1);
@@ -159,7 +170,7 @@ export default class DatonStackState {
     }
 
     //called from click event on a foreign key in a grid
-    async gridKeyClicked(ev, gridLayer, gridTableDef, gridRow, gridColDef) {
+    async gridKeyClicked(ev: any, gridLayer: DatonStackLayer, gridTableDef: TableDefResponse, gridRow: any, gridColDef: ColDefResponse) {
         ev.stopPropagation();
 
         //if this layer is a lookup for some other layer and the user clicked on the key of the main table,
@@ -175,7 +186,7 @@ export default class DatonStackState {
         if (!editLayer) return;
 
         //set up behavior for changes saved on edit layer to show up in the calling viewon
-        editLayer.propagateSaveToViewon = (persiston) => {
+        editLayer.propagateSaveToViewon = (persiston: any) => {
             //abort if viewon layer is no longer in the stack 
             const gridLayerIdx = this.layers.findIndex(x => x === gridLayer);
             if (gridLayerIdx === -1) return;
@@ -194,16 +205,18 @@ export default class DatonStackState {
     }
 
     //called from click event on a lookup button to open a viewon for lookup
-    async startLookup(editingLayer, editingTableDef, editingRow, editingColDef) {
+    async startLookup(editingLayer: DatonStackLayer, editingTableDef: TableDefResponse, editingRow: any, editingColDef: ColDefResponse) {
+        if (!this.session) return;
+
         //add layer for viewon lookup using custom behavior
-        let lookupLayer;
+        let lookupLayer: DatonStackLayer|undefined;
         let useStandard = true;
         if (this.onCustomLookup) {
             const key = this.onCustomLookup(editingLayer, editingTableDef, editingRow, editingColDef);
             useStandard = key === false;
             if (!useStandard) {
                 if (!key) return; //custom behavior is explicitly canceled
-                lookupLayer = await this.add(key, false, editingLayer.businessContext);
+                lookupLayer = await this.add(key as string, false, editingLayer.businessContext);
             }
         } 
         if (useStandard) {
@@ -212,10 +225,13 @@ export default class DatonStackState {
             if (!viewonDef) return;
             lookupLayer = await this.addEmptyViewon(editingColDef.selectBehavior.viewonTypeName, editingLayer.businessContext);
         }
+        if (!lookupLayer) return;
 
         //define callback when user clicks on a key in the viewon result row;
         //the function is called in gridKeyClicked and returns true on success
-        lookupLayer.lookupSelected = async (viewonRow, clickedColDef) => {
+        lookupLayer.lookupSelected = async (viewonRow: any, clickedColDef: ColDefResponse): Promise<boolean> => {
+            if (!this.session || !lookupLayer) return false;
+
             //abort if editing layer is no longer in the stack or is not in edit mode
             const editLayerIdx = this.layers.findIndex(x => x === editingLayer);
             if (editLayerIdx === -1) return false;
@@ -231,8 +247,8 @@ export default class DatonStackState {
             editingRow[editingColDef.name] = fkValue;
             ++editingLayer.renderCount;
             this.callOnChanged();
-            await afterSetRowValue(this.session, editingTableDef, editingColDef, editingRow, null, null, viewonRow);
-            this.removeByKey(lookupLayer.datonKey);
+            await afterSetRowValue(this.session, editingTableDef, editingColDef, editingRow, '', null, viewonRow);
+            this.removeByKey(lookupLayer.datonKey, false);
             ++editingLayer.renderCount;
             return true;
         };

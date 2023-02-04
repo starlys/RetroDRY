@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {securityUtil} from 'retrodryclient';
+import {DatonDefResponse, DatonKey, securityUtil, Session} from 'retrodryclient';
 
 //displays banner in datonstack for a daton
 //props.datonDef is the metadata for the daton
@@ -12,7 +12,19 @@ import {securityUtil} from 'retrodryclient';
 //props.doExport is the handler for export (optional)
 //props.parsedDatonKey
 //props.session is the Session object for language strings 
-const Component = (props) => {
+interface TProps {
+    datonDef: DatonDefResponse;
+    editState: number;
+    editClicked: () => void;
+    saveClicked: () => void;
+    removeClicked: () => void;
+    deleteClicked: () => void;
+    cancelClicked: () => void;
+    doExport?: () => void;
+    parsedDatonKey: DatonKey;
+    session: Session;
+}
+const Component = (props: TProps) => {
     const {datonDef, editState, parsedDatonKey, session} = props;
     const [isDeleteConfirming, setDeleteConfirming] = useState(false);
 
@@ -37,7 +49,7 @@ const Component = (props) => {
         title = 'Query: ' + title;
     }
 
-    const lang = session.dataDictionary.messageConstants;
+    const lang = session.dataDictionary?.messageConstants ?? {};
     const allowDelete = !datonDef.multipleMainRows && !parsedDatonKey.isNew() && securityUtil.canDeletePersiston(datonDef);
     return (
         <div className="daton-banner">

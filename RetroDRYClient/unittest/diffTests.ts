@@ -1,4 +1,4 @@
-import DiffTool from '../src/diffTool';
+import {DiffTool} from '../src/diffTool';
 import { Samples } from './samples';
 import { deepEqual } from 'assert';
 import 'mocha';
