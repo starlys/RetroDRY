@@ -168,7 +168,7 @@ public class Customer : Persiston {
     public int? CompanyId
 
     [StringLength(200), Required, Prompt("Co. name")]
-    public string Company;
+    public string? Company;
 
     [ForeignKey("SalesRep")]
     public int SalesRepId;
@@ -181,12 +181,12 @@ public class Customer : Persiston {
         public int CompanyId;
 
         [StringLength(100), Required]
-        public string Name;
+        public string? Name;
 
         public bool Primary;
     }
 
-    public List<ContactRow> Contact;
+    public List<ContactRow> Contact = new();
 }
 ```
 
@@ -238,19 +238,19 @@ public class CustomerList : Viewon {
         [PrimaryKey(true), ForeignKey(typeof(Customer))] //this links the viewon with its associated persiston
         public int CompanyId;
 
-        public string Company;
+        public string? Company;
 
         [InheritFrom("Customer.Contact.Name")] //we will use some tricky SQL to load only the first primary contact name in the list of customers
-        public string MainContactName;
+        public string? MainContactName;
     }
 
-    public List<CustomerRow> Customer; //field name matches database table name
+    public List<CustomerRow> Customer = new(); //field name matches database table name
 
     [Criteria]
     public abstract class Cri {
 
         [InheritFrom("Customer.Company")] //this ensures the prompt for searching by customer name matches the prompt defined in the persiston
-        public string Company;
+        public string? Company;
 
         [InheritFrom("Customer.SalesRepId")]
         public int? SalesRepId;
@@ -314,7 +314,7 @@ public class Customer : Persiston {
     public int SalesRepId;
 
     [LeftJoin("SalesRepId", "Name"), InheritFrom("'Employee.Name")] //"SalesRepId" must be the name of some other field in this class
-    public string SalesRepName;
+    public string? SalesRepName;
 }
 ```
 
@@ -330,16 +330,16 @@ public class CustomerList : Viewon {
         [ForeignKey(typeof(Customer))] //this links the viewon with its associated persiston
         public int CompanyId;
 
-        public string Company;
+        public string? Company;
 
         [ForeignKey(typeof(SalesRep))] //this can be omitted because CustomerRow inherits metadata from Customer persison
         public int SalesRepId;
 
         [LeftJoin("SalesRepId", "Name"), InheritFrom("'Employee.Name")]
-        public string SalesRepName;
+        public string? SalesRepName;
     }
 
-    public List<CustomerRow> Customer;
+    public List<CustomerRow> Customer = new();
 }
 ```
 

@@ -241,5 +241,6 @@ is done in the SampleClient folder. The copies are not in source control.
 -   Build for publishing using both of these commands: 
     -   npm run prep1
     -   npm run prep2
+-   If the prep2 command (which does the build) emits errors, you may have to fix those errors in the SampleClient folder, then run prep1 and prep2 again. (For some reason that isn't diagnosed at the time of this writing, the typescript rules or version is different between these two packages.)
 -   Create npm account or login as above
 -   Publish using command: npm publish

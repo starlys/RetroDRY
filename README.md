@@ -32,13 +32,20 @@ Multi-tier framework in C#/React for handling load/save data, replication across
 
 ## Version notes
 
+The product should be considered not market ready quite yet, and we should have used 0.x version numbering. It's being upgraded for use in plug.events so we only focus on that use case for now.
+
+* Version 1.5.1 fixes bugs in 1.5.0
+  * Breaking change: API members ending with *ColumnName are now *FieldName.
+  * Breaking change: All List<> members in daton classes must be non-null. For example `public List<CustRow> Cust = new();` This was needed for the nullable types upgrade.
+  * Both client libraries are upgraded to full typescript with exported types.
+
 * Version 1.5.0 contains many breaking changes both client side and server side:
+  * This version is unusable.
   * The C# code base was updated to use nullable semantics, which changed a few function signatures.
   * The ColDef and TableDef classes have new member names to reflect the difference between SQL column names and in-memory field names.
   * RetroLock and LockManager now assign a new version number at the time a save is committed, rather than when the lock is released.
   * The client must provide a version number when subscribing to a daton.
   * A new feature was added that affects server, API, client and React controls: the CSV export option.
-  * WARNING: The number of changes was so large that it likely could have new bugs.
 
 * Version 1.4.3 is the latest stable before major upgrades.
 
