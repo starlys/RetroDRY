@@ -75,8 +75,8 @@ namespace SampleServer.Schema
         [LeftJoin("SupervisorId", "LastName"), Prompt("Supervisor")]
         public string? SupervisorLastName;
 
-        [Prompt("Hired on")]
-        public DateTime HireDate;
+        //[Prompt("Hired on")]
+        //public DateTime HireDate;
 
         [Prompt("Employee is toxic to work environment")]
         public bool IsToxic;

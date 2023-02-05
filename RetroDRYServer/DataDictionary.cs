@@ -117,7 +117,7 @@ namespace RetroDRY
                 targetTabledef.SqlTableName ??= sourceTabledef.SqlTableName;
                 foreach (var targetColdef in targetTabledef.Cols)
                 {
-                    var sourceColdef = sourceTabledef.FindColDefOrThrow(targetColdef.FieldName);
+                    var sourceColdef = sourceTabledef.FindColDefOrNull(targetColdef.FieldName);
                     if (sourceColdef == null || sourceColdef.IsCustom) continue;
                     CopyColumnInheritance(sourceColdef, targetColdef);
                 }

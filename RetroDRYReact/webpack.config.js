@@ -2,22 +2,25 @@ const path = require('path');
 const pkg = require('./package.json');
 const nodeExternals = require('webpack-node-externals');
 module.exports = {
-    entry: "./index.js",
+    entry: "./index.ts",
+    resolve: {
+        extensions: [ '.tsx', '.ts', '.js']
+    },
     output: {
       path: path.resolve(__dirname, 'dist'),
-      filename: "retrodryreact.js",
+      filename: "index.js",
       library: pkg.name,
-      libraryTarget: "commonjs2"
+      libraryTarget: "umd",
     },
     target: 'node',
     externals: [nodeExternals()],
     module: {
       rules: [
         {
-          test: /\.(js|jsx)$/,
+          test: /\.tsx?$/,
           exclude: /node_modules/,
           use: {
-            loader: "babel-loader"
+            loader: "ts-loader"
           }
         }
       ]

@@ -36,16 +36,17 @@ namespace RetroDRY
                 var listField = datondef.Type.GetField(datondef.MainTableDef.Name);
                 var sourceList = listField.GetValue(this) as IList;
                 var targetList = listField.GetValue(target) as IList;
-                if (sourceList != null && targetList != null)
+                if (sourceList != null)
                 {
                     if (targetList == null)
                     {
                         targetList = Utils.Construct(listField.FieldType) as IList;
+                        if (targetList == null) throw new Exception("Failed to construct row list in Clone");
                         listField.SetValue(target, targetList);
                     }
                     foreach (var row in sourceList)
                         if (row is Row trow)
-                            targetList?.Add(trow.Clone(datondef.MainTableDef));
+                            targetList!.Add(trow.Clone(datondef.MainTableDef));
                 }
                 return target;
             }

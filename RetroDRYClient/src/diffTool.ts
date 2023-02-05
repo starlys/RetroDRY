@@ -2,7 +2,7 @@ import { DatonDefResponse } from "./wireTypes";
 import { RowRecurPoint, TableRecurPoint, TableRecurPointFromDaton } from "./recurPoint";
 
 //utility for creating diffs 
-export default class DiffTool {
+export class DiffTool {
     
     //generate a diff for deletion of an entire single-main-row persiston
     static generateDiffForDelete(datonDef: DatonDefResponse, daton: any) {

@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom';
 import App from './App';
 import globals from './globals';
 import { Session } from 'retrodryclient';
-import { sampleLayouts } from './constants';
+import { samplePanelLayouts, sampleGridLayouts } from './constants';
 
 function mainRender() {
     ReactDOM.render(<App />, document.getElementById('root'));
@@ -13,7 +13,7 @@ function mainRender() {
 Your actual client side app will need to log in somewhere in a manner similar to this function.
 You will obtain the session key through your own means from the server, then set members of
 Session, then call Session.start(). Your app will likely have other features that don't use retroDRY
-so you might code the initialization sequence somewhere else besides in index.js.
+so you might code the initialization sequence somewhere else besides in index.tsx.
  */
 (async function() {
     mainRender();
@@ -36,13 +36,13 @@ so you might code the initialization sequence somewhere else besides in index.js
         console.log('Could not start retrodry session');
 
     //register general layouts
-    ses.layouts.registerCard('Employee', 'employee', '', sampleLayouts.employeeCard);
+    ses.layouts.registerCard('Employee', 'employee', '', samplePanelLayouts.employeeCard);
     
     //register layouts (for POS business context)
-    ses.layouts.registerCard('Customer', 'customer', 'POS', sampleLayouts.customerCard);
-    ses.layouts.registerCard('CustomerList', 'customer', 'POS', sampleLayouts.customerListCard);
-    ses.layouts.registerCard('CustomerList', 'criteria', 'POS', sampleLayouts.customerListCriteriaCard);
-    ses.layouts.registerGrid('CustomerList', 'customer', 'POS', sampleLayouts.customerListGrid);
+    ses.layouts.registerCard('Customer', 'customer', 'POS', samplePanelLayouts.customerCard);
+    ses.layouts.registerCard('CustomerList', 'customer', 'POS', samplePanelLayouts.customerListCard);
+    ses.layouts.registerCard('CustomerList', 'criteria', 'POS', samplePanelLayouts.customerListCriteriaCard);
+    ses.layouts.registerGrid('CustomerList', 'customer', 'POS', sampleGridLayouts.customerListGrid);
     mainRender();
 })();
 

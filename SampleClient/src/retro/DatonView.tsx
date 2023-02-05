@@ -1,14 +1,15 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, ReactElement } from 'react';
 import CardView from './CardView';
 import GridView from './GridView';
-import {TableRecurPointFromDaton, DatonKey, parseDatonKey, validateAll, validateCriteria, securityUtil, IdleTimer} from 'retrodryclient';
+import {TableRecurPointFromDaton, DatonKey, parseDatonKey, validateAll, validateCriteria, securityUtil, IdleTimer, TableDefResponse, DatonDefResponse, Session} from 'retrodryclient';
 import DatonBanner from './DatonBanner';
 import CardStack from './CardStack';
+import { DatonStackLayer } from './DatonStackState';
 
 //given the old viewon key and criset (object indexed by coldef names, containing strings), build a new key
-function buildViewonKey(oldKey, tableDef, criset) {
+function buildViewonKey(oldKey: string, tableDef: TableDefResponse, criset: {[name: string]: string}) {
     const parsedOldKey = parseDatonKey(oldKey);
-    const segments = [];
+    const segments: string[] = [];
     for (let colDef of tableDef.cols) {
         let criValue = criset[colDef.name];
         if (!criValue) continue;
@@ -20,15 +21,15 @@ function buildViewonKey(oldKey, tableDef, criset) {
 }
 
 //given the string version of a viewon key, return a criset object indexed by critierion name
-function unpackViewonKey(key) {
-    const ret = {};
+function unpackViewonKey(key: string): {[name: string]: string} {
+    const ret:{[name:string]:string} = {};
     const parsedKey = parseDatonKey(key);
     for (let segment of parsedKey.otherSegments) {
         const eq = segment.indexOf('=');
         if (eq > 0) {
-            let name = segment.substr(0, eq);
-            name = name[0].toLowerCase() + name.substr(1);
-            ret[name] = segment.substr(eq + 1);
+            let name = segment.substring(0, eq);
+            name = name[0].toLowerCase() + name.substring(1);
+            ret[name] = segment.substring(eq + 1);
         }
     }
     return ret;
@@ -36,10 +37,10 @@ function unpackViewonKey(key) {
 
 //create panel with buttons to load each page up to the current one; currentPageNo may be NaN or falsy if we are on page 0
 //layer must be set here.
-function buildTopPagingButtons(layer, currentPageNo, allowNext) {
+function buildTopPagingButtons(layer: DatonStackLayer, currentPageNo: number, allowNext: boolean) {
     if (isNaN(currentPageNo) || !currentPageNo) currentPageNo = 0;
-    const buttons = [];
-    const lang = layer.stackstate.session.dataDictionary.messageConstants;
+    const buttons: ReactElement[] = [];
+    const lang = layer.stackstate.session?.dataDictionary?.messageConstants ?? {};
     for (let i = 0; i < currentPageNo; ++i) buttons.push(
         <button key={i} onClick={() => layer.stackstate.goToPage(layer, i)}> {i + 1} </button>
     );
@@ -55,17 +56,25 @@ function buildTopPagingButtons(layer, currentPageNo, allowNext) {
 //props.edit is true to display initially with editors; false for read only
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
 //props.renderCount is a number incremented by the caller to force rerender when no other props changed
-export default React.memo(props => {
+interface TProps {
+    datonDef: DatonDefResponse;
+    session: Session;
+    layer: DatonStackLayer;
+    edit: boolean;
+    daton: any;
+    renderCount?: number;
+}
+export default React.memo((props: TProps) => {
     const {datonDef, session, layer} = props;
-    const [topStyle, setTopStyle] = useState(null); //'c' or 'g' for card or grid; null on first render
-    const [parsedDatonKey, setParsedDatonKey] = useState(null); 
+    const [topStyle, setTopStyle] = useState<string|null>(null); //'c' or 'g' for card or grid; null on first render
+    const [parsedDatonKey, setParsedDatonKey] = useState<DatonKey|null>(null); 
     const [isEditing, setIsEditing] = useState(props.edit); //note we have to set layer.edit whenever we set this so other controls know the mode
     const [isWorking, setIsWorking] = useState(false);
     const [daton, setDaton] = useState(props.daton);
-    const [errorItems, setErrorItems] = useState([]); //array of strings to display as errors
-    const idleTimer = useRef(null);
-    const criset = useRef({}); //the viewon key segments in unpacked object form (includes _sort and _page)
-    const domElement = useRef();
+    const [errorItems, setErrorItems] = useState<string[]>([]); //array of strings to display as errors
+    const idleTimer = useRef<IdleTimer|null>(null);
+    const criset = useRef<{[name: string]: string}>({}); //the viewon key segments in unpacked object form (includes _sort and _page)
+    const domElement = useRef<any>();
     const validationCount = useRef(0); //used to force rerender of EditValues after validation is run
 
     //scroll on first render
@@ -79,7 +88,7 @@ export default React.memo(props => {
         if (idleTimer.current) idleTimer.current.stop();
     };
     useEffect(() => {
-        return () => cancelIdleTimer;
+        return () => cancelIdleTimer();
     });
 
     //event handlers
@@ -87,7 +96,7 @@ export default React.memo(props => {
         props.session.exportAsCsv(daton.key);
     };
     const editingNearingTimeout = () => {
-        const lang = session.dataDictionary.messageConstants;
+        const lang = session.dataDictionary?.messageConstants ?? {};
         setErrorItems([lang.INFOTIMEOUT]);
     };
     const editingNotNearingTimeout = () => {
@@ -101,7 +110,7 @@ export default React.memo(props => {
         cancelIdleTimer();
         setErrorItems([]);
         if (layer) layer.edit = false;
-        const isNew = parsedDatonKey.isNew();
+        const isNew = parsedDatonKey?.isNew();
         if (isNew)
             layer.stackstate.removeByKey(daton.key, false);
         else {
@@ -111,7 +120,7 @@ export default React.memo(props => {
                 setDaton(d);
             }
             catch {
-                const lang = session.dataDictionary.messageConstants;
+                const lang = session.dataDictionary?.messageConstants ?? {};
                 setErrorItems([lang.ERRNET]);
             }
         }
@@ -119,7 +128,7 @@ export default React.memo(props => {
     const editClicked = async () => {
         //note this can be called before a real render happened
         const isNew = parseDatonKey(daton.key).isNew();
-        const lang = session.dataDictionary.messageConstants;
+        const lang = session.dataDictionary?.messageConstants ?? {};
         if (isNew) {
             setIsEditing(true);
             if (layer) layer.edit = true;
@@ -147,13 +156,14 @@ export default React.memo(props => {
             }
         }
         catch {
-            const lang = session.dataDictionary.messageConstants;
+            const lang = session.dataDictionary?.messageConstants ?? {};
             setErrorItems([lang.ERRNET]);
         }
     };
     const saveClicked = async () => {
+        if (!parsedDatonKey) return;
         const isNew = parsedDatonKey.isNew();
-        const lang = session.dataDictionary.messageConstants;
+        const lang = session.dataDictionary?.messageConstants ?? {};
         validationCount.current = validationCount.current + 1;
 
         //local errors
@@ -176,7 +186,7 @@ export default React.memo(props => {
                 if (isNew) {
                     const newKey = saveInfo.details[0].newKey;
                     if (newKey) {
-                        await layer.stackstate.replaceKey(daton.key, newKey);
+                        await layer.stackstate.replaceKey(daton.key, newKey, false);
                         //note that here, this DatonView instance is no longer mounted
                         if (layer.stackstate.onLayerSaved) layer.stackstate.onLayerSaved(newKey);
                     } else
@@ -187,12 +197,12 @@ export default React.memo(props => {
                     if (loadResult.daton) {
                         layer.stackstate.replaceDaton(daton.key, loadResult.daton);
                     }
-                    setErrorItems(loadResult.errors);
+                    setErrorItems(loadResult.errors ?? []);
                     if (layer.stackstate.onLayerSaved) layer.stackstate.onLayerSaved(daton.key);
                 }
             } else {
-                let errors = [];
-                if (saveInfo && saveInfo.details && saveInfo.details[0]) errors = saveInfo.details[0].errors;
+                let errors: string[] = [];
+                if (saveInfo && saveInfo.details && saveInfo.details[0]) errors = saveInfo.details[0].errors ?? [];
                 else errors.push(lang.ERRNET); 
                 setErrorItems(errors);
             }
@@ -220,12 +230,12 @@ export default React.memo(props => {
             }
         }
         catch {
-            const lang = session.dataDictionary.messageConstants;
+            const lang = session.dataDictionary?.messageConstants ?? {};
             setErrorItems([lang.ERRNET]);
         }
     };
     const doSearch = async () => {
-        if (!layer) return;
+        if (!layer || !datonDef.criteriaDef) return;
 
         //local errors
         const localErrors = validateCriteria(datonDef.criteriaDef, criset.current);
@@ -245,10 +255,10 @@ export default React.memo(props => {
                 layer.stackstate.replaceDaton(daton.key, loadResult.daton);
             } else {
                 //show errors if server validation failed
-                setErrorItems(loadResult.errors);
+                setErrorItems(loadResult.errors ?? []);
             }
         } catch (e) {
-            const lang = session.dataDictionary.messageConstants;
+            const lang = session.dataDictionary?.messageConstants ?? {};
             setErrorItems([lang.ERRNET]);
         }
     };
@@ -278,6 +288,7 @@ export default React.memo(props => {
 
         return null;
     }
+    if (!parseDatonKey) return null;
 
     //set topContent to grid or card view of main table
     let topContent;
@@ -292,9 +303,9 @@ export default React.memo(props => {
     } else { //grid
         if (datonDef.multipleMainRows) {
             const rt = TableRecurPointFromDaton(datonDef, daton); 
-            let sortHandler = null;
+            let sortHandler: ((n: string) => void)|undefined = undefined;
             if (!datonDef.isPersiston && layer) sortHandler = colName => layer.stackstate.doSort(layer, colName);
-            let topPagingButtons = null;
+            let topPagingButtons: ReactElement|null = null;
             if (layer && (criset.current._page || !daton.isComplete)) 
                 topPagingButtons = buildTopPagingButtons(layer, parseInt(criset.current._page), !daton.isComplete);
             topContent = <>
@@ -307,7 +318,7 @@ export default React.memo(props => {
     }
 
     //set criteriaContent to optional criteria card
-    let criteriaContent = null;
+    let criteriaContent: ReactElement|null = null;
     if (datonDef.criteriaDef) {
         criteriaContent = 
             <div className="criteria-block">
@@ -326,7 +337,7 @@ export default React.memo(props => {
 
     return (
         <div className="daton" ref={domElement}>
-            <DatonBanner datonDef={datonDef} editState={bannerState} parsedDatonKey={parsedDatonKey} editClicked={editClicked} saveClicked={saveClicked} 
+            <DatonBanner datonDef={datonDef} editState={bannerState} parsedDatonKey={parsedDatonKey!} editClicked={editClicked} saveClicked={saveClicked} 
                 cancelClicked={cancelClicked} removeClicked={removeClicked} deleteClicked={deleteClicked} doExport={doExport} session={session}/>
             {errorItems.length > 0 && <ul className="daton-errors">
                 {errorItems.map((s, idx3) => <li key={idx3}>{s}</li>)}

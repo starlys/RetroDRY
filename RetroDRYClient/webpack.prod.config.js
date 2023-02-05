@@ -1,6 +1,6 @@
 const path = require('path');
 module.exports = {
-    entry: './index.js',
+    entry: './index.ts',
     devtool: 'inline-source-map',
     mode: 'production',
     module: {
@@ -16,7 +16,7 @@ module.exports = {
         extensions: [ '.tsx', '.ts', '.js']
     },
     output: {
-        filename: 'retrodryclient.js',
+        filename: 'index.js',
         path: path.resolve(__dirname, 'dist'),
         library: 'retrodryclient',
         libraryTarget: 'umd'

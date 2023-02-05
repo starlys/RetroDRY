@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
-import {DropdownState, getBaseType, wireDateToReadable, wireDateTimeToReadable} from 'retrodryclient';
+import {DropdownState, getBaseType, wireDateToReadable, wireDateTimeToReadable, ColDefResponse, Session} from 'retrodryclient';
 
-function textToHtml(s) {
+function textToHtml(s: string) {
     return (s || '').replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
@@ -16,9 +16,15 @@ function textToHtml(s) {
 //props.row is the daton row
 //props.width is the css width string
 //props.session is the retrodry Session 
-const Component = (props) => {
+interface TProps {
+    colDef: ColDefResponse;
+    row: any;
+    width: string;
+    session: Session;
+}
+const Component = (props: TProps) => {
     const {colDef, row, width, session} = props;
-    const [displayAs, setDisplayAs] = useState(null); //mapped value via DropdownState, if any
+    const [displayAs, setDisplayAs] = useState<string|null>(null); //mapped value via DropdownState, if any
 
     let value = row[colDef.name];
     const wrapStyle = {width: width};
@@ -29,7 +35,7 @@ const Component = (props) => {
     const mightUseDDState = colDef.selectBehavior || colDef.foreignKeyDatonTypeName;
     if (!displayAs && mightUseDDState) {
         const ddstate = new DropdownState(session, row, colDef);
-        ddstate.getDisplayValue(value).then((d) => {
+        ddstate.getDisplayValue(value).then((d: string|null) => {
             if (d !== null) setDisplayAs(d); 
         });
     }

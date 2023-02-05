@@ -1,11 +1,12 @@
-import React, {useState, useReducer} from 'react';
+import React, {useState, useReducer, ReactElement} from 'react';
 import EditorPopupError from './EditorPopupError';
 import {DropdownState, splitOnTilde, getInvalidMemberName, processNumberEntry, processNumberRangeEntry, processStringEntry, 
     processDateTimeEntry, inputDateToWire, inputDateTimeToWire, wireDateToInput, wireDateTimeToDateTimeInputs,
-    getBaseType, isNumericBaseType} from 'retrodryclient';
+    getBaseType, isNumericBaseType, ColDefResponse, TableDefResponse, Session} from 'retrodryclient';
+import { DatonStackLayer } from './DatonStackState';
 
 //modify row so the hi range is the same as the lo, if hi wasn't set; example: changes '6~' to '6'
-function autoPopulateHiFromLo(row, colDef) {
+function autoPopulateHiFromLo(row: any, colDef: ColDefResponse) {
     const value = row[colDef.name];
     if (!value) return;
     const i = value.indexOf('~');
@@ -14,7 +15,7 @@ function autoPopulateHiFromLo(row, colDef) {
 
 //get the formatted version of a numeric col value from the row, by using the name$s property of the row to store it
 //Example: row['price$s'] stores what the user is typing while row['price'] stores the parsed number
-function getFormattedNumber(row, colName, baseType) {
+function getFormattedNumber(row: any, colName: string, baseType: string) {
     let s = row[colName + '$s'];
     if (s) return s;
     if (baseType === 'decimal' || baseType === 'double') {
@@ -40,13 +41,23 @@ function getFormattedNumber(row, colName, baseType) {
 //props.session is the retrodry Session 
 //props.layer is the optional DatonStackState layer data for the containing stack (can be omitted if this is used outside a stack)
 //props.onChanged is called with no arguments after a change is saved to the row (on each keystroke)
-const Component = (props) => {
+interface TProps {
+    tableDef: TableDefResponse;
+    colDef: ColDefResponse;
+    row: any;
+    width: string;
+    isCriterion: boolean;
+    session: Session;
+    layer?: DatonStackLayer;
+    onChanged: () => void;
+}
+const Component = (props: TProps) => {
     const {colDef, row, width, layer, session, isCriterion} = props;
     const invalidMemberName = getInvalidMemberName(colDef);
     const [hasFocus, setHasFocus] = useState(false);
     const [valueAtFocus, setValueAtFocus] = useState(null);
     const [selectKind, setSelectKind] = useState(0); //0:unknown at first render; -1:nothing; 1:in process of being calculated; 2:use lookup button; 3:use dropdpown select
-    const [dropdownState, setDropdownState] = useState(null); //DropdownState instance
+    const [dropdownState, setDropdownState] = useState<DropdownState>();
     const [, setInvalidMessage] = useState(row[invalidMemberName]);
     const [, incrementDropdownRenderCount] = useReducer(x => x + 1, 0); 
     let containerClass = row[invalidMemberName] ? 'invalid inputwrap' : 'valid inputwrap';
@@ -58,18 +69,18 @@ const Component = (props) => {
         setHasFocus(true);
         setValueAtFocus(row[colDef.name]);
     };
-    const boolChanged = (ev) => {
+    const boolChanged = (ev:any) => {
         row[colDef.name] = ev.target.checked;
         props.onChanged();
     };
-    const numberChanged = (ev) => {
+    const numberChanged = (ev:any) => {
         row[colDef.name + '$s'] = ev.target.value; //see getFormattedNumber
         row[colDef.name] = parseFloat(ev.target.value); //may be NaN
         //note this stores strings in the $s property while the focus is in the input
         props.onChanged();
     };
-    const rangeChanged = (lo, hi) => { //accepts string entries; use for any range types
-        let value = null;
+    const rangeChanged = (lo: string, hi: string) => { //accepts string entries; use for any range types
+        let value: string|null = null;
         if (lo && hi) {
             if (lo === hi) value = lo;
             else value = lo + '~' + hi;
@@ -79,11 +90,11 @@ const Component = (props) => {
         row[colDef.name] = value;
         props.onChanged();
     };
-    const stringChanged = (ev) => {
+    const stringChanged = (ev:any) => {
         row[colDef.name] = ev.target.value;
         props.onChanged();
     };
-    const selectChanged = (ev) => { 
+    const selectChanged = (ev:any) => { 
         if (baseType === 'string') 
             stringChanged(ev);
         else if (baseType === 'bool') { //criterion values -1,0,1
@@ -95,13 +106,13 @@ const Component = (props) => {
         else 
             numberChanged(ev);
     };
-    const afterEntryProcessed = ([msg, anyCascades]) => {
+    const afterEntryProcessed = ([msg, anyCascades]: [string|null, boolean]) => {
         setInvalidMessage(msg);
         if (anyCascades && layer) {
             layer.rerender();
         }
     };
-    const ctrlBlurred = async (isLoOfRange) => {
+    const ctrlBlurred = async (isLoOfRange: boolean) => {
         setHasFocus(false);
 
         //special case: if user entered lo, and hi is not set, then set hi to the same
@@ -109,7 +120,7 @@ const Component = (props) => {
 
         //validate on tab-out if any change
         if (valueAtFocus !== row[colDef.name]) {
-            let processResult = null;
+            let processResult: [string | null, boolean]|null = null;
             if (isNumericBaseType(baseType)) {
                 if (isCriterion )
                     processResult = await processNumberRangeEntry(session, props.tableDef, colDef, baseType, row, invalidMemberName);
@@ -124,6 +135,7 @@ const Component = (props) => {
         }
     };
     const startLookup = () => {
+        if (!layer) return;
         layer.stackstate.startLookup(layer, props.tableDef, row, colDef);
     };
 
@@ -146,25 +158,26 @@ const Component = (props) => {
         //don't show anything while we load initial dropdown contents
         return null;
     }
+    if (!dropdownState && selectKind === 3) return null;
 
     //setup components that appear before/after the main control
     const popupError = <EditorPopupError show={hasFocus} message={row[invalidMemberName]}/>;
-    let lookupButton = null;
+    let lookupButton:ReactElement|null = null;
     if (selectKind === 2 && layer) { 
         lookupButton = <button className="btn-lookup" onClick={startLookup}>..</button>;
         containerClass += ' has-btn';
     }
 
     //setup main input control
-    let inputCtrl = null;
-    if (selectKind === 3) {
+    let inputCtrl:ReactElement|null = null;
+    if (selectKind === 3 && dropdownState) {
         dropdownState.build().then(anyChanges => {
             if (anyChanges) incrementDropdownRenderCount();
         });
         inputCtrl = <select value={row[colDef.name] || ''} onChange={selectChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}>
-            <option key="-1" value={null}></option>
-            {dropdownState.dropdownRows.map(r => <option key={r[dropdownState.dropdownValueCol]} value={r[dropdownState.dropdownValueCol]}>
-                {dropdownState.dropdownDisplayCols.map(dcname => r[dcname]).join(' - ')}
+            <option key="-1" value={''}></option>
+            {dropdownState.dropdownRows.map(r => <option key={r[dropdownState.dropdownValueCol ?? '']} value={r[dropdownState.dropdownValueCol ?? '']}>
+                {dropdownState.dropdownDisplayCols?.map(dcname => r[dcname]).join(' - ')}
             </option>)}
         </select>;
     } 
@@ -183,11 +196,11 @@ const Component = (props) => {
     else if (isNumericBaseType(baseType)) {
         if (isCriterion) {
             const loHi = splitOnTilde(row[colDef.name] || '');
-            const loNumberChanged = (ev) => {
-                rangeChanged(ev.target.value, loHi[1]);
+            const loNumberChanged = (ev:any) => {
+                rangeChanged(ev.target.value, loHi[1] ?? '');
             };
-            const hiNumberChanged = (ev) => {
-                rangeChanged(loHi[0], ev.target.value);
+            const hiNumberChanged = (ev:any) => {
+                rangeChanged(loHi[0] ?? '', ev.target.value);
             };
             inputCtrl = <>
                 <input className="criterion number" type="number" value={loHi[0] || ''} onChange={loNumberChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(true)}/> - &nbsp;
@@ -203,7 +216,7 @@ const Component = (props) => {
         //string renders multiline control if max length is > 200
         if (isCriterion)
             inputCtrl = <input className="criterion" value={row[colDef.name] || ''} onChange={stringChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)} />;
-        else if (colDef.maxLength > 200) {
+        else if (colDef.maxLength && colDef.maxLength > 200) {
             inputCtrl = <textarea value={row[colDef.name] || ''} onChange={stringChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)} />;
         } else {
             inputCtrl = <input value={row[colDef.name] || ''} onChange={stringChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)} />;
@@ -212,11 +225,11 @@ const Component = (props) => {
     else if (baseType === 'date') { 
         if (isCriterion) {
             const loHi = splitOnTilde(row[colDef.name] || '');
-            const loDateChanged = (ev) => {
-                rangeChanged(inputDateToWire(ev.target.value), loHi[1]);
+            const loDateChanged = (ev:any) => {
+                rangeChanged(inputDateToWire(ev.target.value) ?? '', loHi[1] ?? '');
             };
-            const hiDateChanged = (ev) => {
-                rangeChanged(loHi[0], inputDateToWire(ev.target.value));
+            const hiDateChanged = (ev:any) => {
+                rangeChanged(loHi[0] ?? '', inputDateToWire(ev.target.value) ?? '');
             };
             inputCtrl = <>
                 <input className="criterion date" type="date" value={wireDateToInput(loHi[0])} onChange={loDateChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(true)}/> - &nbsp;
@@ -224,7 +237,7 @@ const Component = (props) => {
             </>;
         }
         else {
-            const dateChanged = (ev) => {
+            const dateChanged = (ev:any) => {
                 row[colDef.name] = inputDateToWire(ev.target.value);
                 props.onChanged();
             };
@@ -236,17 +249,17 @@ const Component = (props) => {
             const loHi = splitOnTilde(row[colDef.name] || '');
             const [valLoDate, valLoTime] = wireDateTimeToDateTimeInputs(session, loHi[0]);
             const [valHiDate, valHiTime] = wireDateTimeToDateTimeInputs(session, loHi[1]);
-            const loDateChanged = (ev) => {
-                rangeChanged(inputDateTimeToWire(session, ev.target.value, valLoTime), loHi[1]);
+            const loDateChanged = (ev:any) => {
+                rangeChanged(inputDateTimeToWire(session, ev.target.value, valLoTime) ?? '', loHi[1] ?? '');
             };
-            const loTimeChanged = (ev) => {
-                rangeChanged(inputDateTimeToWire(session, valLoDate, ev.target.value), loHi[1]);
+            const loTimeChanged = (ev:any) => {
+                rangeChanged(inputDateTimeToWire(session, valLoDate, ev.target.value) ?? '', loHi[1] ?? '');
             };
-            const hiDateChanged = (ev) => {
-                rangeChanged(loHi[0], inputDateTimeToWire(session, ev.target.value, valHiTime));
+            const hiDateChanged = (ev:any) => {
+                rangeChanged(loHi[0] ?? '', inputDateTimeToWire(session, ev.target.value, valHiTime) ?? '');
             };
-            const hiTimeChanged = (ev) => {
-                rangeChanged(loHi[0], inputDateTimeToWire(session, valHiDate, ev.target.value));
+            const hiTimeChanged = (ev:any) => {
+                rangeChanged(loHi[0] ?? '', inputDateTimeToWire(session, valHiDate, ev.target.value) ?? '');
             };
             inputCtrl = <>
                 <input className="criterion date" type="date" value={valLoDate} onChange={loDateChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>
@@ -257,11 +270,11 @@ const Component = (props) => {
         }
         else {
             const [valDate, valTime] = wireDateTimeToDateTimeInputs(session, row[colDef.name]);
-            const dateChanged = (ev) => {
+            const dateChanged = (ev:any) => {
                 row[colDef.name] = inputDateTimeToWire(session, ev.target.value, valTime);
                 props.onChanged();
             };
-            const timeChanged = (ev) => {
+            const timeChanged = (ev:any) => {
                 row[colDef.name] = inputDateTimeToWire(session, valDate, ev.target.value);
                 props.onChanged();
             };

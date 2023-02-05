@@ -89,7 +89,7 @@ namespace RetroDRY
                     if (sourceList != null)
                     {
                         var targetList = Utils.CreateOrGetFieldValue<IList>(target, listField);
-                        if (targetList == null) throw new Exception("Cannot construct row list in Clone");
+                        if (targetList == null) throw new Exception("Uninitialized row list in Clone");
                         foreach (var row in sourceList)
                             if (row is Row trow) targetList.Add(trow.Clone(childTableDef));
                     }
