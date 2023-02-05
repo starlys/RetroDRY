@@ -35,7 +35,7 @@ const Component = (props: TProps) => {
     const mightUseDDState = colDef.selectBehavior || colDef.foreignKeyDatonTypeName;
     if (!displayAs && mightUseDDState) {
         const ddstate = new DropdownState(session, row, colDef);
-        ddstate.getDisplayValue(value).then((d) => {
+        ddstate.getDisplayValue(value).then((d: string|null) => {
             if (d !== null) setDisplayAs(d); 
         });
     }

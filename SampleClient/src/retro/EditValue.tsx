@@ -106,7 +106,7 @@ const Component = (props: TProps) => {
         else 
             numberChanged(ev);
     };
-    const afterEntryProcessed = ([msg, anyCascades]: [msg: string|null, anyCascades: boolean]) => {
+    const afterEntryProcessed = ([msg, anyCascades]: [string|null, boolean]) => {
         setInvalidMessage(msg);
         if (anyCascades && layer) {
             layer.rerender();
@@ -158,7 +158,7 @@ const Component = (props: TProps) => {
         //don't show anything while we load initial dropdown contents
         return null;
     }
-    if (!dropdownState) return null;
+    if (!dropdownState && selectKind === 3) return null;
 
     //setup components that appear before/after the main control
     const popupError = <EditorPopupError show={hasFocus} message={row[invalidMemberName]}/>;
@@ -170,7 +170,7 @@ const Component = (props: TProps) => {
 
     //setup main input control
     let inputCtrl:ReactElement|null = null;
-    if (selectKind === 3) {
+    if (selectKind === 3 && dropdownState) {
         dropdownState.build().then(anyChanges => {
             if (anyChanges) incrementDropdownRenderCount();
         });

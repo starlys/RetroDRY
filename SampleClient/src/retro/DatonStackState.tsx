@@ -76,7 +76,7 @@ export default class DatonStackState {
         //add layer
         const layer = this.createLayer(datonDef, key, parsedKey, daton);
         layer.edit = edit;
-        layer.businessContext = businessContext || '';
+        layer.businessContext = businessContext ?? '';
         this.layers.push(layer);
         this.callOnChanged();
         return layer;
@@ -96,7 +96,7 @@ export default class DatonStackState {
         //add layer
         const viewon = this.session.createEmptyViewon(datonType);
         const layer = this.createLayer(datonDef, datonType, parseDatonKey(viewon.key), viewon);
-        layer.businessContext = businessContext || '';
+        layer.businessContext = businessContext ?? '';
         this.layers.push(layer);
         this.callOnChanged();
         return layer;

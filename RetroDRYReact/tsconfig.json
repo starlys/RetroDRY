@@ -11,7 +11,12 @@
         "forceConsistentCasingInFileNames": true,
         "noUnusedLocals": true,
         "downlevelIteration": true,
+        "jsx": "react",
+        "allowSyntheticDefaultImports": true,
+        "moduleResolution": "node",
+        "skipLibCheck": true,
+        "types": []
     },
-    "include": ["src", "unittest"],
+    "include": ["src"],
     "exclude": ["node_modules"]
 }

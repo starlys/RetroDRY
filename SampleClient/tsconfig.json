@@ -6,6 +6,14 @@
     "forceConsistentCasingInFileNames": true,            /* Ensure that casing is correct in imports. */
     "strict": true,                                      /* Enable all strict type-checking options. */
     "skipLibCheck": true,                                 /* Skip type checking all .d.ts files. */
-    "jsx": "react"
-  }
+    "jsx": "react",
+    "declaration": true,
+    "noImplicitReturns": true,
+    "noImplicitAny": true,
+    "noUnusedLocals": true,
+    "downlevelIteration": true,
+    "suppressImplicitAnyIndexErrors": false
+  },
+  "include": ["src"],
+  "exclude": ["node_modules"]
 }

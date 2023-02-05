@@ -1,8 +1,13 @@
 import React, {useState, useReducer, ReactElement} from 'react';
 import DisplayValue from './DisplayValue';
 import CardView from './CardView';
-import {ColDefResponse, DatonDefResponse, GridLayout, securityUtil, seedNewRow, Session, TableDefResponse} from 'retrodryclient';
+import { ColDefResponse, DatonDefResponse, GridColumnLayout, GridLayout, securityUtil, seedNewRow, Session, TableDefResponse} from 'retrodryclient';
 import { DatonStackLayer } from './DatonStackState';
+
+interface GridColInfo {
+    width: number;
+    colDef?: ColDefResponse;
+}
 
 //Displays all rows of a daton table in grid format
 //props.session is the session for obtaining layouts
@@ -43,7 +48,7 @@ const Component = (props: TProps) => {
 
     //build colInfos array from layout with properties: width, colDef
     const getColDef = (name: string) => tableDef.cols.find(c => c.name === name);
-    const colInfosWithNulls = localGridLayout.columns.map(gc => {
+    const colInfosWithNulls: GridColInfo[] = localGridLayout.columns.map((gc: GridColumnLayout) => {
         return { width: gc.width, colDef: getColDef(gc.name ?? '') };
     });
     const colInfos = colInfosWithNulls.filter(c => c.colDef); //below, can assume colDef is never missing
@@ -94,11 +99,11 @@ const Component = (props: TProps) => {
                     {includeSpaceForDeleteButton && <td style={{width: '1em'}} key="del">
                         {allowDelete && <button className="btn-delete-row" onClick={(ev) => deleteRow(ev, idx)}>X</button>}
                     </td>}
-                    {colInfos.map((ci, idx2) => {
+                    {colInfos.map((ci: GridColInfo, idx2: number) => {
                         const outValue = <DisplayValue session={session} colDef={ci.colDef!} row={row} width="auto" />;
                         let cellContent = outValue;
                         const isClickable = layer && tableDef.primaryKeyColName === ci.colDef?.name && ci.colDef?.foreignKeyDatonTypeName; 
-                        if (isClickable && ci.colDef)
+                        if (isClickable && ci.colDef && layer)
                             cellContent = <span className="grid-fk" onClick={e => {layer.stackstate.gridKeyClicked(e, layer, tableDef, row, ci.colDef!); setExpandRowIdx(-1);}}>
                                 ( {cellContent} )
                             </span>;
@@ -109,7 +114,7 @@ const Component = (props: TProps) => {
     }
 
     //build header cells
-    const colHeaders = colInfos.map((ci, idx) => {
+    const colHeaders = colInfos.map((ci: GridColInfo, idx: number) => {
         let cellContent: string|ReactElement = ci.colDef?.prompt ?? '';
         const clickable = props.sortClicked && ci.colDef?.allowSort;
         if (clickable) cellContent = <span className="grid-sortable" onClick={() => props.sortClicked!(ci.colDef?.name ?? '')}>{cellContent}</span>;

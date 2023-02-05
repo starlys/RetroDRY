@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, ReactElement, DOMElement } from 'react';
+import React, { useState, useRef, useEffect, ReactElement } from 'react';
 import CardView from './CardView';
 import GridView from './GridView';
 import {TableRecurPointFromDaton, DatonKey, parseDatonKey, validateAll, validateCriteria, securityUtil, IdleTimer, TableDefResponse, DatonDefResponse, Session} from 'retrodryclient';
