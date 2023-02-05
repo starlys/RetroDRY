@@ -10,7 +10,7 @@ module.exports = {
       path: path.resolve(__dirname, 'dist'),
       filename: "index.js",
       library: pkg.name,
-      libraryTarget: "commonjs2"
+      libraryTarget: "umd",
     },
     target: 'node',
     externals: [nodeExternals()],
