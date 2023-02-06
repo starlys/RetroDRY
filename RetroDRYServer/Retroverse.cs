@@ -4,9 +4,8 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.IO;
 using System.Linq;
-using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 
 namespace RetroDRY
 {
@@ -456,10 +455,25 @@ namespace RetroDRY
         /// Host app must call this when receiving http request on GET /api/retro/export;
         /// adds exported data to the given stream
         /// </summary>
-        public async Task HandleHttpExport(Stream responseBody, string requestKey)
+        /// <param name="requestKey">as generated in HandleHttpMain</param>
+        public IActionResult HandleHttpExport(string requestKey)
+        {
+            return new FileCallbackResult(new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain"), async (outputStream, _) =>
+            {
+                await using var wri = new StreamWriter(outputStream);
+                await HandleHttpExport(wri, requestKey);
+            });
+        }
+
+        /// <summary>
+        /// Called from the public overload
+        /// </summary>
+        /// <param name="responseWriter">a writer which this method will only write async to, and leave open</param>
+        /// <param name="requestKey">as generated in HandleHttpMain</param>
+        async Task HandleHttpExport(StreamWriter responseWriter, string requestKey)
         {
             if (GetDbConnection == null) throw new Exception("Uninitialized Retroverse");
-   
+
             //get info about what to export
             (IUser? user, DatonKey datonKey, int maxRows) = PendingExports.RetrieveRequest(requestKey);
             maxRows = Math.Min(maxRows, MaxExportRows);
@@ -472,50 +486,44 @@ namespace RetroDRY
                 return (DataDictionary.FindDef(result.Daton), result.Daton);
             });
 
-            var pusher = new PushStreamContent(async (stream, content, context) =>
+            try
             {
-                using var wri = new StreamWriter(stream);
-                try
+                //if viewon, use specialized technique for large result sets
+                if ((datonKey is ViewonKey viewonKey) && viewonKey.PageNumber == 0)
                 {
-                    //if viewon, use specialized technique for large result sets
-                    if ((datonKey is ViewonKey viewonKey) && viewonKey.PageNumber == 0)
-                    {
-                        var datondef = DataDictionary.FindDef(viewonKey);
-                        var sql = GetSqlInstance(viewonKey);
-                        using var db = await GetDbConnection(datondef.DatabaseNumber);
-                        if (sql == null) throw new Exception("Cannot resolve RetroSql instance in HandleHttpExport");
+                    var datondef = DataDictionary.FindDef(viewonKey);
+                    var sql = GetSqlInstance(viewonKey);
+                    using var db = await GetDbConnection(datondef.DatabaseNumber);
+                    if (sql == null) throw new Exception("Cannot resolve RetroSql instance in HandleHttpExport");
 
+                    var csvConverter = new CsvConverter(DataDictionary, lookupResolver, datondef);
+                    await csvConverter.WriteHeaderRow(responseWriter);
+                    int rowNo = 0;
+                    await foreach (var row in sql.LoadForExport(db, DataDictionary, user, viewonKey, maxRows))
+                    {
+                        if (row == null) continue;
+                        await csvConverter.WriteRow(row, ++rowNo, responseWriter);
+                    }
+                }
+
+                //in all other cases load in memory then stream out
+                else
+                {
+                    var result = await GetDaton(datonKey, user);
+                    if (result.Daton != null)
+                    {
+                        var datondef = DataDictionary.FindDef(result.Daton);
                         var csvConverter = new CsvConverter(DataDictionary, lookupResolver, datondef);
-                        csvConverter.WriteHeaderRow(wri);
-                        int rowNo = 0;
-                        await foreach (var row in sql.LoadForExport(db, DataDictionary, user, viewonKey, maxRows))
-                        {
-                            if (row == null) continue;
-                            await csvConverter.WriteRow(row, ++rowNo, wri);
-                        }
-                    }
-
-                    //in all other cases load in memory then stream out
-                    else
-                    {
-                        var result = await GetDaton(datonKey, user);
-                        if (result.Daton != null)
-                        {
-                            var datondef = DataDictionary.FindDef(result.Daton);
-                            var csvConverter = new CsvConverter(DataDictionary, lookupResolver, datondef);
-                            csvConverter.WriteHeaderRow(wri);
-                            await csvConverter.WriteAllRows(result.Daton, wri);
-                        }
+                        await csvConverter.WriteHeaderRow(responseWriter);
+                        await csvConverter.WriteAllRows(result.Daton, responseWriter);
                     }
                 }
-                catch (Exception ex)
-                {
-                    Diagnostics?.ReportClientCallError?.Invoke(ex.ToString());
-                    wri.WriteLine($"Internal error: {ex.Message}");
-                }
-                await stream.FlushAsync();
-            });
-            await pusher.CopyToAsync(responseBody);
+            }
+            catch (Exception ex)
+            {
+                Diagnostics?.ReportClientCallError?.Invoke(ex.ToString());
+                await responseWriter.WriteLineAsync($"Internal error: {ex.Message}");
+            }
         }
 
         /// <summary>

@@ -1,8 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
@@ -27,12 +24,25 @@ namespace SampleServer.Controllers
         }
 
         [HttpGet("export")]
-        public async Task Export(string key) 
+        public IActionResult Export(string key) 
         {
-            Response.Headers.Add(HeaderNames.ContentType, "text/plain");
             Response.Headers.Add(HeaderNames.ContentDisposition, "attachment; filename=data.csv");
+            return GetRetroverse().HandleHttpExport(key);
+        }
 
-            await GetRetroverse().HandleHttpExport(Response.Body, key);
+        //DEBUG ONLY
+        [HttpGet("testexport")]
+        public FileCallbackResult TestExport()
+        {
+            return new FileCallbackResult(new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain"), async (outputStream, _) =>
+            {
+                await using var wri = new StreamWriter(outputStream);
+                for (int lineNo = 0; lineNo < 5000; ++lineNo)
+                {
+                    await wri.WriteLineAsync($"Line {lineNo}");
+                    if (lineNo % 100 == 0) await Task.Delay(10);
+                }
+            });
         }
 
         /// <summary>
