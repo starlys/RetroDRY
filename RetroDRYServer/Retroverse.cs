@@ -488,7 +488,7 @@ namespace RetroDRY
 
             try
             {
-                //if viewon, use specialized technique for large result sets
+                //if viewon page 0, use specialized technique for large result sets
                 if ((datonKey is ViewonKey viewonKey) && viewonKey.PageNumber == 0)
                 {
                     var datondef = DataDictionary.FindDef(viewonKey);

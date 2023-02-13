@@ -101,6 +101,7 @@ public class Startup
 
         //sample SQL overide
         Globals.Retroverse.OverrideSql("Customer", new CustomerSql());
+        Globals.Retroverse.OverrideSql("CustomerList", new CustomerListSql());
 
         //sample exception text rewriter
         Globals.Retroverse.CleanUpSaveException = (user, ex) =>

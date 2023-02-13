@@ -153,9 +153,10 @@ export default class DatonStackState {
             const keyWithSort = parseDatonKey(layer.datonKey);
             const pageSegIdx = keyWithSort.otherSegments.findIndex(s => s.indexOf('_page=') === 0);
             if (pageSegIdx >= 0) keyWithSort.otherSegments.splice(pageSegIdx, 1);
-                const sortSegIdx = keyWithSort.otherSegments.findIndex(s => s.indexOf('_sort=') === 0);
+            const sortSegIdx = keyWithSort.otherSegments.findIndex(s => s.indexOf('_sort=') === 0);
             if (sortSegIdx >= 0) keyWithSort.otherSegments.splice(sortSegIdx, 1);
-            keyWithSort.otherSegments.push('_sort=' + colName);
+            const colUppercased = colName[0].toUpperCase() + colName.substring(1);
+            keyWithSort.otherSegments.push('_sort=' + colUppercased);
             await this.replaceKey(layer.datonKey, keyWithSort.toKeyString(), false);
         }
     }

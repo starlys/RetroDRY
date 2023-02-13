@@ -75,6 +75,22 @@ namespace SampleServer.Schema
 
             [LeftJoin("SalesRepId", "LastName"), Prompt("Sales rep.")]
             public string? SalesRepLastName;
+
+            //column computed in Recompute()
+            [ComputedColumn]
+            public int Computed1;
+
+            [ComputedColumn]
+            public int Computed2;
+
+            [ComputedColumn]
+            public int Computed3;
+
+            //technique 1 of 3 for setting computed field in a viewon. For other techniques, see SqlOverrides
+            public override void Recompute(Daton? daton)
+            {
+                Computed1 = 22;
+            }
         }
 
         [Criteria]
@@ -89,9 +105,7 @@ namespace SampleServer.Schema
 
         public override Task ValidateCriteria(IUser? user, ViewonKey key, Action<string> fail)
         {
-            if (key.Criteria == null)
-                fail("missing criteria");
-            else
+            if (key.Criteria != null)
             {
                 var companyCri = key.Criteria.FirstOrDefault(c => c.Name == "Company");
                 if (companyCri != null && companyCri.PackedValue.StartsWith("The", StringComparison.InvariantCultureIgnoreCase))

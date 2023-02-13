@@ -30,21 +30,6 @@ namespace SampleServer.Controllers
             return GetRetroverse().HandleHttpExport(key);
         }
 
-        //DEBUG ONLY
-        [HttpGet("testexport")]
-        public FileCallbackResult TestExport()
-        {
-            return new FileCallbackResult(new System.Net.Http.Headers.MediaTypeHeaderValue("text/plain"), async (outputStream, _) =>
-            {
-                await using var wri = new StreamWriter(outputStream);
-                for (int lineNo = 0; lineNo < 5000; ++lineNo)
-                {
-                    await wri.WriteLineAsync($"Line {lineNo}");
-                    if (lineNo % 100 == 0) await Task.Delay(10);
-                }
-            });
-        }
-
         /// <summary>
         /// In a real app, this would just refer to a single global Retroverse instance. 
         /// For integration testing, we support 3 independent psuedo-servers in the same process.

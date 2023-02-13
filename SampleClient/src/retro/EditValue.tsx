@@ -174,7 +174,7 @@ const Component = (props: TProps) => {
         dropdownState.build().then(anyChanges => {
             if (anyChanges) incrementDropdownRenderCount();
         });
-        inputCtrl = <select value={row[colDef.name] || ''} onChange={selectChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}>
+        inputCtrl = <select className="dropdown" value={row[colDef.name] || ''} onChange={selectChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}>
             <option key="-1" value={''}></option>
             {dropdownState.dropdownRows.map(r => <option key={r[dropdownState.dropdownValueCol ?? '']} value={r[dropdownState.dropdownValueCol ?? '']}>
                 {dropdownState.dropdownDisplayCols?.map(dcname => r[dcname]).join(' - ')}
@@ -183,14 +183,14 @@ const Component = (props: TProps) => {
     } 
     else if (baseType === 'bool') {
         if (isCriterion)
-            inputCtrl = <select value={row[colDef.name] || ''} onChange={selectChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}>
+            inputCtrl = <select className="criterion bool" value={row[colDef.name] || ''} onChange={selectChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}>
                 <option key="-1" value="">Any</option>
                 <option key="1" value="1">Yes</option>
                 <option key="0" value="0">No</option>
             </select>;
         else {
             let isChecked = row[colDef.name] === true; //allow undefined value in row
-            inputCtrl = <input type="checkbox" checked={isChecked} onChange={boolChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>;
+            inputCtrl = <input className="bool" type="checkbox" checked={isChecked} onChange={boolChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>;
         }
     }
     else if (isNumericBaseType(baseType)) {
@@ -209,17 +209,17 @@ const Component = (props: TProps) => {
         }
         else {
             //the input will use the string version of the number for editing, which is in the row with $s appended.
-            inputCtrl = <input type="number" value={getFormattedNumber(row, colDef.name, baseType)} onChange={numberChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>;
+            inputCtrl = <input className="number" type="number" value={getFormattedNumber(row, colDef.name, baseType)} onChange={numberChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>;
         }
     }
     else if (baseType === 'string') {
         //string renders multiline control if max length is > 200
         if (isCriterion)
-            inputCtrl = <input className="criterion" value={row[colDef.name] || ''} onChange={stringChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)} />;
+            inputCtrl = <input className="criterion string" value={row[colDef.name] || ''} onChange={stringChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)} />;
         else if (colDef.maxLength && colDef.maxLength > 200) {
-            inputCtrl = <textarea value={row[colDef.name] || ''} onChange={stringChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)} />;
+            inputCtrl = <textarea className="string multiline" value={row[colDef.name] || ''} onChange={stringChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)} />;
         } else {
-            inputCtrl = <input value={row[colDef.name] || ''} onChange={stringChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)} />;
+            inputCtrl = <input className="string" value={row[colDef.name] || ''} onChange={stringChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)} />;
         }
     }
     else if (baseType === 'date') { 
@@ -241,7 +241,7 @@ const Component = (props: TProps) => {
                 row[colDef.name] = inputDateToWire(ev.target.value);
                 props.onChanged();
             };
-            inputCtrl = <input type="date" value={wireDateToInput(row[colDef.name])} onChange={dateChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>;
+            inputCtrl = <input className="date" type="date" value={wireDateToInput(row[colDef.name])} onChange={dateChanged} onFocus={ctrlFocused} onBlur={() => ctrlBlurred(false)}/>;
         }
     }
     else if (baseType === 'datetime') { 

@@ -258,11 +258,21 @@ namespace RetroDRY
         /// <param name="coldef">definition of column</param>
         public static string FormatRawExportValue(ColDef coldef, object? value)
         {
+            static string jsonQuote(string s) => JsonConvert.ToString(s);
+
             //null
             if (value == null) return "";
 
             //bool
             if (value is bool vbool) return vbool ? "1" : "0";
+
+            //date and datetime
+            if (value is DateTime vdate)
+            {
+                if (coldef.WireType == Constants.TYPE_DATE || coldef.WireType == Constants.TYPE_NDATE)
+                    return jsonQuote(vdate.Date.ToString("yyyy-MM-dd"));
+                else return jsonQuote(vdate.ToString("O"));
+            }
 
             //all others same as json
             return FormatRawJsonValue(coldef, value);

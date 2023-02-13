@@ -184,8 +184,28 @@ namespace RetroDRY
             var sortField = datondef.MainTableDef.FindColDefOrThrow(sortFieldName);
             var whereClause = MainTableWhereClause(datondef.MainTableDef, key);
 
+            await foreach (var row in LoadForExportImpl(db, dbdef, datondef, datondef.MainTableDef, sortField, whereClause!, pageSize))
+                yield return row;
+        }
+
+        /// <summary>
+        /// Overridable implementation of LoadForExport. Either one can be overridden, but overriding at this lower level
+        /// can result in less code duplicated.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="dbdef"></param>
+        /// <param name="datondef"></param>
+        /// <param name="tabledef"></param>
+        /// <param name="sortField"></param>
+        /// <param name="whereClause"></param>
+        /// <param name="pageSize"></param>
+        /// <returns></returns>
+        protected virtual async IAsyncEnumerable<Row> LoadForExportImpl(IDbConnection db, DataDictionary dbdef, DatonDef datondef, TableDef tabledef,
+            ColDef sortField, SqlSelectBuilder.Where whereClause, int pageSize)
+        {
+            if (SqlFlavor == null) throw new Exception("Must initialize RetroSql.SqlFlavor");
+
             //build sql
-            var tabledef = datondef.MainTableDef;
             var colInfos = BuildColumnsToLoadList(dbdef, tabledef);
             var columnNames = colInfos.Select(c => c.SqlExpression).ToList();
             int customColIndex = -1;
