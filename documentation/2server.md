@@ -81,6 +81,7 @@ Server side code organization
 -   Because it is not an application template and does not have an entry point itself, the developer needs to wire up the behavior as noted in the "Server application plumbing" section.
 -   If you are using your models in two tiers, the models should go into their own separate assembly to be used in multiple places.
 -   If you would rather start with a template, you can get it here: https://github.com/starlys/RetroDRY-ServerTemplate - However, you should still go through these instructions in detail even if using the template.
+-   The order in which you define fields in your model classes is the default output order on cards and grids. It can be overridden with custom layouts, but it is helpful to know how it chooses the default order.
 
 Defining the data model using annotated classes
 -----------------------------------------------

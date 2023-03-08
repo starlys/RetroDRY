@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Primitives;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
@@ -249,6 +250,22 @@ namespace RetroDRY
 
             //unknown
             throw new Exception($"Type {value.GetType().Name} not supported");
+        }
+
+        /// <summary>
+        /// Format a value for CSV export; includes quotes around strings
+        /// </summary>
+        /// <param name="value">any supported value or null</param>
+        /// <param name="coldef">definition of column</param>
+        public static string FormatCsvExportValue(ColDef coldef, object? value)
+        {
+            if (value is string s)
+            {
+                return $"\"{s.Replace("\"", "\"\"")}\"";
+            }
+
+            //all other cases same as JSON
+            return FormatRawExportValue(coldef, value);
         }
 
         /// <summary>

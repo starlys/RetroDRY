@@ -474,7 +474,8 @@ namespace RetroDRY
                 if (foreignTabledef == null) throw new Exception("Expected main table to be defined in SqlColumExpression");
                 var foreignKey = foreignTabledef.FindColDefOrThrow(foreignTabledef.PrimaryKeyFieldName);
                 string tableAlias = "_t_" + (++MaxtDynamicAliasUsed);
-                return $"(select {coldef.LeftJoin.RemoteDisplaySqlColumnName} from {foreignTabledef.SqlTableName} {tableAlias} where {tableAlias}.{foreignKey.SqlColumnName}={tabledef.SqlTableName}.{fkCol.SqlColumnName})";
+                string localTableNameForJoin = fkCol.SqlTableName ?? tabledef.SqlTableName;
+                return $"(select {coldef.LeftJoin.RemoteDisplaySqlColumnName} from {foreignTabledef.SqlTableName} {tableAlias} where {tableAlias}.{foreignKey.SqlColumnName}={localTableNameForJoin}.{fkCol.SqlColumnName})";
             }
 
             if (coldef.IsCustom || coldef.IsComputedOrJoined) throw new Exception("Cannot load custom or computed column from database");

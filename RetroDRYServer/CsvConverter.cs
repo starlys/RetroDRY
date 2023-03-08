@@ -111,7 +111,7 @@ namespace RetroDRY
                 var value = row.GetValue(entry.ColDef);
                 await wri.WriteAsync(',');
                 if (entry.LookupDatonKey == null)
-                    await wri.WriteAsync(Retrovert.FormatRawExportValue(entry.ColDef, value));
+                    await wri.WriteAsync(Retrovert.FormatCsvExportValue(entry.ColDef, value));
                 else
                     await wri.WriteAsync(await LookupResolver.DisplayValueFor(entry.LookupDatonKey, value));
             }
