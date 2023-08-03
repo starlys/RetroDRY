@@ -55,7 +55,7 @@ public class Startup
         var configBuilder = new ConfigurationBuilder().SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
             .AddJsonFile("appsettings_dev.json");
         var config = configBuilder.Build();
-        var dbConnection = config["Database"];
+        var dbConnection = config["Database"] ?? throw new Exception("Database missing in onfig");
         Globals.ConnectionString = dbConnection;
 
         //This will tell RetroDRY how to access your database
