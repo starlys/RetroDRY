@@ -99,8 +99,7 @@ namespace RetroDRY
         /// </summary>
         public ColDef FindColDefOrThrow(string? name, bool caseSensitive = true)
         {
-            var cd = FindColDefOrNull(name, caseSensitive);
-            if (cd == null) throw new Exception($"Cannot find field {name} in {Name}");
+            var cd = FindColDefOrNull(name, caseSensitive) ?? throw new Exception($"Cannot find field {name} in {Name}");
             return cd;
         }
 

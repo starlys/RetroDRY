@@ -131,8 +131,8 @@ namespace RetroDRY
                 var listField = datondef.Type.GetField(datondef.MainTableDef.Name);
                 if (rowsForParent != null)
                 {
-                    var list = Utils.CreateOrGetFieldValue<IList>(daton, listField);
-                    if (list == null) throw new Exception("Could not get list field value in Load");
+                    var list = Utils.CreateOrGetFieldValue<IList>(daton, listField) 
+                        ?? throw new Exception("Could not get list field value in Load");
                     foreach (var row in rowsForParent) list.Add(row);
                 }
             }
@@ -402,8 +402,8 @@ namespace RetroDRY
                 var sortField = childTabledef.FindColDefOrThrow(childTabledef.DefaulSortFieldName);
                 CustomizeWhereClause(whereClause, $"{childTabledef.ParentKeySqlColumnName} in({parentKeyListFormatted})");
                 var loadResult = await LoadTable(db, dbdef, childTabledef, whereClause, sortField, 0, 0);
-                var rowdict = loadResult.RowsByParentKey;
-                if (rowdict == null) throw new Exception("Expected RowsByParentKey in LoadChildTablesRecursive");
+                var rowdict = loadResult.RowsByParentKey 
+                    ?? throw new Exception("Expected RowsByParentKey in LoadChildTablesRecursive");
 
                 //deal out the rows into the parent objects' Lists of this type
                 var listField = parentdef.RowType.GetField(childTabledef.Name);
@@ -411,8 +411,8 @@ namespace RetroDRY
                 {
                     var rowsForParent = rowdict[parentKey];
                     var parentRow = parentRows[parentKey];
-                    var list = Utils.CreateOrGetFieldValue<IList>(parentRow, listField);
-                    if (list == null) throw new Exception("Could not create list field in LoadChildTablesRecursive");
+                    var list = Utils.CreateOrGetFieldValue<IList>(parentRow, listField)
+                        ?? throw new Exception("Could not create list field in LoadChildTablesRecursive");
                     foreach (var row in rowsForParent) list.Add(row);
                 }
 
@@ -467,11 +467,11 @@ namespace RetroDRY
             //auto-left-joined col
             if (coldef.LeftJoin != null)
             {
-                var fkCol = tabledef.FindColDefOrNull(coldef.LeftJoin.ForeignKeyFieldName);
-                if (fkCol == null) throw new Exception($"Invalid foreign key column name in LeftJoin info on {coldef.FieldName}; it must be the name of a column in the same table");
+                var fkCol = tabledef.FindColDefOrNull(coldef.LeftJoin.ForeignKeyFieldName)
+                    ?? throw new Exception($"Invalid foreign key column name in LeftJoin info on {coldef.FieldName}; it must be the name of a column in the same table");
                 if (fkCol.ForeignKeyDatonTypeName == null) throw new Exception($"Invalid use of foreign key column in LeftJoin; {fkCol.FieldName} must use a ForeignKey annotation to identify the foriegn table");
-                var foreignTabledef = dbdef.FindDef(fkCol.ForeignKeyDatonTypeName).MainTableDef;
-                if (foreignTabledef == null) throw new Exception("Expected main table to be defined in SqlColumExpression");
+                var foreignTabledef = dbdef.FindDef(fkCol.ForeignKeyDatonTypeName).MainTableDef
+                    ?? throw new Exception("Expected main table to be defined in SqlColumExpression");
                 var foreignKey = foreignTabledef.FindColDefOrThrow(foreignTabledef.PrimaryKeyFieldName);
                 string tableAlias = "_t_" + (++MaxtDynamicAliasUsed);
                 string localTableNameForJoin = fkCol.SqlTableName ?? tabledef.SqlTableName;
@@ -526,8 +526,8 @@ namespace RetroDRY
         /// </summary>
         private void SetRowFromCustomValues(string json, TableDef tabledef, Row row)
         {
-            var customs = JsonConvert.DeserializeObject<JObject>(json, Constants.CamelSerializerSettings);
-            if (customs == null) throw new Exception("Expected to deserialize json in SetRowFromCustomValues");
+            var customs = JsonConvert.DeserializeObject<JObject>(json, Constants.CamelSerializerSettings)
+                ?? throw new Exception("Expected to deserialize json in SetRowFromCustomValues");
             foreach (var coldef in tabledef.Cols.Where(c => c.IsCustom))
             {
                 var node = customs[coldef.FieldName];

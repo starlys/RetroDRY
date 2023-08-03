@@ -99,8 +99,8 @@ namespace RetroDRY
             {
                 bool anyChanges = false;
                 var field = target.GetType().GetField(datondef.MainTableDef.Name);
-                var targetList = Utils.CreateOrGetFieldValue<IList>(target, field);
-                if (targetList == null) throw new Exception($"Row class {target.GetType().Name} must include field member {datondef.MainTableDef.Name}");
+                var targetList = Utils.CreateOrGetFieldValue<IList>(target, field)
+                    ?? throw new Exception($"Row class {target.GetType().Name} must include field member {datondef.MainTableDef.Name}");
                 foreach (var source in MainTable)
                     anyChanges |= ApplyDiffRowToList(datondef.MainTableDef, source, targetList);
                 return anyChanges ? ApplyAction.Changes : ApplyAction.NoChanges;
@@ -139,9 +139,8 @@ namespace RetroDRY
             bool anyChanges = false;
             if (tabledef.PrimaryKeyFieldName == null) throw new Exception("Primary key not defined");
             var itemType = targetList.GetType().GenericTypeArguments[0];
-            var pkField = itemType.GetField(tabledef.PrimaryKeyFieldName);
-            if (pkField == null) throw new Exception($"Primary key field not found in type {itemType.Name}");
-
+            var pkField = itemType.GetField(tabledef.PrimaryKeyFieldName)
+                ?? throw new Exception($"Primary key field not found in type {itemType.Name}");
             if (source.Kind == DiffKind.DeletedRow)
             {
                 if (!source.Columns.TryGetValue(tabledef.PrimaryKeyFieldName, out object? pkToDelete)) throw new Exception("Deleted row in diff needs primary key member");
@@ -220,8 +219,8 @@ namespace RetroDRY
                 {
                     var childTableDef = child.Key;
                     var childRows = child.Value;
-                    var field = targetType.GetField(childTableDef.Name);
-                    if (field == null) throw new Exception($"Row class {targetType.Name} must include field member {childTableDef.Name}");
+                    var field = targetType.GetField(childTableDef.Name)
+                        ?? throw new Exception($"Row class {targetType.Name} must include field member {childTableDef.Name}");
                     var childTargetList = Utils.CreateOrGetFieldValue<IList>(target, field)
                         ?? throw new Exception("Cannot get list field value in diff");
                     foreach (var childRow in childRows)

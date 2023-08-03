@@ -63,8 +63,8 @@ namespace RetroDRY
         /// </summary>
         public object Clone(TableDef tableDef) 
         {
-            var target = Utils.Construct(tableDef.RowType) as Row;
-            if (target == null) throw new Exception("Cannot construct row in Clone");
+            var target = Utils.Construct(tableDef.RowType) as Row
+                ?? throw new Exception("Cannot construct row in Clone");
 
             //copy custom fields in this row
             if (CustomValues != null) target.CustomValues = new Dictionary<string, object?>(CustomValues);
@@ -88,8 +88,8 @@ namespace RetroDRY
                     var sourceList = listField.GetValue(this) as IList;
                     if (sourceList != null)
                     {
-                        var targetList = Utils.CreateOrGetFieldValue<IList>(target, listField);
-                        if (targetList == null) throw new Exception("Uninitialized row list in Clone");
+                        var targetList = Utils.CreateOrGetFieldValue<IList>(target, listField)
+                            ?? throw new Exception("Uninitialized row list in Clone");
                         foreach (var row in sourceList)
                             if (row is Row trow) targetList.Add(trow.Clone(childTableDef));
                     }

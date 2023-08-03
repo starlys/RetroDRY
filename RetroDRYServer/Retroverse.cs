@@ -424,8 +424,7 @@ namespace RetroDRY
             if (typeof(Viewon).IsAssignableFrom(datondef.Type) && (key is PersistonKey)) throw new Exception("Viewon requested but key format is for persiston");
             if (daton == null)
             {
-                var sql = GetSqlInstance(key);
-                if (sql == null) throw new Exception("Cannot resolve RetroSql instance in GetDaton");
+                var sql = GetSqlInstance(key) ?? throw new Exception("Cannot resolve RetroSql instance in GetDaton");
                 RetroSql.LoadResult? loadResult;
                 using (var db = await GetDbConnection(datondef.DatabaseNumber))
                     loadResult = await sql.Load(db, DataDictionary, user, key, ViewonPageSize);
