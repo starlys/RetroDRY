@@ -4,7 +4,7 @@ using System.Data;
 using System.Linq;
 using System.Reflection;
 
-#pragma warning disable IDE0019
+//#pragma warning disable IDE0019
 
 namespace RetroDRY
 {
@@ -48,8 +48,8 @@ namespace RetroDRY
         /// </summary>
         public static object Construct(Type t)
         {
-            var ctor = t.GetConstructor(new Type[0]);
-            if (ctor == null) throw new Exception($"{t.Name} must have a parameterless constructor");
+            var ctor = t.GetConstructor(new Type[0])
+                ?? throw new Exception($"{t.Name} must have a parameterless constructor");
             return ctor.Invoke(new object[0]);
         }
 
@@ -61,8 +61,7 @@ namespace RetroDRY
         public static Row ConstructRow(Type t, TableDef? tabledef) 
         {
             if (!typeof(Row).IsAssignableFrom(t)) throw new Exception("Requires Row type");
-            var row = Construct(t) as Row;
-            if (row == null) throw new Exception("Could not construct row");
+            var row = Construct(t) as Row ?? throw new Exception("Could not construct row");
             if (tabledef != null)
             {
                 foreach (var coldef in tabledef.Cols.Where(c => c.IsCustom))
@@ -77,8 +76,8 @@ namespace RetroDRY
         /// </summary>
         public static Daton ConstructDaton(Type t, DatonDef datondef)
         {
-            var d = ConstructRow(t, datondef.MultipleMainRows ? null : datondef.MainTableDef) as Daton;
-            if (d == null) throw new Exception("Could not construct daton");
+            var d = ConstructRow(t, datondef.MultipleMainRows ? null : datondef.MainTableDef) as Daton
+                ?? throw new Exception("Could not construct daton");
             return d;
         }
 

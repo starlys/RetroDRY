@@ -230,8 +230,8 @@ namespace RetroDRY
             if (item.DatonDef == null) throw new Exception("missing DatonDef in SaveOne");
 
             var trx = Trxs.Single(t => t.DatabaseNumber == item.DatonDef.DatabaseNumber);
-            var sql = Retroverse.GetSqlInstance(item.Modified.Key);
-            if (sql == null) throw new Exception("Cannot resolve RetroSql instance in SaveOne");
+            var sql = Retroverse.GetSqlInstance(item.Modified.Key) 
+                ?? throw new Exception("Cannot resolve RetroSql instance in SaveOne");
             try
             {
                 await sql.Save(trx.Connection, User, item.Pristine, item.Modified, item.Diff);

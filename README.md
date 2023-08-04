@@ -34,6 +34,10 @@ Multi-tier framework in C#/React for handling load/save data, replication across
 
 The product should be considered not market ready quite yet, and we should have used 0.x version numbering. It's being upgraded for use in plug.events so we only focus on that use case for now.
 
+* Version 1.5.2 fixes bugs in 1.5.1
+  * Breaking change: The RetroController method for export has to be changed.
+  * Breaking change: In SQL overrides, you should override both Load() and LoadForExport() because features that you add in Load() won't be seen in an export context.
+  
 * Version 1.5.1 fixes bugs in 1.5.0
   * Breaking change: API members ending with *ColumnName are now *FieldName.
   * Breaking change: All List<> members in daton classes must be non-null. For example `public List<CustRow> Cust = new();` This was needed for the nullable types upgrade.
@@ -49,4 +53,6 @@ The product should be considered not market ready quite yet, and we should have 
 
 * Version 1.4.3 is the latest stable before major upgrades.
 
-* Version 1.4.1 contains a few breaking changes server side. Most importanly the database resolver is async, which makes many other things async and changes the initialization sequence. It also supports multiple environments (test, production, etc).
+* Version 1.5.1 contains a few breaking changes server side. Most importanly the database resolver is async, which makes many other things async and changes the initialization sequence. It also supports multiple environments (test, production, etc).
+
+* Version 1.5.3 was updated to work with Node version 18, react 18, dotnet 7, and other package updates.

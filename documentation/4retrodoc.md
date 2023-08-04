@@ -237,6 +237,7 @@ Note that the RetroDRYReact folder only contains copies of the source code. The 
 is done in the SampleClient folder. The copies are not in source control.
 
 -   Update the version number in RetroDRYReact/package.json.
+-   Also in RetroDRYReact/package.json, update the version number of RetroDRYClient in two places: dev dependencies and peer dependencies.
 -   In terminal, go to RetroDRYReact folder
 -   Build for publishing using both of these commands: 
     -   npm run prep1

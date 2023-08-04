@@ -5,6 +5,14 @@ export default class IdleTimer {
 
     private intervalId: number = 0; //0 means this instance is not active
     private warningWasGiven = false; 
+    private isOwnerMounted = false;
+
+    // this hack method was added with the change in useEffect in react 18, because react no longer
+    // has a true 'unmounted' call. So we can't dispose the timer until the time is exceeded, at which point
+    // if the owner is no longer there, then it stops itself
+    ownerMounted(mounted: boolean) {
+        this.isOwnerMounted = mounted;
+    }
 
     //start timing user inactivity; if it exceeds the given number of seconds (secondsToWarning), call the warning callback;
     //then if there is no activity from that point for more time (secondsToTimeout, measured from the beginning), call the timeout callback.
@@ -23,11 +31,12 @@ export default class IdleTimer {
         }
 
         this.stop();
-        this.intervalId = setInterval(() => {
+        this.intervalId = window.setInterval(() => {
             if (!this.intervalId) return;
             if (!this.warningWasGiven) {
                 //give warning
                 if (this.isExceeded(secondsToWarning)) {
+                    if (!this.isOwnerMounted) this.stop(); // see hack note on ownerMounted
                     this.warningWasGiven = true;
                     if (warningCallback) warningCallback();
                 }
@@ -48,7 +57,7 @@ export default class IdleTimer {
 
     //stop timing user inactivity
     stop(): void {
-        if (this.intervalId) clearInterval(this.intervalId);
+        if (this.intervalId) window.clearInterval(this.intervalId);
         this.intervalId = 0;
     }
 

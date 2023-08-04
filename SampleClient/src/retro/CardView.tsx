@@ -7,7 +7,7 @@ import {ColDefResponse, DatonDefResponse, PanelLayout, securityUtil, Session, Ta
 import { DatonStackLayer } from './DatonStackState';
 
 //get width in em units for a colDef
-//forcedWidth is optional string width specified in layout; if missing it uses the colun type and length
+//forcedWidth is optional string width specified in layout; if missing it uses the column type and length
 function widthByType(colDef: ColDefResponse, forcedWidth?: string) {
     if (forcedWidth) {
         const w2 = parseInt(forcedWidth);
@@ -15,7 +15,7 @@ function widthByType(colDef: ColDefResponse, forcedWidth?: string) {
     } 
     if (colDef.wireType === 'string' || colDef.wireType === 'nstring') return Math.max(8, Math.min(50, 0.8 * (colDef.maxLength || 50)))
     if (colDef.wireType.indexOf('datetime') >= 0) return 20;
-    return 12;
+    return 15;
 }
 
 //determine if column is editable in this row (row can be falsy if criteria editing)

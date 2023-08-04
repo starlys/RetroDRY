@@ -52,8 +52,8 @@ namespace RetroDRY
         public static IList? GetChildTable(TableDef parentdef, Row parent, TableDef memberdef, bool createIfMissing = false)
         {
             if (parent.GetType() != parentdef.RowType) throw new Exception("Incorrect type");
-            var f = parentdef.RowType.GetField(memberdef.Name); 
-            if (f == null) throw new Exception($"{memberdef.Name} not found in {parentdef.Name}");
+            var f = parentdef.RowType.GetField(memberdef.Name) 
+                ?? throw new Exception($"{memberdef.Name} not found in {parentdef.Name}");
             return GetChildTable(parent, f, createIfMissing);
         }
 
@@ -144,8 +144,8 @@ namespace RetroDRY
 
         private FieldInfo GetPrimaryKeyField()
         {
-            var pkField = TableDef.RowType.GetField(TableDef.PrimaryKeyFieldName);
-            if (pkField == null) throw new Exception($"{TableDef.PrimaryKeyFieldName} not found in {TableDef.Name}");
+            var pkField = TableDef.RowType.GetField(TableDef.PrimaryKeyFieldName)
+                ?? throw new Exception($"{TableDef.PrimaryKeyFieldName} not found in {TableDef.Name}");
             return pkField;
         }
 

@@ -75,8 +75,8 @@ namespace SampleServer.Schema
         [LeftJoin("SupervisorId", "LastName"), Prompt("Supervisor")]
         public string? SupervisorLastName;
 
-        //[Prompt("Hired on")]
-        //public DateTime HireDate;
+        [Prompt("Hired on"), ComputedColumn]
+        public DateTime HireDate;
 
         [Prompt("Employee is toxic to work environment")]
         public bool IsToxic;
@@ -85,6 +85,12 @@ namespace SampleServer.Schema
         public int NeatDeskRating;
 
         public List<EContactRow> EContact = new();
+
+        public override void Recompute(Daton? daton)
+        {
+            base.Recompute(daton);
+            HireDate = DateTime.Today;
+        }
 
         [SqlTableName("EmployeeContact"), ParentKey("EmployeeId")]
         [Prompt("Employee contact")]

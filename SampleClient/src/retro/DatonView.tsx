@@ -88,7 +88,10 @@ export default React.memo((props: TProps) => {
         if (idleTimer.current) idleTimer.current.stop();
     };
     useEffect(() => {
-        return () => cancelIdleTimer();
+        if (idleTimer.current) idleTimer.current.ownerMounted(true);
+        return () => {
+            if (idleTimer.current) idleTimer.current.ownerMounted(false);
+        };
     });
 
     //event handlers
@@ -150,6 +153,7 @@ export default React.memo((props: TProps) => {
             } else {
                 setIsEditing(true);
                 if (!idleTimer.current) idleTimer.current = new IdleTimer();
+                idleTimer.current.ownerMounted(true);
                 idleTimer.current.start(5 * 60, 6 * 60, editingNearingTimeout, editingNotNearingTimeout, editingTimedOut);
                 if (layer) layer.edit = true;
                 setErrorItems([]);

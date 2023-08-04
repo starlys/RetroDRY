@@ -62,8 +62,8 @@ namespace RetroDRY
         {
             lock (items)
             {
-                var item = items.FirstOrDefault(i => i.Id == key);
-                if (item == null) throw new Exception("Request expired");
+                var item = items.FirstOrDefault(i => i.Id == key) 
+                    ?? throw new Exception("Request expired");
                 return (item.User, item.DatonKey, item.MaxRows);
             }
         }

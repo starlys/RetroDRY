@@ -29,8 +29,8 @@ namespace RetroDRY
             if (datondef.MainTableDef == null) throw new Exception("Expected MainTableDef in Clone");
             if (datondef.MultipleMainRows)
             {
-                var target = Utils.Construct(datondef.Type) as Daton;
-                if (target == null) throw new Exception("Failed to construct daton in Clone");
+                var target = Utils.Construct(datondef.Type) as Daton 
+                    ?? throw new Exception("Failed to construct daton in Clone");
                 target.Key = Key;
                 target.Version = Version;
                 var listField = datondef.Type.GetField(datondef.MainTableDef.Name);
@@ -52,8 +52,7 @@ namespace RetroDRY
             }
             else //single main row
             {
-                var target = Clone(datondef.MainTableDef) as Daton;
-                if (target == null) throw new Exception("Cannot clone daton");
+                var target = Clone(datondef.MainTableDef) as Daton ?? throw new Exception("Cannot clone daton");
                 target.Key = Key;
                 target.Version = Version;
                 return target;

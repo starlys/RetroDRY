@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Microsoft.Extensions.Primitives;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
@@ -115,10 +116,10 @@ namespace RetroDRY
             if (!(mainRowsNode is JArray mainRowsArray)) throw new Exception($"{datondef.MainTableDef.Name} node must be an array");
             if (datondef.MultipleMainRows)
             {
-                var targetListInfo = datondef.Type.GetField(datondef.MainTableDef.Name);
-                if (targetListInfo == null) throw new Exception($"Expected {datondef.MainTableDef.Name} to be a member of {datondef.Type.Name}");
-                var targetList = Utils.CreateOrGetFieldValue<IList>(daton, targetListInfo);
-                if (targetList == null) throw new Exception("Could not get list field value in FromCompatibleWireFull");
+                var targetListInfo = datondef.Type.GetField(datondef.MainTableDef.Name)
+                    ?? throw new Exception($"Expected {datondef.MainTableDef.Name} to be a member of {datondef.Type.Name}");
+                var targetList = Utils.CreateOrGetFieldValue<IList>(daton, targetListInfo)
+                    ?? throw new Exception("Could not get list field value in FromCompatibleWireFull");
                 ReadCompatibleJsonRowArray(mainRowsArray, datondef.MainTableDef, targetList);
             }
             else
@@ -152,8 +153,8 @@ namespace RetroDRY
                 if (!mainDiffRow.Columns.ContainsKey(datondef.MainTableDef.PrimaryKeyFieldName))
                 {
                     var pkColdef = datondef.MainTableDef.FindColDefOrThrow(datondef.MainTableDef.PrimaryKeyFieldName);
-                    var pk = Utils.ChangeType(((PersistonKey)datonKey).PrimaryKey, pkColdef.CSType);
-                    if (pk == null) throw new Exception("Could not change key type in FromDiff");
+                    var pk = Utils.ChangeType(((PersistonKey)datonKey).PrimaryKey, pkColdef.CSType)
+                        ?? throw new Exception("Could not change key type in FromDiff");
                     mainDiffRow.Columns[datondef.MainTableDef.PrimaryKeyFieldName] = pk;
                 }
             }
@@ -252,17 +253,43 @@ namespace RetroDRY
         }
 
         /// <summary>
+        /// Format a value for CSV export; includes quotes around strings
+        /// </summary>
+        /// <param name="value">any supported value or null</param>
+        /// <param name="coldef">definition of column</param>
+        public static string FormatCsvExportValue(ColDef coldef, object? value)
+        {
+            if (value is string s)
+            {
+                return $"\"{s.Replace("\"", "\"\"")}\"";
+            }
+
+            //all other cases same as JSON
+            return FormatRawExportValue(coldef, value);
+        }
+
+        /// <summary>
         /// Format a value for exported raw output
         /// </summary>
         /// <param name="value">any supported value or null</param>
         /// <param name="coldef">definition of column</param>
         public static string FormatRawExportValue(ColDef coldef, object? value)
         {
+            static string jsonQuote(string s) => JsonConvert.ToString(s);
+
             //null
             if (value == null) return "";
 
             //bool
             if (value is bool vbool) return vbool ? "1" : "0";
+
+            //date and datetime
+            if (value is DateTime vdate)
+            {
+                if (coldef.WireType == Constants.TYPE_DATE || coldef.WireType == Constants.TYPE_NDATE)
+                    return jsonQuote(vdate.Date.ToString("yyyy-MM-dd"));
+                else return jsonQuote(vdate.ToString("O"));
+            }
 
             //all others same as json
             return FormatRawJsonValue(coldef, value);
@@ -291,15 +318,14 @@ namespace RetroDRY
                     //if the client omits -1 primary key value on new rows, add it here; the save logic needs it but it is redundant from the client perspective
                     if (fillInMissingNegativeKey && !target.Columns.ContainsKey(tableDef.PrimaryKeyFieldName))
                     {
-                        var newRowPK = Utils.ChangeType(-1, tableDef.FindColDefOrThrow(tableDef.PrimaryKeyFieldName).CSType);
-                        if (newRowPK == null) throw new Exception("Could not conver type in ReadJsonDiffRowArray");
+                        var newRowPK = Utils.ChangeType(-1, tableDef.FindColDefOrThrow(tableDef.PrimaryKeyFieldName).CSType)
+                            ?? throw new Exception("Could not convert type in ReadJsonDiffRowArray");
                         target.Columns[tableDef.PrimaryKeyFieldName] = newRowPK;
                     }
                 }
             }
 
-            string? name = CamelCasify(tableDef.Name);
-            if (name == null) throw new Exception("Expected tableDef name in ReadJsonDiffRowArray");
+            string? name = CamelCasify(tableDef.Name) ?? throw new Exception("Expected tableDef name in ReadJsonDiffRowArray");
             ParseArray(name, DiffKind.Other, true, false);
             ParseArray(name + "-new", DiffKind.NewRow, true, true);
             ParseArray(name + "-deleted", DiffKind.DeletedRow, false, false);
@@ -365,8 +391,8 @@ namespace RetroDRY
                     targetRow.SetCustom(colDef.FieldName, value);
                 else
                 {
-                    var targetField = tableDef.RowType.GetField(colDef.FieldName);
-                    if (targetField == null) throw new Exception($"Expected {colDef.FieldName} to be a member of {tableDef.RowType.Name}");
+                    var targetField = tableDef.RowType.GetField(colDef.FieldName)
+                        ?? throw new Exception($"Expected {colDef.FieldName} to be a member of {tableDef.RowType.Name}");
                     targetField.SetValue(targetRow, value);
                 }
             }
@@ -385,8 +411,8 @@ namespace RetroDRY
                     if (targetListField == null) continue;
                     var listType = targetListField.FieldType;
                     if (!(targetListField is IList) || !listType.IsGenericType) continue; //is not List<xxx>
-                    var list = Utils.CreateOrGetFieldValue<IList>(targetRow, targetListField);
-                    if (list == null) throw new Exception("Could not create list field value in ReadCompatibleJsonRow");
+                    var list = Utils.CreateOrGetFieldValue<IList>(targetRow, targetListField)
+                        ?? throw new Exception("Could not create list field value in ReadCompatibleJsonRow");
 
                     //loop rows
                     foreach (var node2 in jarray)

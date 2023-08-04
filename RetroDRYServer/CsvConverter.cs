@@ -63,29 +63,28 @@ namespace RetroDRY
         /// <summary>
         /// Write column names row
         /// </summary>
-        /// <param name="wri"></param>
-        public void WriteHeaderRow(StreamWriter wri)
+        /// <param name="wri">this will only write async to the writer</param>
+        public async Task WriteHeaderRow(StreamWriter wri)
         {
             int displayNameSuffix = 0;
-            wri.Write("_RowNumber");
+            await wri.WriteAsync("_RowNumber");
             foreach (var entry in OutputEntries)
             {
                 string fixedName = Regex.Replace(entry.ColDef.FieldName, @"[\s""]+", "_");
-                wri.Write(',');
-                wri.Write(fixedName);
+                await wri.WriteAsync(',');
+                await wri.WriteAsync(fixedName);
 
                 //for display value cols, we append _D1, _D2 etc to the name
-                if (entry.LookupDatonKey != null) wri.Write($"_D{++displayNameSuffix}");
+                if (entry.LookupDatonKey != null) await wri.WriteAsync($"_D{++displayNameSuffix}");
             }
-            wri.WriteLine();
-            wri.Flush();
+            await wri.WriteLineAsync();
         }
 
         /// <summary>
         /// Write a CSV representation of the main table of the given daton to the StreamWriter, excluding header row
         /// </summary>
         /// <param name="daton"></param>
-        /// <param name="wri"></param>
+        /// <param name="wri">this will only write async to the writer</param>
         public async Task WriteAllRows(Daton daton, StreamWriter wri)
         {
             if (DatonDef.MultipleMainRows)
@@ -103,20 +102,20 @@ namespace RetroDRY
         /// </summary>
         /// <param name="row"></param>
         /// <param name="rowNo">1-based row number that gets written as first column</param>
-        /// <param name="wri"></param>
+        /// <param name="wri">this will only write async to the writer</param>
         public async Task WriteRow(Row row, int rowNo, StreamWriter wri)
         {
-            wri.Write(rowNo);
+            await wri.WriteAsync(rowNo.ToString());
             foreach (var entry in OutputEntries)
             {
                 var value = row.GetValue(entry.ColDef);
-                wri.Write(',');
+                await wri.WriteAsync(',');
                 if (entry.LookupDatonKey == null)
-                    wri.Write(Retrovert.FormatRawExportValue(entry.ColDef, value));
+                    await wri.WriteAsync(Retrovert.FormatCsvExportValue(entry.ColDef, value));
                 else
-                    wri.Write(await LookupResolver.DisplayValueFor(entry.LookupDatonKey, value));
+                    await wri.WriteAsync(await LookupResolver.DisplayValueFor(entry.LookupDatonKey, value));
             }
-            await wri.WriteLineAsync(); //possibly this will allow large tables to stream to the client while this is looping the rows
+            await wri.WriteLineAsync(); 
         }
     }
 }

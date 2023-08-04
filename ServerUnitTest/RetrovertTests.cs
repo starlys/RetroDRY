@@ -59,6 +59,25 @@ namespace UnitTest
         }
 
         [TestMethod]
+        public void ToWireWithEscapedChars()
+        {
+            var jill = new Employee
+            {
+                EmpId = 9,
+                FirstName = "Jill \"The Frill\" Jackson",
+                Key = new PersistonKey("Employee", "9", false),
+                Version = "v2"
+            };
+            var ddict = new DataDictionary();
+            ddict.AddDatonUsingClassAnnotation(typeof(Employee));
+
+            string json = Retrovert.ToWire(ddict, jill, true);
+            //expected has single quotes so the source code is more readable
+            string expected = @"{'key':'Employee|=9','version':'v2','employee':{'empId':9,'firstName':'Jill \'The Frill\' Jackson','lastName':null,'supervisorId':null,'supervisorLastName':null}}";
+            Assert.AreEqual(expected.Replace('\'', '"'), json);
+        }
+
+        [TestMethod]
         public void ToDenseWire()
         {
             var jill = new Employee
