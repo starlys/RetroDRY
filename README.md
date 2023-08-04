@@ -53,4 +53,6 @@ The product should be considered not market ready quite yet, and we should have 
 
 * Version 1.4.3 is the latest stable before major upgrades.
 
-* Version 1.4.1 contains a few breaking changes server side. Most importanly the database resolver is async, which makes many other things async and changes the initialization sequence. It also supports multiple environments (test, production, etc).
+* Version 1.5.1 contains a few breaking changes server side. Most importanly the database resolver is async, which makes many other things async and changes the initialization sequence. It also supports multiple environments (test, production, etc).
+
+* Version 1.5.3 was updated to work with Node version 18, react 18, dotnet 7, and other package updates.

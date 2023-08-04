@@ -1,6 +1,6 @@
 {
   "name": "retrodryreact",
-  "version": "1.5.3-beta.3",
+  "version": "1.5.3",
   "description": "multi-tier tool for data load/save, replication across tiers, and editing",
   "keywords": [
     "framework",
@@ -43,13 +43,13 @@
     "ts-loader": "^7.0.4",
     "copyfiles": "^0",
     "react": "^16.14.0",
-    "retrodryclient": "1.5.1-beta.2",
+    "retrodryclient": "1.5.3",
     "webpack": "^5.75.0",
     "webpack-cli": "^5.1.4",
     "webpack-node-externals": "^1.7.2"
   },
   "peerDependencies": {
     "react": "^16.12.0",
-    "retrodryclient": "^1.5.3-beta.1"
+    "retrodryclient": "^1.5.3"
   }
 }
