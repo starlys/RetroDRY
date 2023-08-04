@@ -1,6 +1,6 @@
 {
   "name": "retrodryreact",
-  "version": "1.5.2-beta.1",
+  "version": "1.5.3-beta.3",
   "description": "multi-tier tool for data load/save, replication across tiers, and editing",
   "keywords": [
     "framework",
@@ -20,7 +20,7 @@
     "LICENSE"
   ],
   "dependencies": {
-    "@types/react": "^18.0.27"
+    "@types/react": "^18.2.18"
   },
   "repository": {
     "type": "git",
@@ -28,28 +28,28 @@
   },
   "scripts": {
     "prep1": "copyfiles --flat ../SampleClient/src/retro/*.ts* src",
-    "prep2": "webpack --mode production --display-modules"
+    "prep2": "webpack --mode production"
   },
   "devDependencies": {
-    "@babel/cli": "^7.20.7",
-    "@babel/core": "^7.10.4",
-    "@babel/plugin-proposal-class-properties": "^7.10.4",
-    "@babel/preset-env": "^7.10.4",
-    "@babel/preset-react": "^7.10.4",
+    "@babel/cli": "^7.22.9",
+    "@babel/core": "^7.22.9",
+    "@babel/plugin-proposal-class-properties": "^7.18.6",
+    "@babel/preset-env": "^7.22.9",
+    "@babel/preset-react": "^7.22.5",
     "@types/webpack-node-externals": "^2.5.3",
     "ts-node": "^8.10.1",
     "typescript": "^3.9.3",
-    "babel-loader": "^8.1.0",
+    "babel-loader": "^8.3.0",
     "ts-loader": "^7.0.4",
     "copyfiles": "^0",
-    "react": "^16.13.1",
+    "react": "^16.14.0",
     "retrodryclient": "1.5.1-beta.2",
     "webpack": "^5.75.0",
-    "webpack-cli": "^3.3.12",
+    "webpack-cli": "^5.1.4",
     "webpack-node-externals": "^1.7.2"
   },
   "peerDependencies": {
     "react": "^16.12.0",
-    "retrodryclient": "^1.5.1"
+    "retrodryclient": "^1.5.3-beta.1"
   }
 }

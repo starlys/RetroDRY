@@ -23,7 +23,7 @@ export default class IdleTimer {
         }
 
         this.stop();
-        this.intervalId = setInterval(() => {
+        this.intervalId = window.setInterval(() => {
             if (!this.intervalId) return;
             if (!this.warningWasGiven) {
                 //give warning
@@ -48,7 +48,7 @@ export default class IdleTimer {
 
     //stop timing user inactivity
     stop(): void {
-        if (this.intervalId) clearInterval(this.intervalId);
+        if (this.intervalId) window.clearInterval(this.intervalId);
         this.intervalId = 0;
     }
 

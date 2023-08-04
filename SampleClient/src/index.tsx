@@ -1,12 +1,14 @@
 import React from 'react';
-import ReactDOM from 'react-dom';
+import { createRoot} from 'react-dom/client';
 import App from './App';
 import globals from './globals';
 import { Session } from 'retrodryclient';
 import { samplePanelLayouts, sampleGridLayouts } from './constants';
 
 function mainRender() {
-    ReactDOM.render(<App />, document.getElementById('root'));
+    const container = document.getElementById('root');
+    const root = createRoot(container!);
+    root.render(<App />, );
 }
 
 /*
@@ -16,7 +18,6 @@ Session, then call Session.start(). Your app will likely have other features tha
 so you might code the initialization sequence somewhere else besides in index.tsx.
  */
 (async function() {
-    mainRender();
 
     //start session on server
     const apiUrl = 'https://localhost:5001/api/';
